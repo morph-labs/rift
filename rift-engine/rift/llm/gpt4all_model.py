@@ -77,10 +77,10 @@ default_args = dict(
     context_erase=0.5,
 )
 
-
 def generate_stream(self: LLModel, prompt: str, **kwargs) -> TextStream:
     loop = asyncio.get_event_loop()
-    output = TextStream()
+    cancelled_flag = threading.Event()
+    output = TextStream(on_cancel=cancelled_flag.set)
     prompt_chars = ctypes.c_char_p(prompt.encode("utf-8"))
     kwargs = {**default_args, **kwargs}
     keys = [x for x, _ in LLModelPromptContext._fields_]
@@ -91,9 +91,12 @@ def generate_stream(self: LLModel, prompt: str, **kwargs) -> TextStream:
     context = LLModelPromptContext(**context_args)
 
     def prompt_callback(token_id, response: Optional[bytes] = None):
-        return True
+        return not cancelled_flag.is_set()
 
     def response_callback(token_id, response: bytes):
+        if cancelled_flag.is_set():
+            logger.debug("response_callback cancelled")
+            return False
         text = response.decode("utf-8")
         loop.call_soon_threadsafe(output.feed_data, text)
         return True
@@ -119,7 +122,6 @@ def generate_stream(self: LLModel, prompt: str, **kwargs) -> TextStream:
 
     output._feed_task = asyncio.create_task(run_async())
     return output
-
 
 DEFAULT_MODEL_NAME = "ggml-gpt4all-j-v1.3-groovy"
 # DEFAULT_MODEL_NAME = "ggml-mpt-7b-chat"

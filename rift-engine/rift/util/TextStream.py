@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, AsyncIterable, Optional
+from typing import Any, AsyncIterable, Callable, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,13 +11,15 @@ class TextStream:
     _eof: bool
     _buffer: str  # [todo] use io.StringIO
     _loop: asyncio.AbstractEventLoop
+    _on_cancel: Optional[Callable[[], None]]
 
-    def __init__(self, loop=None):
+    def __init__(self, loop=None, on_cancel=None):
         self._feed_task = None
         self._buffer = ""
         self._waiter = None
         self._eof = False
         self._loop = asyncio.get_event_loop() if loop is None else loop
+        self._on_cancel = on_cancel
 
     def feed_eof(self):
         if self._eof:
@@ -115,15 +117,18 @@ class TextStream:
 
     async def __anext__(self):
         """Note this is different to StreamReader which yields lines.
-        We just yield everything
-         that is available in the buffer."""
+        We just yield everything that is available in the buffer."""
         while len(self._buffer) == 0:
             if self._eof:
                 raise StopAsyncIteration
             else:
-                await self._wait_for_data("__anext__")
+                try:
+                    await self._wait_for_data("__anext__")
+                except asyncio.CancelledError:
+                    if self._on_cancel is not None:
+                        self._on_cancel()
+                    raise
         return self.pop_all()
-
     @classmethod
     def from_aiter(cls, x: AsyncIterable[str], loop=None):
         self = cls(loop=loop)
