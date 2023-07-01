@@ -50,7 +50,7 @@ def message_length(msg: Message):
 
 
 def auto_truncate(messages: List[Message]):
-    tail_messages = []
+    tail_messages: list[Message] = []
     running_length = 0
     for msg in reversed(messages[1:]):
         running_length += message_length(msg)

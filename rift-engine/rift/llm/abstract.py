@@ -15,13 +15,6 @@ class InsertCodeResult:
 class ChatResult:
     text: TextStream
 
-
-@dataclass
-class ChatMessage:
-    role: str
-    content: str
-
-
 class AbstractCodeCompletionProvider(ABC):
     @abstractmethod
     async def insert_code(

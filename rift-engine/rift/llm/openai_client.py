@@ -26,7 +26,6 @@ from rift.llm.abstract import (
 )
 
 from rift.util.TextStream import TextStream
-from rift.llm.abstract import ChatMessage
 from rift.llm.openai_types import (
     ChatCompletionChunk,
     ChatCompletionRequest,
@@ -177,7 +176,7 @@ def create_system_message_truncated(document: str, max_size: int, cursor_offset:
 def truncate_messages(messages: List[Message]):
     system_message_size = message_size(messages[0])
     max_size = calc_max_non_system_msgs_size(system_message_size)
-    tail_messages = []
+    tail_messages: list[Message] = []
     running_length = 0
     for msg in reversed(messages[1:]):
         running_length += message_size(msg)
@@ -289,12 +288,12 @@ class OpenAIClient(
             if not resp.ok:
                 await self.handle_error(resp)
             while True:
-                line = await resp.content.readline()
-                if line == b"":
+                line_ = await resp.content.readline()
+                if line_ == b"":
                     break
-                if line == b"\n":
+                if line_ == b"\n":
                     continue
-                line = line.decode("utf-8")  # [todo] where to get encoding from?
+                line = line_.decode("utf-8")  # [todo] where to get encoding from?
                 if line.startswith("data:"):
                     line = line.split("data:")[1]
                     line = line.strip()
