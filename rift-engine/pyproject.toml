@@ -14,7 +14,8 @@ authors = [
 ]
 dependencies = [
   "aiohttp",
-  "pydantic[dotenv]",
+  "pydantic[dotenv]==1.*",
+  "python-dotenv",
   "rich",
   "fire",
   "gpt4all==0.3.4",
