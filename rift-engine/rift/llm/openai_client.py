@@ -176,7 +176,7 @@ def create_system_message_truncated(document: str, max_size: int, cursor_offset:
 def truncate_messages(messages: List[Message]):
     system_message_size = message_size(messages[0])
     max_size = calc_max_non_system_msgs_size(system_message_size)
-    tail_messages: list[Message] = []
+    tail_messages: List[Message] = []
     running_length = 0
     for msg in reversed(messages[1:]):
         running_length += message_size(msg)
@@ -327,18 +327,18 @@ class OpenAIClient(
 
     @overload
     def chat_completions(
-        self, messages: list[Message], *, stream: Literal[True], **kwargs
+        self, messages: List[Message], *, stream: Literal[True], **kwargs
     ) -> AsyncGenerator[ChatCompletionChunk, None]:
         ...
 
     @overload
     def chat_completions(
-        self, messages: list[Message], *, stream: Literal[False], **kwargs
+        self, messages: List[Message], *, stream: Literal[False], **kwargs
     ) -> Coroutine[Any, Any, ChatCompletionResponse]:
         ...
 
     def chat_completions(
-        self, messages: list[Message], *, stream: bool = False, **kwargs
+        self, messages: List[Message], *, stream: bool = False, **kwargs
     ) -> Any:
         endpoint = "/chat/completions"
         input_type = ChatCompletionRequest
