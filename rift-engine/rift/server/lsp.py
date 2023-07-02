@@ -13,7 +13,7 @@ from rift.llm.abstract import (
 from rift.llm.create import ModelConfig
 from rift.server.helper import *
 from rift.server.selection import RangeSet
-from rift.llm.abstract import ChatMessage
+from rift.llm.openai_types import Message
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RunChatParams:
     message: str
-    messages: List[ChatMessage]
+    messages: List[Message]
     position: Optional[lsp.Position]
     textDocument: lsp.TextDocumentIdentifier
 
@@ -43,7 +43,7 @@ class LspLogHandler(logging.Handler):
     def __init__(self, server: "LspServer"):
         super().__init__()
         self.server = server
-        self.tasks = set()
+        self.tasks : set[asyncio.Task] = set()
 
     def emit(self, record: logging.LogRecord) -> None:
         if self.server.status != RpcServerStatus.running:
@@ -78,8 +78,9 @@ class ChatHelper:
     server: "LspServer"
     change_futures: dict[str, asyncio.Future[None]]
     cursor: Optional[lsp.Position]
-    task: Optional[asyncio.Task]
     """ The position of the cursor (where text will be inserted next). This position is changed if other edits occur above the cursor. """
+    task: Optional[asyncio.Task]
+    subtasks: set[asyncio.Task]
 
     @property
     def uri(self):

@@ -2,14 +2,30 @@
 
 An AI-first language server for powering your personal, on-device AI software engineer. Built and maintained by [Morph](https://morph.so).
 
+## Installation
+
+For development:
+
+```bash
+# from this directory
+pip install -e .
+```
+
+From PyPI:
+
+```bash
+pip install pyrift
+```
+
 ## Development
 
-Make sure you have `hatch` installed: `pipx install hatch`.
-Similarly to `poetry`, `hatch` manages the versions of all the packages, reducing hassle with environments.
+Use `conda` or `venv` to create and activate a virtual environment.
+
+`pip install -e .`
 
 ## Running
 
-Get a development server running with `hatch run dev`. This will listen for LSP connections on port 7797.
+Run the server with `python -m rift.server.core --port 7797`. This will listen for LSP connections on port 7797.
 
 ## Contributing
 [Fork](https://docs.github.com/en/get-started/quickstart/contributing-to-projects) this repository and make a pull request.
