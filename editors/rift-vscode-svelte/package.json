@@ -1,0 +1,103 @@
+{
+  "name": "rift-vscode-svelte",
+  "displayName": "rift-vscode-svelte",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.54.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:vstodo-sidebar"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "hello-world-sidebar-view",
+          "title": "hello world",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "hello-world-sidebar-view": [
+        {
+          "type": "webview",
+          "id": "hello-world-sidebar",
+          "name": "hello-world-sidebar",
+          "icon": "media/icon.svg",
+          "contextualTitle": "helloWorld"
+        },
+        {
+          "type": "webview",
+          "id": "another-sidebar",
+          "name": "another-sidebar",
+          "icon": "media/icon.svg",
+          "contextualTitle": "another"
+        },
+        {
+          "type": "webview",
+          "id": "agents-sidebar",
+          "name": "agents-sidebar",
+          "icon": "media/icon.svg",
+          "contextualTitle": "agents"
+        },
+        {
+          "type": "webview",
+          "id": "logs-sidebar",
+          "name": "logs-sidebar",
+          "icon": "media/icon.svg",
+          "contextualTitle": "logs"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "rift-vscode-svelte.helloWorld",
+        "title": "Hello World"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack --config ./build/node-extension.webpack.config.cjs",
+    "watch": "concurrently \"rollup -c rollup.config.js -w\" \"webpack --watch --config ./build/node-extension.webpack.config.cjs\"",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-node-resolve": "^11.0.1",
+    "@rollup/plugin-typescript": "^8.1.0",
+    "@tsconfig/svelte": "^1.0.10",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "20.2.5",
+    "@types/vscode": "^1.54.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.8",
+    "@typescript-eslint/parser": "^5.59.8",
+    "@vscode/test-electron": "^2.3.2",
+    "concurrently": "^8.2.0",
+    "eslint": "^8.41.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "rollup": "^2.3.4",
+    "rollup-plugin-svelte": "^6.0.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "svelte": "^3.31.0",
+    "svelte-check": "^1.1.23",
+    "svelte-preprocess": "^4.6.1",
+    "ts-loader": "^9.4.3",
+    "typescript": "^4.9.3",
+    "webpack": "^5.85.0",
+    "webpack-cli": "^5.1.1"
+  }
+}

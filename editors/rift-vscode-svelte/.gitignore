@@ -1,0 +1,11 @@
+out/
+dist/
+node_modules/
+.vscode-test/
+*.vsix
+.html
+tailwind.config.js
+
+dist/
+.env
+*.spec
