@@ -70,10 +70,10 @@ class SplitStringPrompt(Prompt):
             tokens_rhs = ENCODER.encode(self.string2)
             size_lhs = remaining_size // 2
             size_lhs = max(size_lhs, remaining_size - len(tokens_rhs))
-            # cut tokens1 to the rightmost size_lhs tokens
+            # cut tokens_lhs to the rightmost size_lhs tokens
             tokens_lhs = tokens_lhs[-size_lhs:] if size_lhs > 0 else []
             size_rhs = remaining_size - len(tokens_lhs)
-            # cut tokens2 to the leftmost size_rhs tokens
+            # cut tokens_rhs to the leftmost size_rhs tokens
             tokens_rhs = tokens_rhs[:size_rhs] if size_rhs > 0 else []
             combined_string = (
                 ENCODER.decode(tokens_lhs) 
