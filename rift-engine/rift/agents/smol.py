@@ -102,7 +102,7 @@ class SmolAgent(Agent):
             file_paths = self.state.smol_dev.specify_filePaths(prompt, plan)
             filepath_task.status = "done"
             
-            add_task(AgentTask("done", "Reticulating splines...", [], None))
+            self.add_task(AgentTask("done", "Reticulating splines...", [], None))
             
             # generate code
             generated_code = dict()
