@@ -228,7 +228,7 @@ class LspServer(BaseLspServer):
         elif agent_type == "smol_dev":
             model = await self.ensure_chat_model()
             agent_params = ofdict(SmolAgentParams, params.agent_params)
-            agent = SmolAgent()
+            agent = SmolAgent.create()
         else:
             raise Exception(f"unsupported agent type={agent_type}")
         t = asyncio.Task(agent.run())
