@@ -167,90 +167,83 @@ class PromptMessages:
     def __str__(self) -> str:
         return "\n".join(str(message) for message in self.messages)
 
+from unittest import TestCase
+
+class Tests(TestCase):
+    def test_string_prompt(self):
+        prompt = StringPrompt("Hello, World!")
+        self.assertEqual(prompt.fit(20), ("Hello, World!", 4))
+        self.assertEqual(prompt.fit(3), None)
+        self.assertEqual(prompt.fit(0), None)
+        self.assertEqual(prompt.min_size, 4)
+        self.assertEqual(str(prompt), "Hello, World!")
+
+    def test_split_string_prompt(self):
+        prompt = SplitStringPrompt(lhs="Text Before The", rhs="This is after.", separator="<cursor>")
+        self.assertEqual(prompt.fit(2), None)
+        self.assertEqual(prompt.min_size, 3)
+        self.assertEqual(prompt.fit(3), ("<cursor>", 3))
+        self.assertEqual(prompt.fit(4), ('<cursor>This', 4))
+        self.assertEqual(prompt.fit(5), (' The<cursor>This', 5))
+        self.assertEqual(prompt.fit(6), (' The<cursor>This is', 6))
+        self.assertEqual(prompt.fit(7), (' Before The<cursor>This is', 7))
+        self.assertEqual(prompt.fit(10), ('Text Before The<cursor>This is after.', 10))
+        self.assertEqual(prompt.fit(11), ('Text Before The<cursor>This is after.', 10))
+        self.assertEqual(str(prompt), "Text Before The<cursor>This is after.")
+
+    def test_concat_prompt(self):
+        prompt1 = StringPrompt("Hello")
+        prompt2 = SplitStringPrompt(lhs="", rhs=", World!", separator="", min_size=0)
+        concat_prompt = prompt1 + prompt2
+        self.assertEqual(concat_prompt.fit(1), ('Hello', 1))
+        self.assertEqual(concat_prompt.fit(2), ('Hello,', 2))
+        self.assertEqual(concat_prompt.fit(3), ('Hello, World', 3))
+        self.assertEqual(concat_prompt.fit(4), ('Hello, World!', 4))
+        self.assertEqual(concat_prompt.min_size, 1)
+        self.assertEqual(concat_prompt.size, 4)
+
+        prompt2 = SplitStringPrompt(lhs="", rhs=", World!", separator="", min_size=1)
+        concat_prompt = prompt1 + prompt2
+        self.assertEqual(concat_prompt.fit(1), None)
+        self.assertEqual(concat_prompt.fit(2), ('Hello,', 2))
+        self.assertEqual(concat_prompt.min_size, 2)
+        self.assertEqual(concat_prompt.size, 4)
 
 
-def test_string_prompt():
-    prompt = StringPrompt("Hello, World!")
-    assert(prompt.fit(20) == ("Hello, World!", 4))
-    assert(prompt.fit(3) == None)
-    assert(prompt.fit(0) == None)
-    assert(prompt.min_size == 4)
-    assert(str(prompt) == "Hello, World!")
-
-def test_split_string_prompt():
-    prompt = SplitStringPrompt(lhs="Text Before The", rhs="This is after.", separator="<cursor>")
-    assert prompt.fit(2) is None
-    assert prompt.min_size == 3
-    assert prompt.fit(3) == ("<cursor>", 3)
-    assert prompt.fit(4) == ('<cursor>This', 4)
-    assert prompt.fit(5) == (' The<cursor>This', 5)
-    assert prompt.fit(6) == (' The<cursor>This is', 6)
-    assert prompt.fit(7) == (' Before The<cursor>This is', 7)
-    assert prompt.fit(10) == ('Text Before The<cursor>This is after.', 10)
-    assert prompt.fit(11) == ('Text Before The<cursor>This is after.', 10)
-    assert str(prompt) == "Text Before The<cursor>This is after."
-
-def test_concat_prompt():
-    prompt1 = StringPrompt("Hello")
-    prompt2 = SplitStringPrompt(lhs="", rhs=", World!", separator="", min_size=0)
-    concat_prompt = prompt1 + prompt2
-    assert concat_prompt.fit(1) == ('Hello', 1)
-    assert concat_prompt.fit(2) == ('Hello,', 2)
-    assert concat_prompt.fit(3) == ('Hello, World', 3)
-    assert concat_prompt.fit(4) == ('Hello, World!', 4)
-    assert concat_prompt.min_size == 1
-    assert concat_prompt.size == 4
-
-    prompt2 = SplitStringPrompt(lhs="", rhs=", World!", separator="", min_size=1)
-    concat_prompt = prompt1 + prompt2
-    assert concat_prompt.fit(1) == None
-    assert concat_prompt.fit(2) == ('Hello,', 2)
-    assert concat_prompt.min_size == 2
-    assert concat_prompt.size == 4
+    def test_concat_prompt2(self):
+        prompt1 = StringPrompt("Make some comments on the following program:\n")
+        prompt2 = SplitStringPrompt(lhs="def f1(): return 1\ndef f2(): return 2\ndef f3(): return 3\n", rhs="def f4(): return 4\ndef f5(): return 5\ndef f6(): return 6\n", separator="")
+        prompt = prompt1 + prompt2
+        self.assertNotEqual(prompt.fit(prompt.min_size), None)
+        self.assertEqual(prompt.fit(prompt.min_size - 1), None)
+        self.assertNotEqual(prompt.fit(prompt.size - 1), prompt.fit(prompt.size))
+        self.assertEqual(prompt.fit(prompt.size + 1), prompt.fit(prompt.size))
+        fit = prompt.fit(prompt.min_size + 16)
+        self.assertEqual(fit, ('Make some comments on the following program:\ndef f3(): return 3\ndef f4(): return 4\n', 24))
 
 
-def test_concat_prompt2():
-    prompt1 = StringPrompt("Make some comments on the following program:\n")
-    prompt2 = SplitStringPrompt(lhs="def f1(): return 1\ndef f2(): return 2\ndef f3(): return 3\n", rhs="def f4(): return 4\ndef f5(): return 5\ndef f6(): return 6\n", separator="")
-    prompt = prompt1 + prompt2
-    assert prompt.fit(prompt.min_size) != None
-    assert prompt.fit(prompt.min_size - 1) == None
-    assert prompt.fit(prompt.size - 1) != prompt.fit(prompt.size)
-    assert prompt.fit(prompt.size + 1) == prompt.fit(prompt.size)
-    fit = prompt.fit(prompt.min_size + 16)
-    assert fit == ('Make some comments on the following program:\ndef f3(): return 3\ndef f4(): return 4\n', 24)
+    def test_prompt_messages(self):
+        prompt1 = StringPrompt("Hello")
+        prompt2 = SplitStringPrompt(lhs="", rhs=", World!", separator="")
+        prompt_message1 = PromptMessage("system", prompt1)
+        prompt_message2 = PromptMessage("user", prompt2)
 
+        prompt_messages = PromptMessages([prompt_message1])
+        prompt_messages.add_prompt_message("user", prompt2)
 
-def test_prompt_messages():
-    prompt1 = StringPrompt("Hello")
-    prompt2 = SplitStringPrompt(lhs="", rhs=", World!", separator="")
-    prompt_message1 = PromptMessage("system", prompt1)
-    prompt_message2 = PromptMessage("user", prompt2)
+        self.assertEqual(len(prompt_messages.messages), 2)
+        self.assertEqual(prompt_messages.messages[0], prompt_message1)
+        self.assertEqual(prompt_messages.messages[1], prompt_message2)
 
-    prompt_messages = PromptMessages([prompt_message1])
-    prompt_messages.add_prompt_message("user", prompt2)
-
-    assert len(prompt_messages.messages) == 2
-    assert prompt_messages.messages[0] == prompt_message1
-    assert prompt_messages.messages[1] == prompt_message2
-
-    assert prompt_messages.fit(prompt_message1.size) == [Message.mk("system", "Hello")]
-    assert prompt_messages.fit(prompt_message1.size - 1) == []
-    fit0 = prompt_messages.fit(prompt_message1.size + prompt_message2.min_size)
-    assert fit0 == [Message.mk("system", "Hello"), Message.mk("user", "")]
-    fit1 = prompt_messages.fit(prompt_message1.size + prompt_message2.min_size + 1)
-    assert fit1 == [Message.mk("system", "Hello"), Message.mk("user", ",")]
-    fit2 = prompt_messages.fit(prompt_message1.size + prompt_message2.size)
-    assert fit2 == [Message.mk("system", "Hello"), Message.mk("user", ", World!")]
-    fit3 = prompt_messages.fit(prompt_message1.size + prompt_message2.size - 1)
-    assert fit3 != fit2
-    fit4 = prompt_messages.fit(prompt_message1.size + prompt_message2.size + 1)
-    assert fit4 == fit2
-
-if __name__ == "__main__":
-    test_string_prompt()
-    test_split_string_prompt()
-    test_concat_prompt()
-    test_concat_prompt2()
-    test_prompt_messages()
-
+        self.assertEqual(prompt_messages.fit(prompt_message1.size), [Message.mk("system", "Hello")])
+        self.assertEqual(prompt_messages.fit(prompt_message1.size - 1), [])
+        fit0 = prompt_messages.fit(prompt_message1.size + prompt_message2.min_size)
+        self.assertEqual(fit0, [Message.mk("system", "Hello"), Message.mk("user", "")])
+        fit1 = prompt_messages.fit(prompt_message1.size + prompt_message2.min_size + 1)
+        self.assertEqual(fit1, [Message.mk("system", "Hello"), Message.mk("user", ",")])
+        fit2 = prompt_messages.fit(prompt_message1.size + prompt_message2.size)
+        self.assertEqual(fit2, [Message.mk("system", "Hello"), Message.mk("user", ", World!")])
+        fit3 = prompt_messages.fit(prompt_message1.size + prompt_message2.size - 1)
+        self.assertNotEqual(fit3, fit2)
+        fit4 = prompt_messages.fit(prompt_message1.size + prompt_message2.size + 1)
+        self.assertEqual(fit4, fit2)
