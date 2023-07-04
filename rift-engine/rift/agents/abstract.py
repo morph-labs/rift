@@ -94,9 +94,7 @@ class Agent:
             if task is not None:
                 task.cancel()
 
-    async def request_input(
-        self, req: RequestInputRequest
-    ) -> asyncio.Future[RequestInputResponse]:
+    async def request_input(self, req: RequestInputRequest) -> asyncio.Future[RequestInputResponse]:
         ...
 
     async def request_chat(
