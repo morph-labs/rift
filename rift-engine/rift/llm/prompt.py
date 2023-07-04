@@ -66,21 +66,21 @@ class SplitStringPrompt(Prompt):
         if self.min_size <= max_size:
             separator_size = token_length(self.separator)
             remaining_size = max_size - separator_size
-            tokens1 = ENCODER.encode(self.string1)
-            tokens2 = ENCODER.encode(self.string2)
-            size1 = remaining_size // 2
-            size1 = max(size1, remaining_size - len(tokens2))
-            # cut tokens1 to the rightmost size1 tokens
-            tokens1 = tokens1[-size1:] if size1 > 0 else []
-            size2 = remaining_size - len(tokens1)
-            # cut tokens2 to the leftmost size2 tokens
-            tokens2 = tokens2[:size2] if size2 > 0 else []
+            tokens_lhs = ENCODER.encode(self.string1)
+            tokens_rhs = ENCODER.encode(self.string2)
+            size_lhs = remaining_size // 2
+            size_lhs = max(size_lhs, remaining_size - len(tokens_rhs))
+            # cut tokens1 to the rightmost size_lhs tokens
+            tokens_lhs = tokens_lhs[-size_lhs:] if size_lhs > 0 else []
+            size_rhs = remaining_size - len(tokens_lhs)
+            # cut tokens2 to the leftmost size_rhs tokens
+            tokens_rhs = tokens_rhs[:size_rhs] if size_rhs > 0 else []
             combined_string = (
-                ENCODER.decode(tokens1) 
+                ENCODER.decode(tokens_lhs) 
                 + self.separator 
-                + ENCODER.decode(tokens2)
+                + ENCODER.decode(tokens_rhs)
             )
-            return combined_string, len(tokens1) + separator_size + len(tokens2)
+            return combined_string, len(tokens_lhs) + separator_size + len(tokens_rhs)
         return None
 
     @property
@@ -132,6 +132,10 @@ class PromptMessage:
     @property
     def min_size(self) -> int:
         return self.prompt.min_size + EXTRA_TOKENS_PER_MESSAGE
+
+    @property
+    def size(self) -> int:
+        return self.prompt.size + EXTRA_TOKENS_PER_MESSAGE
 
 # Class PromptMessages represents a collection of PromptMessage objects and provides a method to fit them into a given maximum size.
 class PromptMessages:
@@ -230,17 +234,17 @@ def test_prompt_messages():
     assert prompt_messages.messages[0] == prompt_message1
     assert prompt_messages.messages[1] == prompt_message2
 
-    assert prompt_messages.fit(prompt_message1.min_size) == [Message.mk("system", "Hello")]
-    assert prompt_messages.fit(prompt_message1.min_size - 1) == []
-    fit0 = prompt_messages.fit(prompt_message1.min_size + prompt_message2.min_size)
+    assert prompt_messages.fit(prompt_message1.size) == [Message.mk("system", "Hello")]
+    assert prompt_messages.fit(prompt_message1.size - 1) == []
+    fit0 = prompt_messages.fit(prompt_message1.size + prompt_message2.min_size)
     assert fit0 == [Message.mk("system", "Hello"), Message.mk("user", "")]
-    fit1 = prompt_messages.fit(prompt_message1.min_size + prompt_message2.min_size + 1)
+    fit1 = prompt_messages.fit(prompt_message1.size + prompt_message2.min_size + 1)
     assert fit1 == [Message.mk("system", "Hello"), Message.mk("user", ",")]
-    fit2 = prompt_messages.fit(prompt_message1.min_size + prompt2.size + EXTRA_TOKENS_PER_MESSAGE)
+    fit2 = prompt_messages.fit(prompt_message1.size + prompt_message2.size)
     assert fit2 == [Message.mk("system", "Hello"), Message.mk("user", ", World!")]
-    fit3 = prompt_messages.fit(prompt_message1.min_size + prompt2.size + EXTRA_TOKENS_PER_MESSAGE - 1)
+    fit3 = prompt_messages.fit(prompt_message1.size + prompt_message2.size - 1)
     assert fit3 != fit2
-    fit4 = prompt_messages.fit(prompt_message1.min_size + prompt2.size + EXTRA_TOKENS_PER_MESSAGE + 1)
+    fit4 = prompt_messages.fit(prompt_message1.size + prompt_message2.size + 1)
     assert fit4 == fit2
 
 if __name__ == "__main__":
