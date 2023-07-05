@@ -33,7 +33,7 @@ class SmolAgentState(AgentState):
 
 @dataclass
 class SmolAgent(Agent):
-    state: DevAgentState
+    state: SmolAgentState
     tasks: Dict[str, AgentTask]
     server: BaseLspServer
     count: ClassVar[int] = 0
