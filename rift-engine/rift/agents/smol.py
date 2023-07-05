@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict, Optional, ClassVar
 import asyncio
 import smol_dev
-from rift.lsp import LspServer as BaseLspServer, lsp
+from rift.lsp import LspServer as BaseLspServer
 from rift.llm.openai_types import Message as ChatMessage
 from rift.agents.abstract import (
     Agent,
@@ -12,8 +12,11 @@ from rift.agents.abstract import (
     AgentRunParams,
     AgentRunResult,
 )
+import rift.lsp.types as lsp
 from logging import getLogger
-from file_diff import apply_diff_edits
+from rift.llm.abstract import AbstractChatCompletionProvider
+from .file_diff import apply_diff_edits
+from typing import List
 
 logger = getLogger(__name__)
 
@@ -27,9 +30,9 @@ class ChatProgress(
     
 @dataclass
 class SmolAgentState(AgentState):
-    smol_dev: smol_dev.SmolDeveloper = smol_dev  # lets you access smol_dev methods
     messages: List[ChatMessage]
     model: AbstractChatCompletionProvider
+    smol_dev: smol_dev.SmolDeveloper = smol_dev  # lets you access smol_dev methods
 
 @dataclass
 class SmolAgent(Agent):
@@ -38,7 +41,6 @@ class SmolAgent(Agent):
     server: BaseLspServer
     count: ClassVar[int] = 0
     id: int
-    active_task_id: Optional[str] = None
 
     @classmethod
     def create(cls, messages, server):
@@ -51,11 +53,6 @@ class SmolAgent(Agent):
     Then, generate code based on the prompt and the answers to the questions. """)
             ]), tasks=dict(), server=server, id=SmolAgent.count
         )
-        obj.active_task_id = obj.add_task(AgentTask("running", "Get user response", [], None))
-        obj.wait_user_response_task = obj.tasks[active_task_id]
-        obj.generate_response_task = obj.tasks[
-            obj.add_task(AgentTask("done", "Generate response", [], None))
-        ]
         return obj
     
     async def run(self, params: AgentRunParams) -> AgentRunResult:
@@ -64,8 +61,8 @@ class SmolAgent(Agent):
         user_response = await self.request_chat(self.state.messages)
 
         response = ""
-        stream = await self.model.run_chat(
-            self.document.text, self.state.messages, user_response, offset
+        stream = await self.state.model.run_chat(
+            "", self.state.messages, user_response, lsp.Position(0,0)
         )
         async for delta in stream.text:
             response += delta
@@ -74,8 +71,8 @@ class SmolAgent(Agent):
         for i in range(3):
             response = ""
             user_response = await self.request_chat(self.state.messages)
-            stream = await self.model.run_chat(
-                self.document.text, self.state.messages, user_response, None
+            stream = await self.state.model.run_chat(
+                 "", self.state.messages, user_response, lsp.Position(0,0,0,0)
             )
             async for delta in stream.text:
                 response += delta
@@ -87,11 +84,10 @@ class SmolAgent(Agent):
         
         # This is just an example. You should create a run function based on your needs.
         task_id = self.add_task(AgentTask("running", "Generate code", [], None))
-        self.active_task_id = task_id
         task = self.tasks[task_id]
 
         try:
-            prompt = ''.join([m.get('content', '') for m in self.state.messages])
+            prompt = ''.join([message.content for message in self.state.messages])
             # planning
             plan_task = self.add_task(AgentTask("running", "Planning...", [], None))
             plan = self.state.smol_dev.plan(prompt)
@@ -108,14 +104,14 @@ class SmolAgent(Agent):
             generated_code = dict()
             for file_path in file_paths:
                 codegen_task = self.add_task(AgentTask("running", "Codegen for: " + file_path, [], None))
-                code = self.state.smol_dev.generate_code(file_path, params.prompt, plan)
+                code = self.state.smol_dev.generate_code(file_path, self.state.params.prompt, plan)
                 generated_code[file_path] = apply_diff_edits(
-                    TextDocumentIdentifier(uri='file://' + file_path, version=None),
+                    lsp.TextDocumentIdentifier(uri='file://' + file_path, version=None),
                     "", # todo - read in existing file content
                     code
                 )
                 codegen_task.status = "done"
-                send_result(generated_code[file_path]) # todo: check what send_result actually wants
+                self.send_result(generated_code[file_path]) # todo: check what send_result actually wants
             task.status = "done"
             return AgentRunResult(success=True, result=generated_code)
 
