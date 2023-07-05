@@ -211,23 +211,23 @@ class LspServer(BaseLspServer):
             return config.create_chat()
 
     @rpc_method("morph/run")
-    async def on_run(self, params: Any):
-        agent_type = params.pop("agent_type")
+    async def on_run(self, params: RunAgentParams):
+        agent_type = params.agent_type
         if agent_type == "chat":
             # prepare params for ChatAgent construction
             model = await self.ensure_chat_model()
-            params = ofdict(RunChatParams, params)
-            agent = ChatAgent(params, model=model, server=self)
+            agent_params = ofdict(RunChatParams, params.agent_params)
+            agent = ChatAgent(agent_params, model=model, server=self)
         elif agent_type == "code_completion":
             agent = CodeCompletionAgent(params, model=model, server=self)
         else:
             raise Exception(f"unsupported agent type={agent_type}")
-        agent.run()
+        t = asyncio.Task(agent.run())
         self.active_agents[agent.id] = agent
         return RunAgentResult(id=agent.id)
 
     @rpc_method("morph/run_agent")
-    async def on_run_agent(self, params: RunAgentParams):
+    async def on_run_agent(self, params: CodeCompletionAgentParams):
         model = await self.ensure_completions_model()
         try:
             agent = CodeCompletionAgent(params, model=model, server=self)

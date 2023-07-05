@@ -33,8 +33,10 @@ class ChatAgent(Agent):
         obj = ChatAgent(
             state=ChatAgentState(messages=messages), tasks=dict(), server=server, id=ChatAgent.count
         )
-        obj.active_task_id = obj.add_task(AgentTask("running", "Get user response", [], None))
-        obj.wait_user_response_task = obj.tasks[active_task_id]
+        wait_user_response_task_id = obj.add_task(
+            AgentTask("running", "Get user response", [], None)
+        )
+        obj.wait_user_response_task = obj.tasks[wait_user_response_task_id]
         obj.generate_response_task = obj.tasks[
             obj.add_task(AgentTask("done", "Generate response", [], None))
         ]
@@ -45,7 +47,7 @@ class ChatAgent(Agent):
             while True:
                 self.wait_user_response_task.status = "running"
                 self.generate_response_task.status = "done"
-                obj.active_task_id = self.wait_user_response_task.id
+                self.wait_user_response_task.id
                 self.send_progress(ChatProgress(tasks=self.tasks))
 
                 user_response = await self.request_chat(self.state.messages)
@@ -57,7 +59,7 @@ class ChatAgent(Agent):
                 async with response_lock:
                     self.wait_user_response_task.status = "done"
                     self.generate_response_task.status = "running"
-                    obj.active_task_id = self.generate_response_task.id
+                    self.generate_response_task.id
                     await self.send_progress(ChatProgress(response=response, tasks=self.tasks))
                 doc_text = self.document.text
                 pos = self.cursor

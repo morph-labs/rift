@@ -9,24 +9,23 @@ import rift.lsp.types as lsp
 import importlib.util
 from rift.llm.abstract import AbstractCodeCompletionProvider, InsertCodeResult
 from rift.server.selection import RangeSet
+from rift.agents.abstract import Status
 
 logger = logging.getLogger(__name__)
 
 
-class Status(Enum):
-    running = "running"
-    done = "done"
-    error = "error"
-    accepted = "accepted"
-    rejected = "rejected"
+@dataclass
+class CodeCompletionAgentParams:
+    task: str
+    textDocument: lsp.TextDocumentIdentifier
+    position: 
 
 
 @dataclass
 class RunAgentParams:
-    task: str
-    textDocument: lsp.TextDocumentIdentifier
-    position: lsp.Position
-
+    agent_type: str
+    agent_params: Any
+    
 
 @dataclass
 class AgentIdParams:
@@ -36,7 +35,7 @@ class AgentIdParams:
 class CodeCompletionAgent:
     count: ClassVar[int] = 0
     id: int
-    cfg: RunAgentParams
+    cfg: CodeCompletionAgentParams
     status: Status
     server: Any
     change_futures: dict[str, asyncio.Future[None]]
@@ -55,7 +54,7 @@ class CodeCompletionAgent:
     def uri(self):
         return self.cfg.textDocument.uri
 
-    def __init__(self, cfg: RunAgentParams, model: AbstractCodeCompletionProvider, server: Any):
+    def __init__(self, cfg: CodeCompletionAgentParams, model: AbstractCodeCompletionProvider, server: Any):
         CodeCompletionAgent.count += 1
         self.id = CodeCompletionAgent.count
         self.cfg = cfg

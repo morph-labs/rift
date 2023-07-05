@@ -4,6 +4,15 @@ from abc import ABC
 from typing import ClassVar, Dict, Literal
 from rift.lsp import LspServer as BaseLspServer, rpc_method
 from rift.llm.openai_types import Message as ChatMessage
+from enum import Enum
+
+
+class Status(Enum):
+    running = "running"
+    done = "done"
+    error = "error"
+    accepted = "accepted"
+    rejected = "rejected"
 
 
 @dataclass
@@ -63,11 +72,11 @@ class AgentState(ABC):
 
 @dataclass
 class Agent:
+    status: Literal["running", "done", "error"]
     state: AgentState
     tasks: Dict[str, AgentTask]
     server: BaseLspServer
     id: int
-    active_task_id: Optional[str] = None
 
     @property
     def task(self):
