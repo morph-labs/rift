@@ -10,15 +10,9 @@ import importlib.util
 from rift.llm.abstract import AbstractCodeCompletionProvider, InsertCodeResult
 from rift.server.selection import RangeSet
 from rift.agents.abstract import Status
+from rift.agents.code_completion import CodeCompletionAgentParams
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class CodeCompletionAgentParams:
-    task: str
-    textDocument: lsp.TextDocumentIdentifier
-    position: 
 
 
 @dataclass

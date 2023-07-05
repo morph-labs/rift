@@ -94,6 +94,7 @@ class LspServer(ExtraRpc):
         item = params.textDocument
         logger.debug(f"editor opened {item.uri}")
         self.documents[item.uri] = item
+        return {"status": "ok"}
 
     @rpc_method("textDocument/didChange")
     async def _on_did_change(self, params: lsp.DidChangeTextDocumentParams):
