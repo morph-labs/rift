@@ -39,7 +39,7 @@ class AbstractChatCompletionProvider(ABC):
     @abstractmethod
     async def run_chat(
         self,
-        document: str,
+        document: Optional[str],
         messages: List[Message],
         message: str,
         cursor_offset: Optional[int] = None,

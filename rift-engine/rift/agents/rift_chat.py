@@ -89,16 +89,14 @@ class ChatAgent(Agent):
             self.running = False
 
     async def request_input(self) -> RequestInputResponse:
-        response_fut = await self.server.request(
+        return await self.server.request(
             f"morph/{self.agent_type}_{self.id}_request_input", request_input_request
         )
-        return await response_fut
 
     async def request_chat(self, request_chat_request: RequestChatRequest) -> RequestChatResponse:
-        response_fut = await self.server.request(
+        return await self.server.request(
             f"morph/{self.agent_type}_{self.id}_request_chat", request_chat_request
         )
-        return await response_fut
 
     async def send_progress(self, progress: AgentProgress) -> None:
         await self.notify("morph/{self.agent_type}_{self.id}_send_progress", progress)

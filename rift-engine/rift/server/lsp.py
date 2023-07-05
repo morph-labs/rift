@@ -14,20 +14,10 @@ from rift.llm.create import ModelConfig
 from rift.server.agent import *
 from rift.server.selection import RangeSet
 from rift.llm.openai_types import Message
+from rift.util.ofdict import ofdict
+from rift.server.chat_agent import RunChatParams, ChatAgentLogs, ChatAgent
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class RunChatParams:
-    message: str
-    messages: List[Message]
-    position: Optional[lsp.Position]
-    textDocument: lsp.TextDocumentIdentifier
-
-
-ChatAgentLogs = AgentLogs
-
 
 @dataclass
 class AgentProgress:
@@ -68,101 +58,6 @@ class LspLogHandler(logging.Handler):
         )
         self.tasks.add(t)
         t.add_done_callback(self.tasks.discard)
-
-
-class ChatAgent:
-    count: ClassVar[int] = 0
-    id: int
-    cfg: RunChatParams
-    running: bool
-    server: "LspServer"
-    change_futures: dict[str, asyncio.Future[None]]
-    cursor: Optional[lsp.Position]
-    """ The position of the cursor (where text will be inserted next). This position is changed if other edits occur above the cursor. """
-    task: Optional[asyncio.Task]
-    subtasks: set[asyncio.Task]
-
-    @property
-    def uri(self):
-        return self.cfg.textDocument.uri
-
-    def __str__(self):
-        return f"<ChatAgent {self.id}>"
-
-    def __init__(
-        self,
-        cfg: RunChatParams,
-        model: AbstractChatCompletionProvider,
-        server: "LspServer",
-    ):
-        ChatAgent.count += 1
-        self.model = model
-        self.id = CodeCompletionAgent.count
-        self.cfg = cfg
-        self.server = server
-        self.running = False
-        self.change_futures = {}
-        self.cursor = cfg.position
-        self.document = server.documents[self.cfg.textDocument.uri]
-        self.task = None
-        self.subtasks = set()
-
-    def cancel(self, msg):
-        logger.info(f"{self} cancel run: {msg}")
-        if self.task is not None:
-            self.task.cancel(msg)
-
-    async def run(self):
-        self.task = asyncio.create_task(self.worker())
-        self.running = True
-        try:
-            return await self.task
-        except asyncio.CancelledError as e:
-            logger.info(f"{self} run task got cancelled")
-            return f"I stopped! {e}"
-        finally:
-            self.running = False
-
-    async def send_progress(
-        self,
-        response: str = "",
-        logs: Optional[ChatAgentLogs] = None,
-        done: bool = False,
-    ):
-        await self.server.send_chat_agent_progress(
-            self.id,
-            response=response,
-            log=logs,
-            done=done,
-            # textDocument=to_text_document_id(self.document),
-            # cursor=self.cursor,
-            # status="running" if self.running else "done",
-        )
-
-    async def worker(self):
-        response = ""
-        from asyncio import Lock
-
-        response_lock = Lock()
-        assert self.running
-        async with response_lock:
-            await self.send_progress(response)
-        doc_text = self.document.text
-        pos = self.cursor
-        offset = None if pos is None else self.document.position_to_offset(pos)
-
-        stream = await self.model.run_chat(doc_text, self.cfg.messages, self.cfg.message, offset)
-
-        async for delta in stream.text:
-            response += delta
-            async with response_lock:
-                await self.send_progress(response)
-        logger.info(f"{self} finished streaming response.")
-
-        self.running = False
-        async with response_lock:
-            await self.send_progress(response, done=True)
-
 
 @dataclass
 class ChatAgentProgress:
@@ -296,27 +191,38 @@ class LspServer(BaseLspServer):
         await self.notify("morph/chat_progress", progress)
 
     async def ensure_completions_model(self):
-        if self.completions_model is None:
-            await self.get_config()
-        assert self.completions_model is not None
-        return self.completions_model
+        try:
+            if self.completions_model is None:
+                await self.get_config()
+            assert self.completions_model is not None
+            return self.completions_model
+        except:
+            config = ModelConfig(chatModel="openai:gpt-3.5-turbo", completionsModel="openai:gpt-3.5-turbo")
+            return config.create_completions()            
 
     async def ensure_chat_model(self):
-        if self.chat_model is None:
-            await self.get_config()
-        assert self.chat_model is not None
-        return self.chat_model
+        try:
+            if self.chat_model is None:
+                await self.get_config()
+            assert self.chat_model is not None
+            return self.chat_model
+        except:
+            config = ModelConfig(chatModel="openai:gpt-3.5-turbo", completionsModel="openai:gpt-3.5-turbo")
+            return config.create_chat()
 
     @rpc_method("morph/run")
     async def on_run(self, params: Any):
-        agent_type = params.agent_type
+        agent_type = params.pop("agent_type")
         if agent_type == "chat":
+            # prepare params for ChatAgent construction
+            model = await self.ensure_chat_model()
+            params = ofdict(RunChatParams, params)
             agent = ChatAgent(params, model=model, server=self)
         elif agent_type == "code_completion":
             agent = CodeCompletionAgent(params, model=model, server=self)
         else:
             raise Exception(f"unsupported agent type={agent_type}")
-        agent.start()
+        agent.run()
         self.active_agents[agent.id] = agent
         return RunAgentResult(id=agent.id)
 
@@ -332,7 +238,7 @@ class LspServer(BaseLspServer):
             agent = CodeCompletionAgent(params, model=model, server=self)
         logger.debug(f"starting agent {agent.id}")
         # agent holds a reference to worker task
-        agent.start()
+        agent.run()
         self.active_agents[agent.id] = agent
         return RunAgentResult(id=agent.id)
 

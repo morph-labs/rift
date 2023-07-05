@@ -85,3 +85,4 @@ class AsyncStreamTransport(Transport):
         header += "\r\n"
         self.writer.write(header.encode())
         self.writer.write(data)
+        await self.writer.drain()

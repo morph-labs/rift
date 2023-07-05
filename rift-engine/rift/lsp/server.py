@@ -33,8 +33,7 @@ class LspServer(ExtraRpc):
     documents: dict[lsp.DocumentUri, lsp.TextDocumentItem]
     change_callbacks: defaultdict[lsp.DocumentUri, set[Callable]]
     fts: dict[str, asyncio.Future]
-    """ set of open documents, the server will keep these synced with the client
-     editor automatically. """
+    """ set of open documents, the server will keep these synced with the client editor automatically. """
 
     def __init__(self, transport):
         self.change_callbacks = defaultdict(set)

@@ -66,7 +66,7 @@ class CodeCapabilitiesServer:
     async def run_lsp(self, transport):
         server = LspServer(transport)
         try:
-            await server.serve_forever()
+            await server.listen_forever()
         except Exception as e:
             logger.error("caught: " + str(e))
             logger.info(

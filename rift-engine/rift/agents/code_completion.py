@@ -13,7 +13,7 @@ import asyncio
 
 
 @dataclass
-class NewCodeCompletionAgent:
+class CodeCompletionAgent:
     id: int
     state: AgentState
     tasks: Dict[str, AgentTask]
@@ -24,15 +24,18 @@ class NewCodeCompletionAgent:
     status: Status = Status.running
     change_futures: Dict[str, Future] = {}
 
-    def __init__(
-        self, cfg: AgentRunParams, model: AbstractCodeCompletionProvider, server: BaseLspServer
-    ):
-        self.id = NewCodeCompletionAgent.count + 1
-        self.model = model
-        self.server = server
-        self.tasks = {}
-        self.active_task_id = None
-        self.state = AgentState()
+    @classmethod
+    def create(cls, messages, server):
+        CodeCompletionAgent.count += 1
+        obj = CodeCompletionAgent(
+            state=CodeCompletionAgentState(messages=messages), tasks=dict(), server=server, id=ChatAgent.count
+        )
+        obj.active_task_id = obj.add_task(AgentTask("running", "Get user response", [], None))
+        obj.wait_user_response_task = obj.tasks[active_task_id]
+        obj.generate_response_task = obj.tasks[
+            obj.add_task(AgentTask("done", "Generate response", [], None))
+        ]
+        return obj    
 
     @property
     def task(self):

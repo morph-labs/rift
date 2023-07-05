@@ -473,6 +473,7 @@ class RpcServer:
         self.request_counter += 1
         id = self.request_counter
         req = Request(method=method, id=id, params=params)
+        # print("REQUEST: ", req)
         fut = asyncio.get_running_loop().create_future()
         # [todo] I think the pythonic way to do this is to have this dict be a weakref, and the
         # caller is responsible for holding the request object.
@@ -481,7 +482,7 @@ class RpcServer:
             raise RuntimeError(f"non-unique request id {id} found")
         self.my_requests[id] = fut
         await self._send(req)
-        # result = await fut
+        result = await fut
         return result
 
     async def _send_init(self, init_param):
@@ -491,7 +492,7 @@ class RpcServer:
         # [todo] allow inheriting classes to do things here.
         await self.notify("initialized", None)
 
-    async def serve_forever(self, init_param=None):
+    async def listen_forever(self, init_param=None):
         """Runs forever. Serves your client.
 
         It will return when:

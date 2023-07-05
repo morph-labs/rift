@@ -375,7 +375,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
 
     async def run_chat(
         self,
-        document: str,
+        document: Optional[str],
         messages: List[Message],
         message: str,
         cursor_offset: Optional[int] = None,
@@ -389,7 +389,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
 
         max_system_msg_size = calc_max_system_message_size(non_system_messages_size)
         system_message = create_system_message_truncated(
-            document, max_system_msg_size, cursor_offset
+            document or "", max_system_msg_size, cursor_offset
         )
 
         messages = [system_message] + non_system_messages

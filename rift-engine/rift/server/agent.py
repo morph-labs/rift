@@ -118,7 +118,7 @@ class CodeCompletionAgent:
     def running(self):
         return self.task is not None and not self.task.done()
 
-    def start(self) -> asyncio.Task:
+    def run(self) -> asyncio.Task:
         if self.running:
             logger.error("already running")
             assert self.task is not None

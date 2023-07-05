@@ -342,15 +342,16 @@ export class MorphLanguageClient implements vscode.CodeLensProvider<AgentLens> {
         send_progress_callback: (send_progress_request: any) => any,
         send_result_callback: (send_result_request: any) => any,
     ) {
-        const result = await this.client.sendRequest('morph/run', params);
+        const result: any = await this.client.sendRequest('morph/run', params);
         const agentId = result.id; // TODO(jesse): does this create a race condition?
         const agentType = params.agentType;
         console.log(`running ${agentType}`)
         this.client.onNotification(`morph/${agentType}_${agentId}_request_input`, request_input_callback.bind(this))
         this.client.onNotification(`morph/${agentType}_${agentId}_request_chat`, request_chat_callback.bind(this))
         // note(jesse): for the chat agent, the request_chat callback should register another callback for handling user responses --- it should unpack the future identifier from the request_chat_request and re-pass it to the language server
-        this.client.onNotification(`morph/${agentType}_${agentId}_send_progress`, send_progress_callback.bind(this))
-        this.client.onNotification(`morph/${agentType}_${agentId}_send_result`, send_result_callback.bind(this))
+        this.client.onNotification(`morph/${agentType}_${agentId}_send_progress`, send_progress_callback.bind(this)) // this should post a message to the rift logs webview if `tasks` have been updated
+        // actually, i wonder if the server should just be generally responsible for sending notifications to the client about active tasks
+        this.client.onNotification(`morph/${agentType}_${agentId}_send_result`, send_result_callback.bind(this)) // this should be custom
     }
 
     // run should spawn an agent
