@@ -3,6 +3,7 @@ from typing import Dict, Optional, ClassVar
 import asyncio
 import smol_dev
 from rift.lsp import LspServer as BaseLspServer
+
 from rift.llm.openai_types import Message as ChatMessage
 from rift.agents.abstract import (
     Agent,
@@ -11,6 +12,9 @@ from rift.agents.abstract import (
     AgentProgress,
     AgentRunParams,
     AgentRunResult,
+    RequestInputResponse,
+    RequestChatResponse,
+    RequestChatRequest
 )
 import rift.lsp.types as lsp
 from logging import getLogger
@@ -32,7 +36,7 @@ class ChatProgress(
 class SmolAgentState(AgentState):
     messages: List[ChatMessage]
     model: AbstractChatCompletionProvider
-    smol_dev: smol_dev.SmolDeveloper = smol_dev  # lets you access smol_dev methods
+    smol_dev: smol_dev = smol_dev  # lets you access smol_dev methods
 
 @dataclass
 class SmolAgent(Agent):
