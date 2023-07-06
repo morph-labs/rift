@@ -20,7 +20,7 @@ from rift.agents.abstract import (
 import rift.lsp.types as lsp
 from logging import getLogger
 from rift.llm.abstract import AbstractChatCompletionProvider
-from .file_diff import apply_diff_edits_many
+from .file_diff import FileChange, get_file_change, edits_from_file_changes 
 from typing import List
 
 logger = getLogger(__name__)
@@ -134,20 +134,20 @@ class SmolAgent(Agent):
             self.add_task(AgentTask("Reticulating splines...", "done", [], None))
             
             # generate code
-            generated_code_list : List[tuple[lsp.TextDocumentIdentifier, str, str]] = []
+            generated_code : List[FileChange] = []
             import os
             for file_path in file_paths:
                 codegen_task = self.add_task(AgentTask("running", "Codegen for: " + file_path, [], None))
                 code = self.state.smol_dev.generate_code(file_path, self.state.params.instructionPrompt, plan)
-                generated_code_list.append([
-                    lsp.TextDocumentIdentifier(uri='file://' + os.getcwd() + '/' + file_path, version=None),
-                    "", # todo - read in existing file content
-                    code
-                ])
+                absolute_file_path = os.getcwd() + '/' + file_path
+                uri = 'file://' + absolute_file_path
+                file_change = get_file_change(path=absolute_file_path, new_content=code)
+                
+                generated_code.append(file_change)
                 await self.send_progress(SmolAgentProgress(tasks=self.tasks, thoughts=code))
                 # temporarily commented out # codegen_task.status = "done"
                 self.send_result(code) # todo: check what send_result actually wants
-            finalWorkspaceEdit = apply_diff_edits_many(generated_code_list)
+            finalWorkspaceEdit = edits_from_file_changes(generated_code)
             x = await self.server.request("workspace/applyEdit", finalWorkspaceEdit)
             print("X: ", x)
             # temporarily commented out # task.status = "done"
