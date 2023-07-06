@@ -18,7 +18,7 @@ from rift.util.ofdict import ofdict
 from rift.server.chat_agent import RunChatParams, ChatAgentLogs, ChatAgent
 from rift.server.agent import *
 from rift.agents.code_completion import CodeCompletionAgent
-from rift.agents.smol import SmolAgent
+from rift.agents.smol import SmolAgent, SmolAgentParams
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +228,7 @@ class LspServer(BaseLspServer):
         elif agent_type == "smol_dev":
             model = await self.ensure_chat_model()
             agent_params = ofdict(SmolAgentParams, params.agent_params)
-            agent = SmolAgent()
+            agent = SmolAgent.create(params=agent_params, model=model, server=self)
         else:
             raise Exception(f"unsupported agent type={agent_type}")
         t = asyncio.Task(agent.run())

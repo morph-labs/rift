@@ -23,7 +23,7 @@ class CodeCompletionProgress(AgentProgress):
 
 @dataclass
 class CodeCompletionAgentParams:
-    task: str
+    instructionPrompt: str
     textDocument: lsp.TextDocumentIdentifier
     position: lsp.Position
 
@@ -92,7 +92,7 @@ class CodeCompletionAgent(Agent):
                 offset = self.state.document.position_to_offset(pos)
                 doc_text = self.state.document.text
                 stream: InsertCodeResult = await model.insert_code(
-                    doc_text, offset, goal=self.state.params.task
+                    doc_text, offset, goal=self.state.params.instructionPrompt
                 )
                 logger.debug("starting streaming code")
                 all_deltas = []

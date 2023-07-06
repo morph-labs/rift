@@ -30,6 +30,15 @@ if __name__ == "__main__":
         @rpc_method('morph/code_completion_1_send_progress')
         async def chat_progress(self, params: Any):
             print("PROGRESS: ", params)            
+            
+        @rpc_method('morph/smol_dev_1_request_chat')
+        async def smol_agent_chat(self, params: Any):
+            print("SMOL CHAT: ", params)
+            return {"message": "print hello world in a python file"}
+        
+        @rpc_method('morph/smol_dev_1_send_progress')
+        async def smol_agent_progress(self, params: Any):
+            print("SMOL PROGRESS: ", params)            
 
         @rpc_method('window/logMessage')
         async def logmessage(self, params: Any):
@@ -37,6 +46,11 @@ if __name__ == "__main__":
 
         @rpc_method('workspace/applyEdit')
         async def applyEdit(self, params: Any) -> lsp.ApplyWorkspaceEditResponse:
+            print("**********************")
+            print("**********************")
+            print("**********************")
+            print("**********************")
+            print("**********************")
             print("EDIT: ", params)
             return {"applied": True}
 
@@ -57,12 +71,12 @@ if __name__ == "__main__":
         on_did_open_params = lsp.DidOpenTextDocumentParams(textDocument=lsp.TextDocumentItem(text="yeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeehaw", uri="file:///home/pv/Downloads/yeehaw-dev/yeehaw.py", languageId="python", version=0))
         print("REGISTER FILE: ", await client.on_did_open(params=on_did_open_params))
         
-        from rift.agents.code_completion import CodeCompletionAgentParams
+        from rift.agents.smol import SmolAgentParams
         from rift.server.lsp import RunAgentParams
         class RunParams(BaseModel):
             agent_type: str = "chat"
         params = todict(
-            RunAgentParams(agent_type="code_completion", agent_params=CodeCompletionAgentParams(task="write hello world in Python", position=lsp.Position(0,0), textDocument=lsp.TextDocumentIdentifier(uri="file:///home/pv/Downloads/yeehaw-dev/yeehaw.py", version=0)))
+            RunAgentParams(agent_type="smol_dev", agent_params=SmolAgentParams(instructionPrompt="write hello world in Python", position=lsp.Position(0,0), textDocument=lsp.TextDocumentIdentifier(uri="file:///home/pv/Downloads/yeehaw-dev/yeehaw.py", version=0)))
         )
         print("RUN RESULT: ", await client.run(params=params))
         print("initialized")
