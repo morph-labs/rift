@@ -23,6 +23,7 @@ dependencies = [
   "tiktoken",
   "sentencepiece",
   "transformers",
+  "diff_match_patch"
 ]
 dynamic = ["version"]
 

@@ -18,6 +18,7 @@ class CodeCompletionRunResult(AgentRunResult):
 
 @dataclass
 class CodeCompletionProgress(AgentProgress):
+    id: Optional[int] = None
     response: Optional[str] = None
     thoughts: Optional[str] = None
 
@@ -105,8 +106,8 @@ class CodeCompletionAgent(Agent):
                             logger.error(f"too many edit attempts for '{delta}' dropped")
                             return
                         attempts -= 1
-                        # cf = asyncio.get_running_loop().create_future()
-                        # self.state.change_futures[delta] = cf
+                        cf = asyncio.get_running_loop().create_future()
+                        self.state.change_futures[delta] = cf
                         x = await self.server.apply_insert_text(
                             self.state.document.uri,
                             self.state.cursor,
@@ -118,28 +119,30 @@ class CodeCompletionAgent(Agent):
                             await asyncio.sleep(0.1)
                             continue
                         try:
-                            # await asyncio.wait_for(cf, timeout=2)
+                            await asyncio.wait_for(cf, timeout=2)
                             break
                         except asyncio.TimeoutError:
                             # [todo] this happens when an edit occured that clobbers this, try redoing.
                             logger.error(f"timeout waiting for change '{delta}', retry the edit")
                         finally:
-                            # del self.state.change_futures[delta]
+                            del self.state.change_futures[delta]
                             pass
                     with lsp.setdoc(self.state.document):                        
                         added_range = lsp.Range.of_pos(self.state.cursor, len(delta))
                         self.state.cursor += len(delta)
                         self.state.ranges.add(added_range)
-                    await self.send_progress(CodeCompletionProgress(tasks=self.tasks, response=None))
+                    await self.send_progress(CodeCompletionProgress(tasks=self.tasks, response=None, status=self.status))
                 all_text = "".join(all_deltas)
                 logger.info(f"{self} finished streaming {len(all_text)} characters")
+                self.status = "done"
+                await self.send_progress(CodeCompletionProgress(tasks=self.tasks, response=None, thoughts=thoughts, status=self.status))                
                 if stream.thoughts is not None:
                     thoughts = await stream.thoughts.read()
-                    await self.send_progress(CodeCompletionProgress(tasks=self.tasks, thoughts=thoughts))
+                    await self.send_progress(CodeCompletionProgress(tasks=self.tasks, thoughts=thoughts, status=self.status))
                     return CodeCompletionRunResult()
                 else:
                     thoughts = "done!"
-                await self.send_progress(CodeCompletionProgress(tasks=self.tasks, response=None, thoughts=thoughts))
+                await self.send_progress(CodeCompletionProgress(tasks=self.tasks, response=None, thoughts=thoughts, status=self.status))
                 return CodeCompletionResult()
 
             except asyncio.CancelledError as e:
@@ -155,7 +158,7 @@ class CodeCompletionAgent(Agent):
             finally:
                 # self.task = None
                 self.server.change_callbacks[self.state.document.uri].discard(self.on_change)
-                await self.send_progress(CodeCompletionProgress(tasks=self.tasks, response=None))
+                await self.send_progress(CodeCompletionProgress(status=self.status, tasks=self.tasks, response=None))
 
         t = asyncio.Task(worker())
         self._task = t
@@ -188,7 +191,7 @@ class CodeCompletionAgent(Agent):
             else:
                 # someone else caused this change
                 # [todo], in the below examples, we shouldn't cancel, but instead figure out what changed and restart the insertions with the new information.
-                with setdoc(self.state.document):
+                with lsp.setdoc(self.state.document):
                     self.state.ranges.apply_edit(c)
                 if c.range is None:
                     self.cancel("the whole document got replaced")
@@ -233,6 +236,7 @@ class CodeCompletionAgent(Agent):
         )
 
     async def send_progress(self, progress):
+        progress.id = self.id
         await self.server.notify(f"morph/{self.agent_type}_{self.id}_send_progress", progress)
 
     async def send_result(self, result):

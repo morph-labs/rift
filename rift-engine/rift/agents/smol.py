@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Dict, Optional, ClassVar
+from dataclasses import dataclass
+from typing import Dict, Optional, ClassVar, Any
 import asyncio
 import smol_dev
 from rift.lsp import LspServer as BaseLspServer
@@ -161,13 +161,15 @@ class SmolAgent(Agent):
         finally:
             await self.send_progress(SmolAgentProgress(tasks=self.tasks, response=None))
 
+
     async def request_input(self, request_input_request):
         return await self.server.request(
             f"morph/{self.agent_type}_{self.id}_request_input", request_input_request
         )
 
+
     async def request_chat(self, request_chat_request):
-        return await self.server.request(
+        return await self.server.request
             f"morph/{self.agent_type}_{self.id}_request_chat", request_chat_request
         )
 

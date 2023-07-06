@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { MorphLanguageClient } from './client';
+import { MorphLanguageClient, RunAgentProgress, AgentStatus } from './client';
 import { join } from 'path';
 import { TextDocumentIdentifier } from 'vscode-languageclient';
 // This method is called when your extension is activated
@@ -37,7 +37,38 @@ export function activate(context: vscode.ExtensionContext) {
             console.log('run_agent task was cancelled')
             return
         }
-        const r = await hslc.run_agent({ position, textDocument, task })
+        //
+        // let CODE_COMPLETION_STATUS: string = "running";
+        // let CODE_COMPLETION_RANGES: vscode.Range[] = [];
+        // let STATUS_CHANGE_EMITTER = new vscode.EventEmitter<AgentStatus>;
+        const code_completion_send_progress_callback = async (params: RunAgentProgress) => {
+            const green = vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(0,255,0,0.1)' })
+            const key: string = `code_completion_${params.id}`
+            const agentState = hslc.agentStates.get(key)
+            if (params.status) {
+                if (hslc.agentStates.get(key).status !== params.status) {
+                    hslc.agentStates.get(key).status = params.status
+                    hslc.agentStates.get(key).emitter.fire(params.status)
+                }
+            }
+            if (params.ranges) {
+                hslc.agentStates.get(key).ranges = params.ranges
+            }
+            const editors = vscode.window.visibleTextEditors.filter(e => e.document.uri.toString() == hslc.agentStates.get(key).params.textDocument.uri.toString())
+            for (const editor of editors) {
+                // [todo] check editor is visible
+                const version = editor.document.version
+                if (params.status == 'accepted' || params.status == 'rejected') {
+                    editor.setDecorations(green, [])
+                    continue
+                }
+                if (params.ranges) {
+                    editor.setDecorations(green, params.ranges.map(r => new vscode.Range(r.start.line, r.start.character, r.end.line, r.end.character)))
+                }
+            }
+        }
+        
+        const r = await hslc.run({agent_type: "code_completion", agent_params: {position, textDocument, task} }, async () => {}, async () => {}, code_completion_send_progress_callback, async () => {})
     });
 
     context.subscriptions.push(disposable);

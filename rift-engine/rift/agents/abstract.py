@@ -59,6 +59,7 @@ class AgentRunParams(ABC):
 
 @dataclass
 class AgentProgress(ABC):
+    status: Literal["running", "done", "error"]
     tasks: Optional[Dict[AgentTaskId, AgentTask]] = None
 
 
