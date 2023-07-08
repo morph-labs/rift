@@ -31,6 +31,9 @@ class Prompt(ABC):
     def __add__(self, other) -> "ConcatPrompt":
         return ConcatPrompt(self, other)
 
+    def __or__(self, other) -> "EitherPrompt":
+        return EitherPrompt(self, other)
+
     @abstractmethod
     def __str__(self) -> str:
         raise NotImplementedError
@@ -118,6 +121,25 @@ class ConcatPrompt(Prompt):
 
     def __str__(self) -> str:
         return str(self.prompt1) + str(self.prompt2)
+
+class EitherPrompt(Prompt):
+    def __init__(self, prompt1: Prompt, prompt2: Prompt) -> None:
+        super().__init__(max(prompt1.size, prompt2.size))
+        self.prompt1 = prompt1
+        self.prompt2 = prompt2
+
+    def fit(self, max_size: int) -> Optional[Tuple[str, int]]:
+        first = self.prompt1.fit(max_size)
+        if first is not None:
+            return first        
+        return self.prompt2.fit(max_size)
+
+    @property
+    def min_size(self) -> int:
+        return min(self.prompt1.min_size, self.prompt2.min_size)
+
+    def __str__(self) -> str:
+            return "(" + str(self.prompt1) + " | "  + str(self.prompt2) + ")"
 
 
 # every message follows <im_start>{role/name}\n{content}<im_end>\n
@@ -221,6 +243,18 @@ class Tests(TestCase):
         fit = prompt.fit(prompt.min_size + 16)
         self.assertEqual(fit, ('Make some comments on the following program:\ndef f3(): return 3\ndef f4(): return 4\n', 24))
 
+
+    # Tests EitherPrompt's behavior of choosing the longest fitting prompt, falling back to the shorter one if necessary.
+    def test_either_prompt(self):
+        prompt1 = StringPrompt("This is a much longer prompt that exceeds the maximum size.")
+        prompt2 = StringPrompt("Short prompt.")
+        prompt = prompt1 | prompt2
+        assert prompt.min_size == prompt2.min_size
+        assert prompt.size == prompt.size
+        assert prompt.fit(prompt2.size) == prompt2.fit(prompt2.size)
+        assert prompt.fit(prompt1.size) == prompt1.fit(prompt1.size)
+        assert prompt.min_size == prompt2.min_size
+        assert prompt.size == prompt1.size
 
     def test_prompt_messages(self):
         prompt1 = StringPrompt("Hello")
