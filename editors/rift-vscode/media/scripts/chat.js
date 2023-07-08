@@ -251,7 +251,7 @@
       console.log('generating Element with data-id attribute: ', dataId)
       textbox.placeholder = 'Ask questions and get answers about the current code window.'
       textbox.addEventListener('blur', function (e) {
-        renderMessagesFromState(vscode.getState())
+        renderMessagesFromState(vscode.getState(), e.target.value)
       })
       textbox.addEventListener('keydown', function (e) {
         if (e.key === "Enter") { // 13 is the Enter key code
@@ -335,15 +335,26 @@
   }
 
 
-  function renderMessagesFromState(state) {
+  function renderMessagesFromState(state, currentText = '') {
     console.log('render called')
+    
     function removeAllNodes() {
       while (document.body.firstChild) {
         document.body.removeChild(document.body.firstChild);
       }
     }
     const addNewInputAndResponseDiv = () => {
+
       const userInput = genChatElement(true, 'new')
+      
+      //Repaste the test after losing focus if necessary
+      if (currentText.length > 0) {
+        textArea = userInput.querySelector('textarea')
+        if (textArea) {
+          textArea.value = currentText
+        }
+      }
+    
       document.body.appendChild(userInput)
       userInput.focus()
       const responseDiv = genChatElement(false, 'new')
