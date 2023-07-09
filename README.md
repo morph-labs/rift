@@ -13,8 +13,19 @@ Existing code generation tooling is presently mostly code-agnostic, operating at
 The Rift Code Engine is an AI-native language server which will expose interfaces for code transformations and code understanding in a uniform, model- and language-agnostic way --- e.g. `rift.summarize_callsites` or `rift.launch_ai_swe_async` should work on a Python codebase with [StarCoder](https://huggingface.co/blog/starcoder) as well as it works on a Rust codebase using [CodeGen](https://github.com/salesforce/CodeGen). Within the language server, models will have full programatic access to language-specific tooling like compilers, unit and integration test frameworks, and static analyzers to produce correct code with minimal user intervention. We will develop UX idioms as needed to support this functionality in the Rift IDE extensions.
 
 ## Getting started
-Install the VSCode extension from the VSCode Marketplace or by building and installing from the VSIX bundle produced by `vsce package ./editors/rift-vscode/`.
+### VSCode extension
+Install the VSCode extension from the VSCode Marketplace or by building and installing from the VSIX bundle produced by the following steps:
 
+- `cd ./editors/rift-vscode`
+- Increment the semver number (e.g. 0.0.8 to 0.0.9) in the `package.json`
+- run `vsce package`
+
+If you also want to develop the extension itself, you should open the extension in an extension development host using the following steps:
+- `cd ./editors/rift-vscode`
+- Run `code .` to open a VSCode process on the `rift-vscode` workspace.
+- Press `Ctrl + F5` to compile the extension and create a new VSCode window with the extension loaded.
+
+### Rift Code Engine
 Run the Rift server by following the instructions in the [readme](./rift-engine/README.md).
 
 ## Contributing
