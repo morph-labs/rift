@@ -6,6 +6,7 @@ from rift.llm.openai_types import (
 )
 from tiktoken import get_encoding
 from typing import (
+    Callable,
     List,
     Optional,
     Tuple,
@@ -141,6 +142,32 @@ class EitherPrompt(Prompt):
     def __str__(self) -> str:
             return "(" + str(self.prompt1) + " | "  + str(self.prompt2) + ")"
 
+def generate_list_prompts(prompt_func: Callable[[List[str]], Prompt], elements: List[str], max_size: int) -> List[Prompt]:
+    """
+    Generates a list of prompts using a given prompt function, a list of elements, and a maximum size.
+    Split up the list into smaller lists until the prompt fits into the maximum size.
+
+    Args:
+        prompt_func (Callable[[List[str]], Prompt]): The prompt function used to create prompts.
+        elements (List[str]): The list of elements to be used as input to the prompt function.
+        max_size (int): The maximum size allowed for each prompt.
+
+    Returns:
+        List[Prompt]: The list of generated prompts.
+    """
+    prompts = []
+    prompt = prompt_func(elements)
+    if prompt.fit(max_size) is not None:
+        return [prompt]
+    else:
+        middle = len(elements) // 2
+        left_elements = elements[:middle]
+        right_elements = elements[middle:]
+        left_prompts = generate_list_prompts(prompt_func, left_elements, max_size)
+        right_prompts = generate_list_prompts(prompt_func, right_elements, max_size)
+        prompts.extend(left_prompts)
+        prompts.extend(right_prompts)
+        return prompts
 
 # every message follows <im_start>{role/name}\n{content}<im_end>\n
 # see https://platform.openai.com/docs/guides/gpt/managing-tokens
@@ -255,6 +282,20 @@ class Tests(TestCase):
         assert prompt.fit(prompt1.size) == prompt1.fit(prompt1.size)
         assert prompt.min_size == prompt2.min_size
         assert prompt.size == prompt1.size
+
+    def test_generate_list_prompts(self):
+        elements = ["Element 1", "Element 2", "Element 3", "Element 4", "Element 5"]
+        def list_prompt_func(elements):
+            separator = ", "
+            prompt_string = separator.join(elements)
+            return StringPrompt(prompt_string)
+        max_size = list_prompt_func(elements).size / 2
+        prompts = generate_list_prompts(list_prompt_func, elements, max_size)
+
+        assert len(prompts) == 3  # The list should be split into 3 prompts
+        assert prompts[0].fit(max_size)[0] == 'Element 1, Element 2'
+        assert prompts[1].fit(max_size)[0] == 'Element 3'
+        assert prompts[2].fit(max_size)[0] == 'Element 4, Element 5'
 
     def test_prompt_messages(self):
         prompt1 = StringPrompt("Hello")
