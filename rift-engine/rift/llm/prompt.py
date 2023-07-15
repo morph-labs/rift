@@ -289,13 +289,13 @@ class Tests(TestCase):
             separator = ", "
             prompt_string = separator.join(elements)
             return StringPrompt(prompt_string)
-        max_size = list_prompt_func(elements).size / 2
+        max_size = list_prompt_func(elements).size // 2
         prompts = generate_list_prompts(list_prompt_func, elements, max_size)
 
         assert len(prompts) == 3  # The list should be split into 3 prompts
-        assert prompts[0].fit(max_size)[0] == 'Element 1, Element 2'
-        assert prompts[1].fit(max_size)[0] == 'Element 3'
-        assert prompts[2].fit(max_size)[0] == 'Element 4, Element 5'
+        assert (v := prompts[0].fit(max_size)) and v[0] == 'Element 1, Element 2'
+        assert (v := prompts[1].fit(max_size)) and v[0] == 'Element 3'
+        assert (v := prompts[2].fit(max_size)) and v[0] == 'Element 4, Element 5'
 
     def test_prompt_messages(self):
         prompt1 = StringPrompt("Hello")
