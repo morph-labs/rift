@@ -14,15 +14,15 @@ from typing import (
 
 ENCODER = get_encoding("cl100k_base")
 
-def token_length(string):
+def token_length(string: str) -> int:
     return len(ENCODER.encode(string))
 
 class Prompt(ABC):
-    def __init__(self, size) -> None:
+    def __init__(self, size: int) -> None:
         self.size = size
 
     @abstractmethod
-    def fit(self, max_size) -> Optional[Tuple[str, int]]:
+    def fit(self, max_size: int) -> Optional[Tuple[str, int]]:
         raise NotImplementedError
 
     @abstractproperty
