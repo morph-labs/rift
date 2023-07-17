@@ -23,7 +23,7 @@ cd rift
 pip install -e ./rift-engine
 
 # launch the language server
-python -m rift.server.core --port 7797
+python -m rift.server.core --host 127.0.0.1 --port 7797
 ```
 
 This requires a working Python (>=3.9) installation.

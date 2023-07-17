@@ -60,6 +60,16 @@
             "openai:gpt-4"
           ],
           "markdownDescription": "model to use for completions. (remember to set the OpenAI API key if using an openai:* model). You can also set your own (use the JSON settings editor), the format is `{type}:{name} [@ {path}]` where `type` is one of `gpt4all`, `openai`, or `hf` (for huggingface models), `name` is the name of the model, and `path` is an optional path to the downloaded model weights."
+        },
+        "rift.engineServer.host": {
+          "type": "string",
+          "default": "127.0.0.1",
+          "description": "Specifies the host that the Rift Engine is running on."
+        },
+        "rift.engineServer.port": {
+          "type": "integer",
+          "default": 7797,
+          "description": "Specifies the port number the Rift Engine is listening on."
         }
       }
     },

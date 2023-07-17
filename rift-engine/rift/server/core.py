@@ -47,6 +47,7 @@ def rift_splash():
 
 # ref: https://stackoverflow.com/questions/64303607/python-asyncio-how-to-read-stdin-and-write-to-stdout
 
+LspHost = Union[Literal["stdio"], str]
 LspPort = Union[Literal["stdio"], int]
 
 ModelType = Literal["openai", "hf", "gpt4all"]
@@ -56,8 +57,10 @@ class CodeCapabilitiesServer:
     server: Optional[LspServer] = None
     def __init__(
         self,
+        lsp_host: LspHost = "127.0.0.1",
         lsp_port: LspPort = 7797,
     ):
+        self.lsp_host = lsp_host
         self.lsp_port = lsp_port
 
     async def on_lsp_connection(self, reader, writer):
@@ -77,23 +80,25 @@ class CodeCapabilitiesServer:
             )
 
     async def run_lsp_tcp_client_mode(self):
+        assert isinstance(self.lsp_host, str)
         assert isinstance(self.lsp_port, int)
-        reader, writer = await asyncio.open_connection("127.0.0.1", self.lsp_port)
+        reader, writer = await asyncio.open_connection(self.lsp_host, self.lsp_port)
         transport = AsyncStreamTransport(reader, writer)
         await self.run_lsp(transport)
 
     async def run_lsp_tcp(self):
+        assert isinstance(self.lsp_host, str)
         assert isinstance(self.lsp_port, int)
         try:
-            server = await asyncio.start_server(self.on_lsp_connection, "127.0.0.1", self.lsp_port)
+            server = await asyncio.start_server(self.on_lsp_connection, self.lsp_host, self.lsp_port)
         except OSError as e:
             logger.error(str(e))
-            logger.info(f"try connecting to {self.lsp_port}")
+            logger.info(f"try connecting to {self.lsp_host}:{self.lsp_port}")
             return await self.run_lsp_tcp_client_mode()
         else:
             async with server:
                 addrs = ", ".join(str(sock.getsockname()) for sock in server.sockets)
-                logger.info(f"listening with LSP protool on {addrs}")
+                logger.info(f"listening with LSP protocol on {addrs}")
                 await server.serve_forever()
 
     async def run_lsp_stdio(self):
@@ -126,6 +131,7 @@ class CodeCapabilitiesServer:
 
 
 def create_metaserver(
+    host: LspHost = "127.0.0.1",
     port: LspPort = 7797,
     version=False,
     debug=False,
@@ -133,6 +139,7 @@ def create_metaserver(
     """
     Main entry point for the rift server
     Args:
+        - host: host to listen on. If 'stdio', then listen on stdin and stdout.
         - port: port number to listen on. If 'stdio', then listen on stdin and stdout. Note that this doesn't work with gpt4all.
         - model_type: one of 'openai', 'hf', 'gpt4all'.
         - chat_model_type: optional, defaults to same as model_type
@@ -156,17 +163,18 @@ def create_metaserver(
 
     rift_splash()
 
-    logger.info(f"starting Rift server on {port}")
-    metaserver = CodeCapabilitiesServer(lsp_port=port)
+    logger.info(f"starting Rift server on {host}:{port}")
+    metaserver = CodeCapabilitiesServer(lsp_host=host, lsp_port=port)
     return metaserver
 
 
 def main(
+    host: LspHost = "127.0.0.1",
     port: LspPort = 7797,
-        version=False,
-        debug=False,
+    version=False,
+    debug=False,
 ):
-    metaserver = create_metaserver(port, version, debug)
+    metaserver = create_metaserver(host, port, version, debug)
     asyncio.run(metaserver.run_forever(), debug=debug)
 
 

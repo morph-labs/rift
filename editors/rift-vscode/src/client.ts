@@ -22,16 +22,14 @@ import * as tcpPortUsed from 'tcp-port-used'
 
 let client: LanguageClient
 
-const DEFAULT_PORT = 7797
-
 // ref: https://stackoverflow.com/questions/40284523/connect-external-language-server-to-vscode-extension
 
 // https://nodejs.org/api/child_process.html#child_processspawncommand-args-options
 
 /** Creates the ServerOptions for a system in the case that a language server is already running on the given port. */
-function tcpServerOptions(context: ExtensionContext, port = DEFAULT_PORT): ServerOptions {
+function tcpServerOptions(context: ExtensionContext, host, port): ServerOptions {
     let socket = net.connect({
-        port: port, host: "127.0.0.1"
+        port: port, host: host
     })
     const si: StreamInfo = {
         reader: socket, writer: socket
@@ -42,7 +40,7 @@ function tcpServerOptions(context: ExtensionContext, port = DEFAULT_PORT): Serve
 }
 
 /** Creates the server options for spinning up our own server.*/
-function createServerOptions(context: vscode.ExtensionContext, port = DEFAULT_PORT): ServerOptions {
+function createServerOptions(context: vscode.ExtensionContext, port): ServerOptions {
     let cwd = vscode.workspace.workspaceFolders![0].uri.path
     // [todo]: we will supply different bundles for the 3 main platforms; windows, linux, mac.
     // there needs to be a decision point here where we decide which platform we are on and
@@ -231,19 +229,23 @@ export class MorphLanguageClient implements vscode.CodeLensProvider<HelperLens> 
             console.log(`client already exists and is in state ${this.client.state}`)
             return
         }
-        const port = DEFAULT_PORT
+        const config = workspace.getConfiguration('rift')
+
+        const port = config.get('engineServer.port')
+        const host = config.get('engineServer.host')
+
         let serverOptions: ServerOptions
-        while (!(await tcpPortUsed.check(port))) {
+        while (!(await tcpPortUsed.check(port, host))) {
             console.log('waiting for server to come online')
             try {
-                await tcpPortUsed.waitUntilUsed(port, 500, 1000000)
+                await tcpPortUsed.waitUntilUsedOnHost(port, host, 500, 1000000)
             }
             catch (e) {
                 console.error(e)
             }
         }
-        console.log(`server detected on port ${port}`)
-        serverOptions = tcpServerOptions(this.context, port)
+        console.log(`server detected on port ${host}:${port}`)
+        serverOptions = tcpServerOptions(this.context, host, port)
         const clientOptions: LanguageClientOptions = {
             documentSelector: [{ language: '*' }]
         }
@@ -295,7 +297,12 @@ export class MorphLanguageClient implements vscode.CodeLensProvider<HelperLens> 
 
     async run_helper(params: RunHelperParams) {
         if (!this.client) {
-            throw new Error(`waiting for a connection to rift-engine, please make sure the rift-engine is running on port ${DEFAULT_PORT}`) // [todo] better ux here.
+            const config = workspace.getConfiguration('rift')
+
+            const port = config.get('engineServer.port')
+            const host = config.get('engineServer.host')
+
+            throw new Error(`waiting for a connection to rift-engine, please make sure the rift-engine is running on ${host}:${port}`) // [todo] better ux here.
         }
         const result: RunHelperResult = await this.client.sendRequest('morph/run_helper', params)
         const helper = new Helper(result.id, params.position, params.textDocument)
