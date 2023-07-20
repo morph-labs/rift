@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 Language = Literal["c", "javascript", "python", "typescript", "tsx"]
 Identifier = str
 Pos = Tuple[int, int] # (line, column)
 Range = Tuple[Pos, Pos] # ((start_line, start_column), (end_line, end_column))
 Substring = Tuple[int, int] # (start_byte, end_byte)
+Scope = List[str] # e.g. ["A", "B"] for class B inside class A
 
 @dataclass
 class Document:
@@ -19,6 +20,7 @@ class SymbolInfo(ABC):
     document: Document
     name: str
     range: Range
+    scope: Scope
     substring: Substring 
 
     # return the substring of the document that corresponds to this symbol info

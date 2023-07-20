@@ -1,14 +1,14 @@
 from typing import Literal, List, Tuple
 from tree_sitter import Language as TreeLanguage, Parser, Tree, Node
 from textwrap import dedent
-from rift.IR.ir import Document, FunctionDeclaration, Language, IR
+from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Scope
 
 TreeLanguage.build_library(
   'build/my-languages.so',
   [ 'vendor/tree-sitter-c', 'vendor/tree-sitter-javascript', 'vendor/tree-sitter-python', 'vendor/tree-sitter-typescript/tsx']
 )
 
-def find_function_declarations(code_block: str, language: Language, node: Node) -> List[FunctionDeclaration]:
+def find_function_declarations(code_block: str, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
     document=Document(text=code_block, language=language)
     declarations: List[FunctionDeclaration] = []
     def mk_fun_decl(id: Node, node: Node):
@@ -16,6 +16,7 @@ def find_function_declarations(code_block: str, language: Language, node: Node) 
             document=document,
             name=code_block[id.start_byte:id.end_byte],
             range=(node.start_point, node.end_point),
+            scope=scope,
             substring=(node.start_byte, node.end_byte)
         )
     if node.type in ['block']:
@@ -23,13 +24,15 @@ def find_function_declarations(code_block: str, language: Language, node: Node) 
         pass
     if node.type in ['class_definition']:
         body = node.child_by_field_name('body')
-        if body is not None:
+        name = node.child_by_field_name('name')
+        if body is not None and name is not None:
+            scope = scope + [code_block[name.start_byte:name.end_byte]]
             for child in body.children:
-                declarations += find_function_declarations(code_block, language, child)
+                declarations += find_function_declarations(code_block, language, child, scope)
     if node.type in ['decorated_definition']: # python decorator
         defitinion = node.child_by_field_name('definition')
         if defitinion is not None:
-            declarations += find_function_declarations(code_block, language, defitinion)
+            declarations += find_function_declarations(code_block, language, defitinion, scope)
     if node.type in ['function_definition', 'function_declaration']:
         for child in node.children:
             if child.type == 'function_declarator': # in C
@@ -76,7 +79,7 @@ def parse_code_block(ir:IR, code_block: str, language: Language) -> None:
     declarations: List[FunctionDeclaration] = []
     for node in tree.root_node.children:
         declarations += find_function_declarations(
-            code_block=code_block, language=language, node=node)
+            code_block=code_block, language=language, node=node, scope=[])
     for declaration in declarations:
         ir.symbol_table[declaration.name] = declaration
 
@@ -122,9 +125,12 @@ if __name__ == "__main__":
             async def insert_code(
                 self, document: str, cursor_offset: int, goal: Optional[str] = None
             ) -> InsertCodeResult:
-                raise NotImplementedError()
+                pass
             async def load(self):
                 pass
+            class Nested:
+                def nested():
+                    pass
     """).lstrip()
     ir = IR(symbol_table={})
     parse_code_block(ir, code_c, 'c')
@@ -141,4 +147,4 @@ if __name__ == "__main__":
     for id in ir.symbol_table:
         d = symbol_table[id]
         if isinstance(d, FunctionDeclaration):
-            print(f"Function: {d.name} language: {d.document.language} range: {d.range} substring: {d.substring}")
+            print(f"Function: {d.name} language: {d.document.language} range: {d.range} scope: {d.scope} substring: {d.substring}")
