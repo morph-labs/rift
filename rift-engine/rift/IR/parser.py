@@ -5,7 +5,7 @@ from rift.IR.ir import Document, FunctionDeclaration, Language, IR
 
 TreeLanguage.build_library(
   'build/my-languages.so',
-  [ 'vendor/tree-sitter-c', 'vendor/tree-sitter-javascript', 'vendor/tree-sitter-python', 'vendor/tree-sitter-typescript/typescript']
+  [ 'vendor/tree-sitter-c', 'vendor/tree-sitter-javascript', 'vendor/tree-sitter-python', 'vendor/tree-sitter-typescript/tsx']
 )
 
 def find_function_declarations(code_block: str, language: Language, node: Node) -> List[FunctionDeclaration]:
@@ -18,6 +18,18 @@ def find_function_declarations(code_block: str, language: Language, node: Node) 
             range=(node.start_point, node.end_point),
             substring=(node.start_byte, node.end_byte)
         )
+    if node.type in ['block']:
+        print(f"block: {node}")
+        pass
+    if node.type in ['class_definition']:
+        body = node.child_by_field_name('body')
+        if body is not None:
+            for child in body.children:
+                declarations += find_function_declarations(code_block, language, child)
+    if node.type in ['decorated_definition']: # python decorator
+        defitinion = node.child_by_field_name('definition')
+        if defitinion is not None:
+            declarations += find_function_declarations(code_block, language, defitinion)
     if node.type in ['function_definition', 'function_declaration']:
         for child in node.children:
             if child.type == 'function_declarator': # in C
@@ -51,7 +63,9 @@ def get_tree_language(language: Language) -> TreeLanguage:
     elif language == 'python':
         return TreeLanguage('build/my-languages.so', 'python')
     elif language == 'typescript':
-        return TreeLanguage('build/my-languages.so', 'typescript')
+        return TreeLanguage('build/my-languages.so', 'tsx')
+    elif language == 'tsx':
+        return TreeLanguage('build/my-languages.so', 'tsx')
     else:
         raise ValueError(f"Unknown language: {language}")
     
@@ -91,11 +105,38 @@ if __name__ == "__main__":
         function f1() { return 0; }
         let f2 = x => x+1;
     """).lstrip()
+    code_ts = dedent("""
+        type a = readonly b[][];
+        function ts(x:number) { return x }
+    """).lstrip()
+    code_tsx = dedent("""
+        d = <div> "abc" </div>
+        function tsx() { return d }
+    """).lstrip()
+    code_py = dedent("""
+        class A:
+            def py(x):
+                return x
+        class B:
+            @abstractmethod
+            async def insert_code(
+                self, document: str, cursor_offset: int, goal: Optional[str] = None
+            ) -> InsertCodeResult:
+                raise NotImplementedError()
+            async def load(self):
+                pass
+    """).lstrip()
     ir = IR(symbol_table={})
     parse_code_block(ir, code_c, 'c')
     parse_code_block(ir, code_js, 'javascript')
+    parse_code_block(ir, code_ts, 'typescript')
+    parse_code_block(ir, code_tsx, 'tsx')
+    parse_code_block(ir, code_py, 'python')
     print(f"\nCode:\n-----\n{code_c}\n----")
     print(f"\nCode:\n-----\n{code_js}\n----\n")
+    print(f"\nCode:\n-----\n{code_ts}\n----\n")
+    print(f"\nCode:\n-----\n{code_tsx}\n----\n")
+    print(f"\nCode:\n-----\n{code_py}\n----\n")
     symbol_table = ir.symbol_table
     for id in ir.symbol_table:
         d = symbol_table[id]
