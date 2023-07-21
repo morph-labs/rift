@@ -1,12 +1,8 @@
 from typing import Literal, List, Tuple
-from tree_sitter import Language as TreeLanguage, Parser, Tree, Node
+from tree_sitter import Node
+from tree_sitter_languages import get_parser
 from textwrap import dedent
 from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Scope
-
-TreeLanguage.build_library(
-  'build/my-languages.so',
-  [ 'vendor/tree-sitter-c', 'vendor/tree-sitter-javascript', 'vendor/tree-sitter-python', 'vendor/tree-sitter-typescript/tsx']
-)
 
 def find_function_declarations(code_block: str, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
     document=Document(text=code_block, language=language)
@@ -57,24 +53,9 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
                 if is_arrow_function and id is not None:
                     declarations.append(mk_fun_decl(id, node))
     return declarations
-
-def get_tree_language(language: Language) -> TreeLanguage:
-    if language == 'c':
-        return TreeLanguage('build/my-languages.so', 'c')
-    elif language == 'javascript':
-        return TreeLanguage('build/my-languages.so', 'javascript')
-    elif language == 'python':
-        return TreeLanguage('build/my-languages.so', 'python')
-    elif language == 'typescript':
-        return TreeLanguage('build/my-languages.so', 'tsx')
-    elif language == 'tsx':
-        return TreeLanguage('build/my-languages.so', 'tsx')
-    else:
-        raise ValueError(f"Unknown language: {language}")
     
 def parse_code_block(ir:IR, code_block: str, language: Language) -> None:
-    parser = Parser()
-    parser.set_language(get_tree_language(language))
+    parser = get_parser(language)
     tree = parser.parse(code_block.encode())
     declarations: List[FunctionDeclaration] = []
     for node in tree.root_node.children:

@@ -70,6 +70,8 @@ dependencies = [
   'pyinstaller',
   "gpt4all==0.3.4",
   "einops",
+  "tree_sitter",
+  "tree_sitter_languages",
 ]
 
 [tool.hatch.envs.default.scripts]
