@@ -29,6 +29,7 @@ dependencies = [
   "diff_match_patch",
   "art",
   "tree-sitter",
+  "tree_sitter_languages",
   "smol_dev @ git+https://www.github.com/jesse-michael-han/smol_dev",
   "gpt-engineer @ git+https://www.github.com/morph-labs/gpt-engineer",
   "aider-chat @ git+https://github.com/morph-labs/aider"
@@ -70,8 +71,6 @@ dependencies = [
   'pyinstaller',
   "gpt4all==0.3.4",
   "einops",
-  "tree_sitter",
-  "tree_sitter_languages",
 ]
 
 [tool.hatch.envs.default.scripts]
