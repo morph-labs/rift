@@ -4,7 +4,14 @@ from tree_sitter_languages import get_parser
 from textwrap import dedent
 from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Parameter, Scope
 
-def get_parameters(text:str, node: Node)-> List[Parameter]:
+def get_type(text: str, language: Language, node: Node) -> str:
+    if language in ["typescript", "tsx"] and node.type == 'type_annotation' and len(node.children) >= 2:
+        # TS: first child should be ":" and second child should be type
+        second_child = node.children[1]
+        return text[second_child.start_byte:second_child.end_byte]
+    return text[node.start_byte:node.end_byte]
+
+def get_parameters(text:str, language: Language, node: Node)-> List[Parameter]:
     parameters: List[Parameter] = []
     for child in node.children:
         if child.type == 'identifier':
@@ -34,7 +41,7 @@ def get_parameters(text:str, node: Node)-> List[Parameter]:
             type = None
             type_node = child.child_by_field_name('type')
             if type_node is not None:
-                type = text[type_node.start_byte:type_node.end_byte]
+                type = get_type(text=text, language=language, node=type_node)
             parameters.append(Parameter(name=name, type=type, optional=child.type == 'optional_parameter'))
     return parameters
 
@@ -71,19 +78,19 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
                     if grandchild.type == 'identifier':
                         id = grandchild
                     elif grandchild.type == 'parameter_list':
-                        parameters = get_parameters(text=code_block, node=grandchild)
+                        parameters = get_parameters(text=code_block, language=language, node=grandchild)
             elif child.type == 'identifier':
                 id = child
         parameters_node = node.child_by_field_name('parameters')
         if parameters_node is not None:
-            parameters = get_parameters(text=code_block, node=parameters_node)
+            parameters = get_parameters(text=code_block, language=language, node=parameters_node)
 
         return_type: Optional[str] = None
         return_type_node = node.child_by_field_name('return_type')
         if return_type_node is None:
             return_type_node = node.child_by_field_name('type')
         if return_type_node is not None:
-            return_type = code_block[return_type_node.start_byte:return_type_node.end_byte]
+            return_type = get_type(text=code_block, language=language, node=return_type_node)
 
         if id is not None:
             declarations.append(mk_fun_decl(id=id, node=node, parameters=parameters, return_type=return_type))
@@ -145,6 +152,7 @@ class Tests:
     code_ts = dedent("""
         type a = readonly b[][];
         function ts(x:number, opt?:string) : number { return x }
+        function ts2() : array<number> { return [] }
     """).lstrip()
     code_tsx = dedent("""
         d = <div> "abc" </div>

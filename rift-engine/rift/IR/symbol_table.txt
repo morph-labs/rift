@@ -31,8 +31,13 @@ Function: ts
    language: typescript
    range: ((1, 0), (1, 56))
    substring: (25, 81)
-   parameters: [x::number, opt?::string]
-   return_type: : number
+   parameters: [x:number, opt?:string]
+   return_type: number
+Function: ts2
+   language: typescript
+   range: ((2, 0), (2, 44))
+   substring: (82, 126)
+   return_type: array<number>
 Function: tsx
    language: tsx
    range: ((1, 0), (1, 27))
