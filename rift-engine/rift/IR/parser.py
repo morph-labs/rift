@@ -11,6 +11,40 @@ def get_type(text: str, language: Language, node: Node) -> str:
         return text[second_child.start_byte:second_child.end_byte]
     return text[node.start_byte:node.end_byte]
 
+def add_c_cpp_declarators_to_type(type: str, declarators: List[str]) -> str:
+    for d in declarators:
+        if d == 'pointer_declarator':
+            type += '*'
+        elif d == 'array_declarator':
+            type += '[]'
+        elif d == 'function_declarator':
+            type += '()'
+        elif d == 'identifier':
+            pass
+        else:
+            raise Exception(f"Unknown declarator: {d}")
+    return type
+
+def extract_c_cpp_declarators(node: Node) -> Tuple[List[str], Node]:
+    declarator_node = node.child_by_field_name('declarator')
+    if declarator_node is None:
+        return [], node
+    declarators, final_node = extract_c_cpp_declarators(declarator_node)
+    declarators.append(declarator_node.type)
+    return declarators, final_node
+
+def get_c_cpp_parameter(text: str, node: Node) -> Parameter:
+    declarators, final_node = extract_c_cpp_declarators(node)
+    type_node = node.child_by_field_name('type')
+    if type_node is None:
+        raise Exception(f"Could not find type node in {node}")
+    type = text[type_node.start_byte:type_node.end_byte]
+    type = add_c_cpp_declarators_to_type(type, declarators)
+    name = ""
+    if final_node.type == 'identifier':
+        name = text[final_node.start_byte:final_node.end_byte]  
+    return Parameter(name=name, type=type)
+
 def get_parameters(text:str, language: Language, node: Node)-> List[Parameter]:
     parameters: List[Parameter] = []
     for child in node.children:
@@ -27,12 +61,15 @@ def get_parameters(text:str, language: Language, node: Node)-> List[Parameter]:
                     type = text[grandchild.start_byte:grandchild.end_byte]
             parameters.append(Parameter(name=name, type=type))
         elif child.type == 'parameter_declaration':
-            type = ""
-            type_node = child.child_by_field_name('type')
-            if type_node is not None:
-                type = text[type_node.start_byte:type_node.end_byte]
-            name = text[child.start_byte:child.end_byte]
-            parameters.append(Parameter(name=name, type=type))
+            if language in ['c', 'cpp']:
+                parameters.append(get_c_cpp_parameter(text, child))
+            else:
+                type = ""
+                type_node = child.child_by_field_name('type')
+                if type_node is not None:
+                    type = text[type_node.start_byte:type_node.end_byte]
+                name = text[child.start_byte:child.end_byte]
+                parameters.append(Parameter(name=name, type=type))
         elif child.type == 'required_parameter' or child.type == 'optional_parameter':
             name = ""
             pattern_node = child.child_by_field_name('pattern')
@@ -59,18 +96,6 @@ def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node
         return declarators, fun_node
     else:
         return None
-
-def add_declarators_to_type(type: str, declarators: List[str]) -> str:
-    for d in declarators:
-        if d == 'pointer_declarator':
-            type += '*'
-        elif d == 'array_declarator':
-            type += '[]'
-        elif d == 'function_declarator':
-            type += '()'
-        else:
-            raise Exception(f"Unknown declarator: {d}")
-    return type
 
 def find_function_declarations(code_block: str, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
     document=Document(text=code_block, language=language)
@@ -105,7 +130,7 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
         if res is None or type is None:
             return []
         declarators, fun_node = res
-        type = add_declarators_to_type(type, declarators)
+        type = add_c_cpp_declarators_to_type(type, declarators)
         id: Optional[Node] = None
         parameters: List[Parameter] = []
         for child in fun_node.children:

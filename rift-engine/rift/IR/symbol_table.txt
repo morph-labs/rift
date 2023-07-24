@@ -7,7 +7,7 @@ Function: foo
    language: c
    range: ((4, 0), (6, 1))
    substring: (26, 58)
-   parameters: [int **x:int]
+   parameters: [x:int**]
    return_type: int*
 Function: bb
    language: c
