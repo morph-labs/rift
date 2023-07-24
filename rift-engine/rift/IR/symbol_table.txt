@@ -6,18 +6,18 @@ Function: aa
 Function: foo
    language: c
    range: ((4, 0), (6, 1))
-   substring: (26, 57)
+   substring: (26, 58)
    parameters: [int **x:int]
-   return_type: void
+   return_type: int*
 Function: bb
    language: c
    range: ((8, 0), (10, 1))
-   substring: (59, 83)
+   substring: (60, 84)
    return_type: int
 Function: main
    language: c
    range: ((12, 0), (17, 1))
-   substring: (85, 142)
+   substring: (86, 143)
    return_type: int
 Function: f1
    language: javascript

@@ -45,6 +45,33 @@ def get_parameters(text:str, language: Language, node: Node)-> List[Parameter]:
             parameters.append(Parameter(name=name, type=type, optional=child.type == 'optional_parameter'))
     return parameters
 
+def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node]]:
+    if node.type == 'function_declarator':
+        return [], node
+    declarator_node = node.child_by_field_name('declarator')
+    if declarator_node is not None:
+        res = find_c_cpp_function_declarator(declarator_node)
+        if res is None:
+            return None
+        declarators, fun_node = res
+        if declarator_node.type != 'function_declarator':
+            declarators.append(declarator_node.type)
+        return declarators, fun_node
+    else:
+        return None
+
+def add_declarators_to_type(type: str, declarators: List[str]) -> str:
+    for d in declarators:
+        if d == 'pointer_declarator':
+            type += '*'
+        elif d == 'array_declarator':
+            type += '[]'
+        elif d == 'function_declarator':
+            type += '()'
+        else:
+            raise Exception(f"Unknown declarator: {d}")
+    return type
+
 def find_function_declarations(code_block: str, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
     document=Document(text=code_block, language=language)
     declarations: List[FunctionDeclaration] = []
@@ -65,30 +92,41 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
             scope = scope + [code_block[name.start_byte:name.end_byte]]
             for child in body.children:
                 declarations += find_function_declarations(code_block, language, child, scope)
-    if node.type in ['decorated_definition']: # python decorator
+    elif node.type in ['decorated_definition']: # python decorator
         defitinion = node.child_by_field_name('definition')
         if defitinion is not None:
             declarations += find_function_declarations(code_block, language, defitinion, scope)
-    if node.type in ['function_definition', 'function_declaration']:
+    elif node.type == 'function_definition' and language in ['c', 'cpp']:
+        type_node = node.child_by_field_name('type')
+        type = None
+        if type_node is not None:
+            type = get_type(text=code_block, language=language, node=type_node)
+        res = find_c_cpp_function_declarator(node)
+        if res is None or type is None:
+            return []
+        declarators, fun_node = res
+        type = add_declarators_to_type(type, declarators)
         id: Optional[Node] = None
         parameters: List[Parameter] = []
-        for child in node.children:
-            if child.type == 'function_declarator': # in C
-                for grandchild in child.children:
-                    if grandchild.type == 'identifier':
-                        id = grandchild
-                    elif grandchild.type == 'parameter_list':
-                        parameters = get_parameters(text=code_block, language=language, node=grandchild)
-            elif child.type == 'identifier':
+        for child in fun_node.children:
+            if child.type == 'identifier':
                 id = child
+            elif child.type == 'parameter_list':
+                parameters = get_parameters(text=code_block, language=language, node=child)
+        if id is None:
+            return []
+        declarations.append(mk_fun_decl(id=id, node=node, parameters=parameters, return_type=type))
+    elif node.type in ['function_definition', 'function_declaration']:
+        id: Optional[Node] = None
+        for child in node.children:
+            if child.type == 'identifier':
+                id = child
+        parameters: List[Parameter] = []
         parameters_node = node.child_by_field_name('parameters')
         if parameters_node is not None:
             parameters = get_parameters(text=code_block, language=language, node=parameters_node)
-
         return_type: Optional[str] = None
         return_type_node = node.child_by_field_name('return_type')
-        if return_type_node is None:
-            return_type_node = node.child_by_field_name('type')
         if return_type_node is not None:
             return_type = get_type(text=code_block, language=language, node=return_type_node)
 
@@ -130,7 +168,7 @@ class Tests:
           return 0;
         }
 
-        void foo(int **x) {
+        int * foo(int **x) {
           *x = 0;
         }
 

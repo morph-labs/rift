@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Dict, List, Literal, Optional, Tuple
 
-Language = Literal["c", "javascript", "python", "typescript", "tsx"]
+Language = Literal["c", "cpp", "javascript", "python", "typescript", "tsx"]
 Identifier = str
 Pos = Tuple[int, int] # (line, column)
 Range = Tuple[Pos, Pos] # ((start_line, start_column), (end_line, end_column))
@@ -59,6 +59,8 @@ class IR:
 def language_from_file_extension(file_path: str) -> Optional[Language]:
     if file_path.endswith(".c"):
         return "c"
+    elif file_path.endswith(".cpp") or file_path.endswith(".cc") or file_path.endswith(".cxx") or file_path.endswith(".c++"):
+        return "cpp"
     elif file_path.endswith(".js"):
         return "javascript"
     elif file_path.endswith(".py"):
