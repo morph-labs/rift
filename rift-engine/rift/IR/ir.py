@@ -29,7 +29,21 @@ class SymbolInfo(ABC):
         return self.document.text[start:end]
 
 @dataclass
+class Parameter:
+    name: str
+    type: Optional[str] = None
+
+    def __str__(self) -> str:
+        if self.type is None:
+            return self.name
+        else:
+            return f"{self.name}:{self.type}"
+    __repr__ = __str__
+
+@dataclass
 class FunctionDeclaration(SymbolInfo):
+    parameters: List[Parameter]
+    return_type: Optional[str] = None
     pass
 
 
