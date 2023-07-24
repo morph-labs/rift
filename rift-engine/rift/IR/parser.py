@@ -114,7 +114,10 @@ def parse_code_block(ir:IR, code_block: str, language: Language) -> None:
     for declaration in declarations:
         ir.symbol_table[declaration.name] = declaration
 
-if __name__ == "__main__":
+
+#### TESTS FROM HERE ON ####
+
+class Tests:
     code_c = dedent("""
         int aa() {
           return 0;
@@ -163,25 +166,56 @@ if __name__ == "__main__":
                 def nested():
                     pass
     """).lstrip()
+
+import pytest
+import difflib
+
+@pytest.fixture(scope='module')
+def symbol_table_fixture():
     ir = IR(symbol_table={})
-    parse_code_block(ir, code_c, 'c')
-    parse_code_block(ir, code_js, 'javascript')
-    parse_code_block(ir, code_ts, 'typescript')
-    parse_code_block(ir, code_tsx, 'tsx')
-    parse_code_block(ir, code_py, 'python')
-    print(f"\nCode:\n-----\n{code_c}\n----")
-    print(f"\nCode:\n-----\n{code_js}\n----\n")
-    print(f"\nCode:\n-----\n{code_ts}\n----\n")
-    print(f"\nCode:\n-----\n{code_tsx}\n----\n")
-    print(f"\nCode:\n-----\n{code_py}\n----\n")
+    parse_code_block(ir, Tests.code_c, 'c')
+    parse_code_block(ir, Tests.code_js, 'javascript')
+    parse_code_block(ir, Tests.code_ts, 'typescript')
+    parse_code_block(ir, Tests.code_tsx, 'tsx')
+    parse_code_block(ir, Tests.code_py, 'python')
+
     symbol_table = ir.symbol_table
-    for id in ir.symbol_table:
+    return symbol_table_to_str(symbol_table)
+
+def symbol_table_to_str(symbol_table):
+    lines = []
+    for id in symbol_table:
         d = symbol_table[id]
         if isinstance(d, FunctionDeclaration):
-            print(f"Function: {d.name}\n   language: {d.document.language}\n   range: {d.range}\n   substring: {d.substring}")
+            lines.append(f"Function: {d.name}\n   language: {d.document.language}\n   range: {d.range}\n   substring: {d.substring}")
             if d.parameters != []:
-                print(f"   parameters: {d.parameters}")
+                lines.append(f"   parameters: {d.parameters}")
             if d.return_type is not None:
-                print(f"   return_type: {d.return_type}")
+                lines.append(f"   return_type: {d.return_type}")
             if d.scope != []:
-                print(f"   scope: {d.scope}")
+                lines.append(f"   scope: {d.scope}")
+    output = '\n'.join(lines)
+    return output
+
+import os
+
+def test_parsing(symbol_table_fixture):
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    symbol_table_file = os.path.join(script_dir, 'symbol_table.txt')
+    with open(symbol_table_file, 'r') as f:
+        old_symbol_table = f.read()
+
+    if symbol_table_fixture != old_symbol_table:
+        diff = difflib.unified_diff(old_symbol_table.splitlines(keepends=True),
+                                    symbol_table_fixture.splitlines(keepends=True))
+        diff_output = ''.join(diff)
+
+        # if you want to update the symbol table, set this to True
+        update_symbol_table = False
+        if update_symbol_table:
+            print("Updating Symbol Table...")
+            with open(symbol_table_file, 'w') as f:
+                f.write(symbol_table_fixture)
+
+        assert False, f"Symbol Table has changed:\n\n{diff_output}"
+

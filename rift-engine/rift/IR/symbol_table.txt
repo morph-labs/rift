@@ -1,0 +1,63 @@
+Function: aa
+   language: c
+   range: ((0, 0), (2, 1))
+   substring: (0, 24)
+   return_type: int
+Function: foo
+   language: c
+   range: ((4, 0), (6, 1))
+   substring: (26, 57)
+   parameters: [int **x:int]
+   return_type: void
+Function: bb
+   language: c
+   range: ((8, 0), (10, 1))
+   substring: (59, 83)
+   return_type: int
+Function: main
+   language: c
+   range: ((12, 0), (17, 1))
+   substring: (85, 142)
+   return_type: int
+Function: f1
+   language: javascript
+   range: ((0, 0), (0, 27))
+   substring: (0, 27)
+Function: f2
+   language: javascript
+   range: ((1, 0), (1, 18))
+   substring: (28, 46)
+Function: ts
+   language: typescript
+   range: ((1, 0), (1, 56))
+   substring: (25, 81)
+   parameters: [x::number, opt?::string]
+   return_type: : number
+Function: tsx
+   language: tsx
+   range: ((1, 0), (1, 27))
+   substring: (23, 50)
+Function: py
+   language: python
+   range: ((1, 4), (2, 16))
+   substring: (13, 40)
+   parameters: [x]
+   scope: ['A']
+Function: insert_code
+   language: python
+   range: ((5, 4), (8, 12))
+   substring: (74, 212)
+   parameters: [self, document:str, cursor_offset:int]
+   return_type: InsertCodeResult
+   scope: ['B']
+Function: load
+   language: python
+   range: ((9, 4), (10, 12))
+   substring: (217, 251)
+   parameters: [self]
+   scope: ['B']
+Function: nested
+   language: python
+   range: ((12, 8), (13, 16))
+   substring: (278, 308)
+   scope: ['B', 'Nested']
