@@ -19,6 +19,23 @@ def get_parameters(text:str, node: Node)-> List[Parameter]:
                 elif grandchild.type == 'type':
                     type = text[grandchild.start_byte:grandchild.end_byte]
             parameters.append(Parameter(name=name, type=type))
+        elif child.type == 'parameter_declaration':
+            type = ""
+            type_node = child.child_by_field_name('type')
+            if type_node is not None:
+                type = text[type_node.start_byte:type_node.end_byte]
+            name = text[child.start_byte:child.end_byte]
+            parameters.append(Parameter(name=name, type=type))
+        elif child.type == 'required_parameter' or child.type == 'optional_parameter':
+            name = ""
+            pattern_node = child.child_by_field_name('pattern')
+            if pattern_node is not None:
+                name = text[pattern_node.start_byte:pattern_node.end_byte]
+            type = None
+            type_node = child.child_by_field_name('type')
+            if type_node is not None:
+                type = text[type_node.start_byte:type_node.end_byte]
+            parameters.append(Parameter(name=name, type=type, optional=child.type == 'optional_parameter'))
     return parameters
 
 def find_function_declarations(code_block: str, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
@@ -47,21 +64,24 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
             declarations += find_function_declarations(code_block, language, defitinion, scope)
     if node.type in ['function_definition', 'function_declaration']:
         id: Optional[Node] = None
+        parameters: List[Parameter] = []
         for child in node.children:
             if child.type == 'function_declarator': # in C
                 for grandchild in child.children:
                     if grandchild.type == 'identifier':
                         id = grandchild
+                    elif grandchild.type == 'parameter_list':
+                        parameters = get_parameters(text=code_block, node=grandchild)
             elif child.type == 'identifier':
                 id = child
-
-        parameters: List[Parameter] = []
         parameters_node = node.child_by_field_name('parameters')
         if parameters_node is not None:
             parameters = get_parameters(text=code_block, node=parameters_node)
 
         return_type: Optional[str] = None
         return_type_node = node.child_by_field_name('return_type')
+        if return_type_node is None:
+            return_type_node = node.child_by_field_name('type')
         if return_type_node is not None:
             return_type = code_block[return_type_node.start_byte:return_type_node.end_byte]
 
@@ -121,7 +141,7 @@ if __name__ == "__main__":
     """).lstrip()
     code_ts = dedent("""
         type a = readonly b[][];
-        function ts(x:number) { return x }
+        function ts(x:number, opt?:string) : number { return x }
     """).lstrip()
     code_tsx = dedent("""
         d = <div> "abc" </div>

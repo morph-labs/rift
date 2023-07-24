@@ -32,12 +32,16 @@ class SymbolInfo(ABC):
 class Parameter:
     name: str
     type: Optional[str] = None
+    optional: bool = False
 
     def __str__(self) -> str:
+        name = self.name
+        if self.optional:
+            name += "?"
         if self.type is None:
-            return self.name
+            return name
         else:
-            return f"{self.name}:{self.type}"
+            return f"{name}:{self.type}"
     __repr__ = __str__
 
 @dataclass
