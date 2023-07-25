@@ -184,6 +184,20 @@ def parse_code_block(ir:IR, code_block: str, language: Language) -> None:
     for declaration in declarations:
         ir.symbol_table[declaration.name] = declaration
 
+# Given an IR, find function declarations that are missing types in the parameters or the return type.
+def find_missing_types(ir:IR) -> List[str]:
+    missing_types: List[str] = []
+    for id in ir.symbol_table:
+        d = ir.symbol_table[id]
+        if isinstance(d, FunctionDeclaration):
+            if d.parameters != []:
+                for p in d.parameters:
+                    if p.type is None:
+                        missing_types.append(f"Parameter {p.name} of {d.name}")
+                        break
+            if d.return_type is None:
+                missing_types.append(f"Return type of {d.name}")
+    return missing_types
 
 #### TESTS FROM HERE ON ####
 
@@ -241,17 +255,14 @@ class Tests:
 import pytest
 import difflib
 
-@pytest.fixture(scope='module')
-def symbol_table_fixture():
+def get_ir():
     ir = IR(symbol_table={})
     parse_code_block(ir, Tests.code_c, 'c')
     parse_code_block(ir, Tests.code_js, 'javascript')
     parse_code_block(ir, Tests.code_ts, 'typescript')
     parse_code_block(ir, Tests.code_tsx, 'tsx')
     parse_code_block(ir, Tests.code_py, 'python')
-
-    symbol_table = ir.symbol_table
-    return symbol_table_to_str(symbol_table)
+    return ir
 
 def symbol_table_to_str(symbol_table):
     lines = []
@@ -270,23 +281,49 @@ def symbol_table_to_str(symbol_table):
 
 import os
 
-def test_parsing(symbol_table_fixture):
+def test_parsing():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     symbol_table_file = os.path.join(script_dir, 'symbol_table.txt')
     with open(symbol_table_file, 'r') as f:
         old_symbol_table = f.read()
-
+    ir = get_ir()
+    symbol_table_fixture = symbol_table_to_str(ir.symbol_table)
     if symbol_table_fixture != old_symbol_table:
         diff = difflib.unified_diff(old_symbol_table.splitlines(keepends=True),
                                     symbol_table_fixture.splitlines(keepends=True))
         diff_output = ''.join(diff)
 
         # if you want to update the symbol table, set this to True
-        update_symbol_table = False
+        update_symbol_table = os.getenv("UPDATE_TESTS", "False") == "True"
         if update_symbol_table:
             print("Updating Symbol Table...")
             with open(symbol_table_file, 'w') as f:
                 f.write(symbol_table_fixture)
 
-        assert False, f"Symbol Table has changed:\n\n{diff_output}"
+        assert update_symbol_table, f"Symbol Table has changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
 
+def test_missing_types():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    missing_types_file = os.path.join(script_dir, 'missing_types.txt')
+    with open(missing_types_file, 'r') as f:
+        old_missing_types = f.read()
+
+    ir = get_ir()
+    missing_types = find_missing_types(ir)
+    new_missing_types = '\n'.join(missing_types)
+    if new_missing_types != old_missing_types:
+        diff = difflib.unified_diff(old_missing_types.splitlines(keepends=True),
+                                    new_missing_types.splitlines(keepends=True))
+        diff_output = ''.join(diff)
+
+        # if you want to update the missing types, set this to True
+        update_missing_types = os.getenv("UPDATE_TESTS", "False") == "True"
+        if update_missing_types:
+            print("Updating Missing Types...")
+            with open(missing_types_file, 'w') as f:
+                f.write(new_missing_types)
+
+        assert update_missing_types, f"Missing Types have changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
+
+    
+    

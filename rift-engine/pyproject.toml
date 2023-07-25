@@ -28,7 +28,7 @@ dependencies = [
   "transformers",
   "diff_match_patch",
   "art",
-  "tree-sitter",
+  "tree_sitter",
   "tree_sitter_languages",
   "smol_dev @ git+https://www.github.com/jesse-michael-han/smol_dev",
   "gpt-engineer @ git+https://www.github.com/morph-labs/gpt-engineer",
