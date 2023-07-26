@@ -103,6 +103,7 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
     def mk_fun_decl(id: Node, node: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
         return FunctionDeclaration(
             document=document,
+            language=language,
             name=code_block[id.start_byte:id.end_byte],
             parameters=parameters,
             range=(node.start_point, node.end_point),
@@ -192,7 +193,7 @@ def find_missing_types(ir:IR) -> List[str]:
         if isinstance(d, FunctionDeclaration):
             if d.parameters != []:
                 for p in d.parameters:
-                    if p.type is None:
+                    if p.type is None and not (p.name == "self" and d.language == "python"):
                         missing_types.append(f"Parameter {p.name} of {d.name}")
                         break
             if d.return_type is None:

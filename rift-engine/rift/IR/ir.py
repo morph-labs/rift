@@ -18,6 +18,7 @@ class Document:
 class SymbolInfo(ABC):
     """Abstract class for symbol information."""
     document: Document
+    language: Language
     name: str
     range: Range
     scope: Scope

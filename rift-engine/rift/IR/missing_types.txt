@@ -3,7 +3,5 @@ Return type of f2
 Return type of tsx
 Parameter x of py
 Return type of py
-Parameter self of insert_code
-Parameter self of load
 Return type of load
 Return type of nested
