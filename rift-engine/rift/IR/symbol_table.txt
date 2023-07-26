@@ -22,12 +22,14 @@ Function: main
    return_type: int
 Function: f1
    language: javascript
-   range: ((0, 0), (0, 27))
-   substring: (0, 27)
+   range: ((1, 0), (1, 27))
+   substring: (22, 49)
+   docstring: /** Some docstring */
 Function: f2
    language: javascript
-   range: ((1, 0), (1, 18))
-   substring: (28, 46)
+   range: ((3, 0), (3, 18))
+   substring: (93, 111)
+   docstring: /** Some docstring on an arrow function */
 Function: ts
    language: typescript
    range: ((1, 0), (1, 56))

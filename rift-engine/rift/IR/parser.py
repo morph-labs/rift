@@ -100,7 +100,8 @@ def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node
 def find_function_declarations(code_block: str, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
     document=Document(text=code_block, language=language)
     declarations: List[FunctionDeclaration] = []
-    def mk_fun_decl(id: Node, node: Node, docstring = "", parameters: List[Parameter] = [], return_type: Optional[str] = None):
+    docstring = ""
+    def mk_fun_decl(id: Node, node: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
         return FunctionDeclaration(
             docstring=docstring,
             document=document,
@@ -112,6 +113,11 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
             scope=scope,
             substring=(node.start_byte, node.end_byte)
         )
+    previous_node = node.prev_sibling
+    if previous_node is not None and previous_node.type == 'comment':
+        docstring_ = code_block[previous_node.start_byte:previous_node.end_byte]
+        if docstring_.startswith('/**'):
+            docstring = docstring_
     if node.type in ['class_definition']:
         body = node.child_by_field_name('body')
         name = node.child_by_field_name('name')
@@ -140,16 +146,9 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
                 id = child
             elif child.type == 'parameter_list':
                 parameters = get_parameters(text=code_block, language=language, node=child)
-        docstring = ""
-        previous_node = node.prev_sibling
-        if previous_node is not None and previous_node.type == 'comment':
-            docstring_ = code_block[previous_node.start_byte:previous_node.end_byte]
-            if docstring_.startswith('/**'):
-                docstring = docstring_
-
         if id is None:
             return []
-        declarations.append(mk_fun_decl(docstring=docstring, id=id, node=node, parameters=parameters, return_type=type))
+        declarations.append(mk_fun_decl(id=id, node=node, parameters=parameters, return_type=type))
     elif node.type in ['function_definition', 'function_declaration']:
         id: Optional[Node] = None
         for child in node.children:
@@ -163,7 +162,6 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
         return_type_node = node.child_by_field_name('return_type')
         if return_type_node is not None:
             return_type = get_type(text=code_block, language=language, node=return_type_node)
-        docstring = ""
         body = node.child_by_field_name('body')
         if body is not None and len(body.children) > 0 and body.children[0].type == 'expression_statement':
             stmt = body.children[0]
@@ -171,7 +169,7 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
                 docstring_node = stmt.children[0]
                 docstring = code_block[docstring_node.start_byte:docstring_node.end_byte]
         if id is not None:
-            declarations.append(mk_fun_decl(docstring=docstring, id=id, node=node, parameters=parameters, return_type=return_type))
+            declarations.append(mk_fun_decl(id=id, node=node, parameters=parameters, return_type=return_type))
 
     elif node.type in ['lexical_declaration', 'variable_declaration']:
         # arrow functions in js/ts e.g. let foo = x => x+1
@@ -238,7 +236,9 @@ class Tests:
         }
     """).lstrip()
     code_js = dedent("""
+        /** Some docstring */
         function f1() { return 0; }
+        /** Some docstring on an arrow function */
         let f2 = x => x+1;
     """).lstrip()
     code_ts = dedent("""
