@@ -47,6 +47,7 @@ class Parameter:
 
 @dataclass
 class FunctionDeclaration(SymbolInfo):
+    docstring: str
     parameters: List[Parameter]
     return_type: Optional[str] = None
     pass

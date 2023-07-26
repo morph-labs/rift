@@ -100,8 +100,9 @@ def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node
 def find_function_declarations(code_block: str, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
     document=Document(text=code_block, language=language)
     declarations: List[FunctionDeclaration] = []
-    def mk_fun_decl(id: Node, node: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
+    def mk_fun_decl(id: Node, node: Node, docstring = "", parameters: List[Parameter] = [], return_type: Optional[str] = None):
         return FunctionDeclaration(
+            docstring=docstring,
             document=document,
             language=language,
             name=code_block[id.start_byte:id.end_byte],
@@ -155,9 +156,15 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
         return_type_node = node.child_by_field_name('return_type')
         if return_type_node is not None:
             return_type = get_type(text=code_block, language=language, node=return_type_node)
-
+        docstring = ""
+        body = node.child_by_field_name('body')
+        if body is not None and len(body.children) > 0 and body.children[0].type == 'expression_statement':
+            stmt = body.children[0]
+            if len(stmt.children) > 0 and stmt.children[0].type == 'string':
+                docstring_node = stmt.children[0]
+                docstring = code_block[docstring_node.start_byte:docstring_node.end_byte]
         if id is not None:
-            declarations.append(mk_fun_decl(id=id, node=node, parameters=parameters, return_type=return_type))
+            declarations.append(mk_fun_decl(docstring=docstring, id=id, node=node, parameters=parameters, return_type=return_type))
 
     elif node.type in ['lexical_declaration', 'variable_declaration']:
         # arrow functions in js/ts e.g. let foo = x => x+1
@@ -239,6 +246,7 @@ class Tests:
     code_py = dedent("""
         class A:
             def py(x):
+                \"\"\"This is a docstring\"\"\"
                 return x
         class B:
             @abstractmethod
@@ -277,6 +285,8 @@ def symbol_table_to_str(symbol_table):
                 lines.append(f"   return_type: {d.return_type}")
             if d.scope != []:
                 lines.append(f"   scope: {d.scope}")
+            if d.docstring != "":
+                lines.append(f"   docstring: {d.docstring}")
     output = '\n'.join(lines)
     return output
 

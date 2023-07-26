@@ -44,25 +44,26 @@ Function: tsx
    substring: (23, 50)
 Function: py
    language: python
-   range: ((1, 4), (2, 16))
-   substring: (13, 40)
+   range: ((1, 4), (3, 16))
+   substring: (13, 74)
    parameters: [x]
    scope: ['A']
+   docstring: """This is a docstring"""
 Function: insert_code
    language: python
-   range: ((5, 4), (8, 12))
-   substring: (74, 212)
+   range: ((6, 4), (9, 12))
+   substring: (108, 246)
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
    scope: ['B']
 Function: load
    language: python
-   range: ((9, 4), (10, 12))
-   substring: (217, 251)
+   range: ((10, 4), (11, 12))
+   substring: (251, 285)
    parameters: [self]
    scope: ['B']
 Function: nested
    language: python
-   range: ((12, 8), (13, 16))
-   substring: (278, 308)
+   range: ((13, 8), (14, 16))
+   substring: (312, 342)
    scope: ['B', 'Nested']
