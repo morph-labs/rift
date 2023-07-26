@@ -140,9 +140,16 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
                 id = child
             elif child.type == 'parameter_list':
                 parameters = get_parameters(text=code_block, language=language, node=child)
+        docstring = ""
+        previous_node = node.prev_sibling
+        if previous_node is not None and previous_node.type == 'comment':
+            docstring_ = code_block[previous_node.start_byte:previous_node.end_byte]
+            if docstring_.startswith('/**'):
+                docstring = docstring_
+
         if id is None:
             return []
-        declarations.append(mk_fun_decl(id=id, node=node, parameters=parameters, return_type=type))
+        declarations.append(mk_fun_decl(docstring=docstring, id=id, node=node, parameters=parameters, return_type=type))
     elif node.type in ['function_definition', 'function_declaration']:
         id: Optional[Node] = None
         for child in node.children:
@@ -214,7 +221,7 @@ class Tests:
         int aa() {
           return 0;
         }
-
+        /** This is a docstring */
         int * foo(int **x) {
           *x = 0;
         }
