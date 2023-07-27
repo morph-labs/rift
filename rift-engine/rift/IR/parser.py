@@ -241,10 +241,9 @@ class MissingReturnType(MissingType):
 
     __repr__ = __str__
 
-# Given an IR, find function declarations that are missing types in the parameters or the return type.
-
 
 def find_missing_types(ir: IR) -> List[MissingType]:
+    """Given an IR, find function declarations that are missing types in the parameters or the return type."""
     missing_types: List[MissingType] = []
     for id in ir.symbol_table:
         d = ir.symbol_table[id]
