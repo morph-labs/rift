@@ -17,7 +17,5 @@ Install the VSCode extension from the VSCode Marketplace or by building and inst
 
 Run the Rift server by following the instructions in the [readme](./rift-engine/README.md).
 
-## Contributing
-We welcome contributions to Rift at all levels of the stack, from adding support for new open-source models in the Rift Code Engine, to implementing the Rift API for your favorite programming language, to UX polish in the VSCode extension, to adding support for your [favorite](./editors/emacs) [editor](./editors/vim).
 
 Programming is evolving. Join the [community](https://discord.gg/wa5sgWMfqv), contribute to our roadmap, and help shape the future of software.
