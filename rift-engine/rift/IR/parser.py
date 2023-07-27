@@ -259,8 +259,10 @@ def find_missing_types(ir: IR) -> List[MissingType]:
                 missing_types.append(MissingReturnType(function_declaration=d))
     return missing_types
 
-#### TESTS FROM HERE ON ####
 
+############################
+#### TESTS FROM HERE ON ####
+############################
 
 class Tests:
     code_c = dedent("""
