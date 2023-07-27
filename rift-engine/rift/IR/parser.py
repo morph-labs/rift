@@ -221,25 +221,24 @@ def parse_code_block(ir: IR, code_block: str, language: Language) -> None:
 @dataclass
 class MissingType:
     function_declaration: FunctionDeclaration
-    pass
-
-
-@dataclass
-class MissingParameterType(MissingType):
-    name: str
+    parameters: List[str] = []
+    return_type: bool = False
 
     def __str__(self) -> str:
-        return f"Parameter {self.name} of {self.function_declaration.name}"
+        s = f"Function {self.function_declaration.name} is missing type annotations"
+        if self.parameters != []:
+            if len(self.parameters) == 1:
+                s += f" in parameter '{self.parameters[0]}'"
+            else:
+                s += f" in parameters {self.parameters}"
+        if self.return_type:
+            if self.parameters != []:
+                s += " and"
+            s += " in return type"
+        return s
 
-    __repr__ = __str__
-
-
-@dataclass
-class MissingReturnType(MissingType):
-    def __str__(self) -> str:
-        return f"Return type of {self.function_declaration.name}"
-
-    __repr__ = __str__
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 def find_missing_types(ir: IR) -> List[MissingType]:
@@ -248,14 +247,17 @@ def find_missing_types(ir: IR) -> List[MissingType]:
     for id in ir.symbol_table:
         d = ir.symbol_table[id]
         if isinstance(d, FunctionDeclaration):
+            missing_parameters = []
+            missing_return = False
             if d.parameters != []:
                 for p in d.parameters:
                     if p.type is None and not (p.name == "self" and d.language == "python"):
-                        missing_types.append(MissingParameterType(
-                            function_declaration=d, name=p.name))
-                        break
+                        missing_parameters.append(p.name)
             if d.return_type is None:
-                missing_types.append(MissingReturnType(function_declaration=d))
+                missing_return = True
+            if missing_parameters != [] or missing_return:
+                missing_types.append(MissingType(
+                    function_declaration=d, parameters=missing_parameters, return_type=missing_return))
     return missing_types
 
 
@@ -301,7 +303,7 @@ class Tests:
     """).lstrip()
     code_py = dedent("""
         class A:
-            def py(x):
+            def py(x, y):
                 \"\"\"This is a docstring\"\"\"
                 return x
         class B:
@@ -310,7 +312,7 @@ class Tests:
                 self, document: str, cursor_offset: int, goal: Optional[str] = None
             ) -> InsertCodeResult:
                 pass
-            async def load(self):
+            async def load(self, v):
                 pass
             class Nested:
                 def nested():

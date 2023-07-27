@@ -1,7 +1,6 @@
-Return type of f1
-Return type of f2
-Return type of tsx
-Parameter x of py
-Return type of py
-Return type of load
-Return type of nested
+Function f1 is missing type annotations in return type
+Function f2 is missing type annotations in return type
+Function tsx is missing type annotations in return type
+Function py is missing type annotations in parameters ['x', 'y'] and in return type
+Function load is missing type annotations in parameter 'v' and in return type
+Function nested is missing type annotations in return type
