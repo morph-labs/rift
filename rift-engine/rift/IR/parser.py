@@ -1,4 +1,5 @@
 from typing import Literal, List, Optional, Tuple
+from attr import dataclass
 from tree_sitter import Node
 from tree_sitter_languages import get_parser
 from textwrap import dedent
@@ -197,19 +198,40 @@ def parse_code_block(ir:IR, code_block: str, language: Language) -> None:
     for declaration in declarations:
         ir.symbol_table[declaration.name] = declaration
 
+@dataclass
+class MissingType:
+    function_declaration: FunctionDeclaration
+    pass
+
+@dataclass
+class MissingParameterType(MissingType):
+    name: str
+
+    def __str__(self) -> str:
+        return f"Parameter {self.name} of {self.function_declaration.name}"
+
+    __repr__ = __str__
+
+@dataclass
+class MissingReturnType(MissingType):
+    def __str__(self) -> str:
+        return f"Return type of {self.function_declaration.name}"
+
+    __repr__ = __str__  
+
 # Given an IR, find function declarations that are missing types in the parameters or the return type.
-def find_missing_types(ir:IR) -> List[str]:
-    missing_types: List[str] = []
+def find_missing_types(ir: IR) -> List[MissingType]:
+    missing_types: List[MissingType] = []
     for id in ir.symbol_table:
         d = ir.symbol_table[id]
         if isinstance(d, FunctionDeclaration):
             if d.parameters != []:
                 for p in d.parameters:
                     if p.type is None and not (p.name == "self" and d.language == "python"):
-                        missing_types.append(f"Parameter {p.name} of {d.name}")
+                        missing_types.append(MissingParameterType(function_declaration=d, name=p.name))
                         break
             if d.return_type is None:
-                missing_types.append(f"Return type of {d.name}")
+                missing_types.append(MissingReturnType(function_declaration=d))
     return missing_types
 
 #### TESTS FROM HERE ON ####
@@ -328,7 +350,7 @@ def test_missing_types():
 
     ir = get_ir()
     missing_types = find_missing_types(ir)
-    new_missing_types = '\n'.join(missing_types)
+    new_missing_types = '\n'.join([str(mt) for mt in missing_types])
     if new_missing_types != old_missing_types:
         diff = difflib.unified_diff(old_missing_types.splitlines(keepends=True),
                                     new_missing_types.splitlines(keepends=True))
