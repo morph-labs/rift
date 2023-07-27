@@ -6,7 +6,7 @@ Here are some ways you can contribute:
 
 1. [Rift Code Engine](./rift-engine/CONTRIBUTING.md): Help us expand Rift's capabilities by adding support for new open-source models.
 
-1. [Rift API](./rift-engine/CONTRIBUTING.md): Implement the Rift API for your favorite programming language, making it easier for developers to interact with Rift.
+1. [Rift API](./rift-engine/CONTRIBUTING.md): Make it easier for developers to interact with Rift.
 
 1. [VSCode Extension](./editors/rift-vscode-svelte/CONTRIBUTING.md): Improve the user experience of Rift in VSCode by polishing the extension.
 
