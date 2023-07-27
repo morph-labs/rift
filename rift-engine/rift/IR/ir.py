@@ -4,15 +4,17 @@ from typing import Dict, List, Literal, Optional, Tuple
 
 Language = Literal["c", "cpp", "javascript", "python", "typescript", "tsx"]
 Identifier = str
-Pos = Tuple[int, int] # (line, column)
-Range = Tuple[Pos, Pos] # ((start_line, start_column), (end_line, end_column))
-Substring = Tuple[int, int] # (start_byte, end_byte)
-Scope = List[str] # e.g. ["A", "B"] for class B inside class A
+Pos = Tuple[int, int]  # (line, column)
+Range = Tuple[Pos, Pos]  # ((start_line, start_column), (end_line, end_column))
+Substring = Tuple[int, int]  # (start_byte, end_byte)
+Scope = List[str]  # e.g. ["A", "B"] for class B inside class A
+
 
 @dataclass
 class Document:
     text: str
     language: Language
+
 
 @dataclass
 class SymbolInfo(ABC):
@@ -22,12 +24,13 @@ class SymbolInfo(ABC):
     name: str
     range: Range
     scope: Scope
-    substring: Substring 
+    substring: Substring
 
     # return the substring of the document that corresponds to this symbol info
     def get_substring(self) -> str:
         start, end = self.substring
         return self.document.text[start:end]
+
 
 @dataclass
 class Parameter:
@@ -44,6 +47,7 @@ class Parameter:
         else:
             return f"{name}:{self.type}"
     __repr__ = __str__
+
 
 @dataclass
 class FunctionDeclaration(SymbolInfo):

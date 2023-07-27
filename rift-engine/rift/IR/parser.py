@@ -1,3 +1,5 @@
+import os
+import difflib
 from typing import Literal, List, Optional, Tuple
 from attr import dataclass
 from tree_sitter import Node
@@ -5,12 +7,14 @@ from tree_sitter_languages import get_parser
 from textwrap import dedent
 from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Parameter, Scope
 
+
 def get_type(text: str, language: Language, node: Node) -> str:
     if language in ["typescript", "tsx"] and node.type == 'type_annotation' and len(node.children) >= 2:
         # TS: first child should be ":" and second child should be type
         second_child = node.children[1]
         return text[second_child.start_byte:second_child.end_byte]
     return text[node.start_byte:node.end_byte]
+
 
 def add_c_cpp_declarators_to_type(type: str, declarators: List[str]) -> str:
     for d in declarators:
@@ -26,6 +30,7 @@ def add_c_cpp_declarators_to_type(type: str, declarators: List[str]) -> str:
             raise Exception(f"Unknown declarator: {d}")
     return type
 
+
 def extract_c_cpp_declarators(node: Node) -> Tuple[List[str], Node]:
     declarator_node = node.child_by_field_name('declarator')
     if declarator_node is None:
@@ -33,6 +38,7 @@ def extract_c_cpp_declarators(node: Node) -> Tuple[List[str], Node]:
     declarators, final_node = extract_c_cpp_declarators(declarator_node)
     declarators.append(declarator_node.type)
     return declarators, final_node
+
 
 def get_c_cpp_parameter(text: str, node: Node) -> Parameter:
     declarators, final_node = extract_c_cpp_declarators(node)
@@ -43,10 +49,11 @@ def get_c_cpp_parameter(text: str, node: Node) -> Parameter:
     type = add_c_cpp_declarators_to_type(type, declarators)
     name = ""
     if final_node.type == 'identifier':
-        name = text[final_node.start_byte:final_node.end_byte]  
+        name = text[final_node.start_byte:final_node.end_byte]
     return Parameter(name=name, type=type)
 
-def get_parameters(text:str, language: Language, node: Node)-> List[Parameter]:
+
+def get_parameters(text: str, language: Language, node: Node) -> List[Parameter]:
     parameters: List[Parameter] = []
     for child in node.children:
         if child.type == 'identifier':
@@ -80,8 +87,10 @@ def get_parameters(text:str, language: Language, node: Node)-> List[Parameter]:
             type_node = child.child_by_field_name('type')
             if type_node is not None:
                 type = get_type(text=text, language=language, node=type_node)
-            parameters.append(Parameter(name=name, type=type, optional=child.type == 'optional_parameter'))
+            parameters.append(Parameter(name=name, type=type,
+                              optional=child.type == 'optional_parameter'))
     return parameters
+
 
 def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node]]:
     if node.type == 'function_declarator':
@@ -98,10 +107,12 @@ def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node
     else:
         return None
 
+
 def find_function_declarations(code_block: str, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
-    document=Document(text=code_block, language=language)
+    document = Document(text=code_block, language=language)
     declarations: List[FunctionDeclaration] = []
     docstring = ""
+
     def mk_fun_decl(id: Node, node: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
         return FunctionDeclaration(
             docstring=docstring,
@@ -125,11 +136,13 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
         if body is not None and name is not None:
             scope = scope + [code_block[name.start_byte:name.end_byte]]
             for child in body.children:
-                declarations += find_function_declarations(code_block, language, child, scope)
-    elif node.type in ['decorated_definition']: # python decorator
+                declarations += find_function_declarations(
+                    code_block, language, child, scope)
+    elif node.type in ['decorated_definition']:  # python decorator
         defitinion = node.child_by_field_name('definition')
         if defitinion is not None:
-            declarations += find_function_declarations(code_block, language, defitinion, scope)
+            declarations += find_function_declarations(
+                code_block, language, defitinion, scope)
     elif node.type == 'function_definition' and language in ['c', 'cpp']:
         type_node = node.child_by_field_name('type')
         type = None
@@ -146,10 +159,12 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
             if child.type == 'identifier':
                 id = child
             elif child.type == 'parameter_list':
-                parameters = get_parameters(text=code_block, language=language, node=child)
+                parameters = get_parameters(
+                    text=code_block, language=language, node=child)
         if id is None:
             return []
-        declarations.append(mk_fun_decl(id=id, node=node, parameters=parameters, return_type=type))
+        declarations.append(mk_fun_decl(
+            id=id, node=node, parameters=parameters, return_type=type))
     elif node.type in ['function_definition', 'function_declaration']:
         id: Optional[Node] = None
         for child in node.children:
@@ -158,11 +173,13 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
         parameters: List[Parameter] = []
         parameters_node = node.child_by_field_name('parameters')
         if parameters_node is not None:
-            parameters = get_parameters(text=code_block, language=language, node=parameters_node)
+            parameters = get_parameters(
+                text=code_block, language=language, node=parameters_node)
         return_type: Optional[str] = None
         return_type_node = node.child_by_field_name('return_type')
         if return_type_node is not None:
-            return_type = get_type(text=code_block, language=language, node=return_type_node)
+            return_type = get_type(
+                text=code_block, language=language, node=return_type_node)
         body = node.child_by_field_name('body')
         if body is not None and len(body.children) > 0 and body.children[0].type == 'expression_statement':
             stmt = body.children[0]
@@ -170,7 +187,8 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
                 docstring_node = stmt.children[0]
                 docstring = code_block[docstring_node.start_byte:docstring_node.end_byte]
         if id is not None:
-            declarations.append(mk_fun_decl(id=id, node=node, parameters=parameters, return_type=return_type))
+            declarations.append(mk_fun_decl(
+                id=id, node=node, parameters=parameters, return_type=return_type))
 
     elif node.type in ['lexical_declaration', 'variable_declaration']:
         # arrow functions in js/ts e.g. let foo = x => x+1
@@ -187,8 +205,9 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
                 if is_arrow_function and id is not None:
                     declarations.append(mk_fun_decl(id, node))
     return declarations
-    
-def parse_code_block(ir:IR, code_block: str, language: Language) -> None:
+
+
+def parse_code_block(ir: IR, code_block: str, language: Language) -> None:
     parser = get_parser(language)
     tree = parser.parse(code_block.encode())
     declarations: List[FunctionDeclaration] = []
@@ -198,10 +217,12 @@ def parse_code_block(ir:IR, code_block: str, language: Language) -> None:
     for declaration in declarations:
         ir.symbol_table[declaration.name] = declaration
 
+
 @dataclass
 class MissingType:
     function_declaration: FunctionDeclaration
     pass
+
 
 @dataclass
 class MissingParameterType(MissingType):
@@ -212,14 +233,17 @@ class MissingParameterType(MissingType):
 
     __repr__ = __str__
 
+
 @dataclass
 class MissingReturnType(MissingType):
     def __str__(self) -> str:
         return f"Return type of {self.function_declaration.name}"
 
-    __repr__ = __str__  
+    __repr__ = __str__
 
 # Given an IR, find function declarations that are missing types in the parameters or the return type.
+
+
 def find_missing_types(ir: IR) -> List[MissingType]:
     missing_types: List[MissingType] = []
     for id in ir.symbol_table:
@@ -228,13 +252,15 @@ def find_missing_types(ir: IR) -> List[MissingType]:
             if d.parameters != []:
                 for p in d.parameters:
                     if p.type is None and not (p.name == "self" and d.language == "python"):
-                        missing_types.append(MissingParameterType(function_declaration=d, name=p.name))
+                        missing_types.append(MissingParameterType(
+                            function_declaration=d, name=p.name))
                         break
             if d.return_type is None:
                 missing_types.append(MissingReturnType(function_declaration=d))
     return missing_types
 
 #### TESTS FROM HERE ON ####
+
 
 class Tests:
     code_c = dedent("""
@@ -290,8 +316,6 @@ class Tests:
                     pass
     """).lstrip()
 
-import pytest
-import difflib
 
 def get_ir():
     ir = IR(symbol_table={})
@@ -302,12 +326,14 @@ def get_ir():
     parse_code_block(ir, Tests.code_py, 'python')
     return ir
 
+
 def symbol_table_to_str(symbol_table):
     lines = []
     for id in symbol_table:
         d = symbol_table[id]
         if isinstance(d, FunctionDeclaration):
-            lines.append(f"Function: {d.name}\n   language: {d.document.language}\n   range: {d.range}\n   substring: {d.substring}")
+            lines.append(
+                f"Function: {d.name}\n   language: {d.document.language}\n   range: {d.range}\n   substring: {d.substring}")
             if d.parameters != []:
                 lines.append(f"   parameters: {d.parameters}")
             if d.return_type is not None:
@@ -319,7 +345,6 @@ def symbol_table_to_str(symbol_table):
     output = '\n'.join(lines)
     return output
 
-import os
 
 def test_parsing():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -341,6 +366,7 @@ def test_parsing():
                 f.write(symbol_table_fixture)
 
         assert update_symbol_table, f"Symbol Table has changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
+
 
 def test_missing_types():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -364,6 +390,3 @@ def test_missing_types():
                 f.write(new_missing_types)
 
         assert update_missing_types, f"Missing Types have changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
-
-    
-    
