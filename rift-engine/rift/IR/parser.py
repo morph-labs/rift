@@ -5,7 +5,7 @@ from attr import dataclass
 from tree_sitter import Node
 from tree_sitter_languages import get_parser
 from textwrap import dedent
-from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Parameter, Scope
+from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Parameter, Scope, language_from_file_extension
 
 
 def get_type(text: str, language: Language, node: Node) -> str:
@@ -241,9 +241,9 @@ class MissingType:
         return self.__str__()
 
 
-def find_missing_types(ir: IR) -> List[MissingType]:
+def functions_missing_types_in_ir(ir: IR) -> List[MissingType]:
     """Given an IR, find function declarations that are missing types in the parameters or the return type."""
-    missing_types: List[MissingType] = []
+    functions_missing_types: List[MissingType] = []
     for id in ir.symbol_table:
         d = ir.symbol_table[id]
         if isinstance(d, FunctionDeclaration):
@@ -256,14 +256,40 @@ def find_missing_types(ir: IR) -> List[MissingType]:
             if d.return_type is None:
                 missing_return = True
             if missing_parameters != [] or missing_return:
-                missing_types.append(MissingType(
+                functions_missing_types.append(MissingType(
                     function_declaration=d, parameters=missing_parameters, return_type=missing_return))
-    return missing_types
+    return functions_missing_types
 
+
+def functions_missing_types_in_file(path: str) -> List[MissingType]:
+    """Given a file path, parse the file and find function declarations that are missing types in the parameters or the return type."""
+    ir = IR(symbol_table={})
+    language = language_from_file_extension(path)
+    if language is None:
+        return []
+    with open(path, 'r') as f:
+        code_block = f.read()
+    parse_code_block(ir, code_block, language)
+    return functions_missing_types_in_ir(ir)
+
+
+def files_missing_types_in_project(root_path: str) -> List[Tuple[str, List[MissingType]]]:
+    """"Return a list of files with missing types, and the missing types in each file."""
+    files_with_missing_types: List[Tuple[str, List[MissingType]]] = []
+    for root, dirs, files in os.walk(root_path):
+        for file in files:
+            path = os.path.join(root, file)
+            missing_types = functions_missing_types_in_file(path)
+            if missing_types != []:
+                path_from_root = os.path.relpath(path, root_path)
+                files_with_missing_types.append(
+                    (path_from_root, missing_types))
+    return files_with_missing_types
 
 ############################
 #### TESTS FROM HERE ON ####
 ############################
+
 
 class Tests:
     code_c = dedent("""
@@ -378,7 +404,7 @@ def test_missing_types():
         old_missing_types = f.read()
 
     ir = get_ir()
-    missing_types = find_missing_types(ir)
+    missing_types = functions_missing_types_in_ir(ir)
     new_missing_types = '\n'.join([str(mt) for mt in missing_types])
     if new_missing_types != old_missing_types:
         diff = difflib.unified_diff(old_missing_types.splitlines(keepends=True),
@@ -393,3 +419,14 @@ def test_missing_types():
                 f.write(new_missing_types)
 
         assert update_missing_types, f"Missing Types have changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
+
+
+def test_missing_types_in_project():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(script_dir)
+    files = files_missing_types_in_project(parent_dir)
+    for file, missing_types in files:
+        print(f"File: {file}")
+        for mt in missing_types:
+            print(f"  {mt}")
+        print()
