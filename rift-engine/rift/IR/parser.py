@@ -261,29 +261,29 @@ def functions_missing_types_in_ir(ir: IR) -> List[MissingType]:
     return functions_missing_types
 
 
-def functions_missing_types_in_file(path: str) -> List[MissingType]:
+def functions_missing_types_in_file(path: str) -> Tuple[List[MissingType], str]:
     """Given a file path, parse the file and find function declarations that are missing types in the parameters or the return type."""
     ir = IR(symbol_table={})
     language = language_from_file_extension(path)
     if language is None:
-        return []
+        return ([], "")
     with open(path, 'r') as f:
         code_block = f.read()
     parse_code_block(ir, code_block, language)
-    return functions_missing_types_in_ir(ir)
+    return (functions_missing_types_in_ir(ir), code_block)
 
 
-def files_missing_types_in_project(root_path: str) -> List[Tuple[str, List[MissingType]]]:
+def files_missing_types_in_project(root_path: str) -> List[Tuple[str, List[MissingType], str]]:
     """"Return a list of files with missing types, and the missing types in each file."""
-    files_with_missing_types: List[Tuple[str, List[MissingType]]] = []
+    files_with_missing_types: List[Tuple[str, List[MissingType], str]] = []
     for root, dirs, files in os.walk(root_path):
         for file in files:
             path = os.path.join(root, file)
-            missing_types = functions_missing_types_in_file(path)
+            (missing_types, code) = functions_missing_types_in_file(path)
             if missing_types != []:
                 path_from_root = os.path.relpath(path, root_path)
                 files_with_missing_types.append(
-                    (path_from_root, missing_types))
+                    (path_from_root, missing_types, code))
     return files_with_missing_types
 
 ############################
@@ -425,7 +425,7 @@ def test_missing_types_in_project():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(script_dir)
     files = files_missing_types_in_project(parent_dir)
-    for file, missing_types in files:
+    for file, missing_types, code in files:
         print(f"File: {file}")
         for mt in missing_types:
             print(f"  {mt}")
