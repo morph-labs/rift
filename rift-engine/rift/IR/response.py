@@ -1,3 +1,6 @@
+import difflib
+import os
+import re
 from textwrap import dedent
 from typing import List
 from rift.IR.ir import FunctionDeclaration, IR, Language
@@ -47,7 +50,7 @@ def parse_code_blocks(code_blocks: List[str], language: Language) -> IR:
     return ir
 
 
-def replace_functions_in_document(ir_doc: IR, ir_blocks: IR, document: str) -> str:
+def replace_functions_in_document(ir_doc: IR, ir_blocks: IR, document: str, replace_body: bool) -> str:
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
 
@@ -72,14 +75,32 @@ def replace_functions_in_document(ir_doc: IR, ir_blocks: IR, document: str) -> s
         function_in_blocks = ir_blocks.symbol_table.get(
             function_declaration.name)
         if isinstance(function_in_blocks, FunctionDeclaration):
-            new_function_text = function_in_blocks.get_substring()
-            modified_document = modified_document[:function_declaration.substring[0]] + \
-                new_function_text + \
-                modified_document[function_declaration.substring[1]:]
+            if replace_body:
+                new_function_text = function_in_blocks.get_substring()
+                start_replace, end_replace = function_declaration.substring
+                modified_document = \
+                    modified_document[:start_replace] + \
+                    new_function_text + \
+                    modified_document[end_replace:]
+            else:
+                new_function_text = function_in_blocks.get_substring_without_body()
+                old_function_text = function_declaration.get_substring_without_body()
+                # Get trailing newline and/or whitespace from old text
+                old_trailing_whitespace = re.search(r'\s*$', old_function_text)
+                # Add it to new text
+                if old_trailing_whitespace is not None:
+                    new_function_text = new_function_text.rstrip()
+                    new_function_text += old_trailing_whitespace.group(0)
+                start_replace = function_declaration.substring[0]
+                end_replace = start_replace + len(old_function_text)
+                modified_document = \
+                    modified_document[:start_replace] + \
+                    new_function_text + \
+                    modified_document[end_replace:]
     return modified_document
 
 
-def replace_functions_from_code_blocks(code_blocks: List[str], document: str, language: Language) -> str:
+def replace_functions_from_code_blocks(code_blocks: List[str], document: str, language: Language, replace_body: bool) -> str:
     """
     Generates a new document by replacing functions in the original document with the corresponding functions
     from the code blocks.
@@ -94,9 +115,11 @@ def replace_functions_from_code_blocks(code_blocks: List[str], document: str, la
     """
     ir_blocks = parse_code_blocks(code_blocks=code_blocks, language=language)
     ir_doc = parse_code_blocks(code_blocks=[document], language=language)
-    return replace_functions_in_document(ir_doc, ir_blocks, document)
+    return replace_functions_in_document(ir_doc=ir_doc, ir_blocks=ir_blocks, document=document, replace_body=replace_body)
 
-# your test class and main logic remain unchanged.
+############################
+#### TESTS FROM HERE ON ####
+############################
 
 
 class Test:
@@ -181,14 +204,74 @@ class Test:
         In `main()`, we add a call to `free(x)` to release the allocated memory before the program exits.
         """).lstrip()
 
+    code3 = dedent("""
+        def foo() -> None:
+            print("Hello world!")
+
+        @cache
+        def get_num_tokens(content):
+            return len(ENCODER.encode(content))
+
+        @cache
+        def get_num_tokens2(content):
+            return len(ENCODER.encode(content))
+        
+        def bar() -> None:
+            print("Hello world!")
+        """).lstrip()
+
+    response3 = dedent("""
+        Here are the required changes:
+
+        ```
+        @cache
+        def get_num_tokens(content: str) -> int:           
+        ...
+                       
+        @cache
+        def get_num_tokens2(content: t1) -> t2:           
+            return some(imaginary(code))
+        ```
+
+        Some other thoutghts:
+        - this
+        
+        """).lstrip()
+
 
 def test_response():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    test_output_file = os.path.join(script_dir, 'response_test.txt')
+    with open(test_output_file, 'r') as f:
+        old_test_output = f.read()
+    new_test_output = ""
+
     language: Language = "c"
     code_blocks1 = extract_blocks_from_response(Test.response1)
     new_document1 = replace_functions_from_code_blocks(
-        code_blocks=code_blocks1, document=Test.document, language=language)
-    print(f"new document1:\n{new_document1}\n")
+        code_blocks=code_blocks1, document=Test.document, language=language, replace_body=True)
+    new_test_output += f"\nNew document1:\n```\n{new_document1}```"
     code_blocks2 = extract_blocks_from_response(Test.response2)
     new_document2 = replace_functions_from_code_blocks(
-        code_blocks=code_blocks2, document=Test.document, language=language)
-    print(f"new document2:\n{new_document2}\n")
+        code_blocks=code_blocks2, document=Test.document, language=language, replace_body=True)
+    new_test_output += f"\n\nNew document2:\n```\n{new_document2}```"
+
+    language = "python"
+    code_blocks3 = extract_blocks_from_response(Test.response3)
+    new_document3 = replace_functions_from_code_blocks(
+        code_blocks=code_blocks3, document=Test.code3, language=language, replace_body=False)
+    new_test_output += f"\n\nNew document3:\n```\n{new_document3}```"
+
+    if new_test_output != old_test_output:
+        diff = difflib.unified_diff(old_test_output.splitlines(keepends=True),
+                                    new_test_output.splitlines(keepends=True))
+        diff_output = ''.join(diff)
+
+        # if you want to update the missing types, set this to True
+        update_missing_types = os.getenv("UPDATE_TESTS", "False") == "True"
+        if update_missing_types:
+            print("Updating Missing Types...")
+            with open(test_output_file, 'w') as f:
+                f.write(new_test_output)
+
+        assert update_missing_types, f"Missing Types have changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"

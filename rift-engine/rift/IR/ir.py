@@ -31,7 +31,6 @@ class SymbolInfo(ABC):
         start, end = self.substring
         return self.document.text[start:end]
 
-
 @dataclass
 class Parameter:
     name: str
@@ -55,8 +54,14 @@ class FunctionDeclaration(SymbolInfo):
     docstring: str
     parameters: List[Parameter]
     return_type: Optional[str] = None
-    pass
 
+    def get_substring_without_body(self) -> str:
+        if self.body is None:
+            return self.get_substring()
+        else:
+            start, end = self.substring
+            body_start, body_end = self.body
+            return self.document.text[start:body_start]
 
 @dataclass
 class IR:

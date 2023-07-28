@@ -127,7 +127,7 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
             scope=scope,
             substring=(node.start_byte, node.end_byte)
         )
-    
+
     previous_node = node.prev_sibling
     if previous_node is not None and previous_node.type == 'comment':
         docstring_ = code_block[previous_node.start_byte:previous_node.end_byte]
@@ -293,6 +293,7 @@ def files_missing_types_in_project(root_path: str) -> List[Tuple[str, List[Missi
                     (path_from_root, missing_types, code))
     return files_with_missing_types
 
+
 ############################
 #### TESTS FROM HERE ON ####
 ############################
@@ -405,7 +406,6 @@ def test_parsing():
 
         assert update_symbol_table, f"Symbol Table has changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
 
-
 def test_missing_types():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     missing_types_file = os.path.join(script_dir, 'missing_types.txt')
@@ -439,3 +439,4 @@ def test_missing_types_in_project():
         for mt in missing_types:
             print(f"  {mt}")
         print()
+
