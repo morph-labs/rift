@@ -3,6 +3,7 @@ Function: aa
    range: ((0, 0), (2, 1))
    substring: (0, 24)
    return_type: int
+   body: (9, 24)
 Function: foo
    language: c
    range: ((4, 0), (6, 1))
@@ -10,21 +11,25 @@ Function: foo
    parameters: [x:int**]
    return_type: int*
    docstring: /** This is a docstring */
+   body: (71, 84)
 Function: bb
    language: c
    range: ((8, 0), (10, 1))
    substring: (86, 110)
    return_type: int
+   body: (95, 110)
 Function: main
    language: c
    range: ((12, 0), (17, 1))
    substring: (112, 169)
    return_type: int
+   body: (123, 169)
 Function: f1
    language: javascript
    range: ((1, 0), (1, 27))
    substring: (22, 49)
    docstring: /** Some docstring */
+   body: (36, 49)
 Function: f2
    language: javascript
    range: ((3, 0), (3, 18))
@@ -36,15 +41,18 @@ Function: ts
    substring: (25, 81)
    parameters: [x:number, opt?:string]
    return_type: number
+   body: (69, 81)
 Function: ts2
    language: typescript
    range: ((2, 0), (2, 44))
    substring: (82, 126)
    return_type: array<number>
+   body: (113, 126)
 Function: tsx
    language: tsx
    range: ((1, 0), (1, 27))
    substring: (23, 50)
+   body: (38, 50)
 Function: py
    language: python
    range: ((1, 4), (3, 16))
@@ -52,6 +60,7 @@ Function: py
    parameters: [x, y]
    scope: ['A']
    docstring: """This is a docstring"""
+   body: (35, 77)
 Function: insert_code
    language: python
    range: ((6, 4), (9, 12))
@@ -59,14 +68,17 @@ Function: insert_code
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
    scope: ['B']
+   body: (245, 249)
 Function: load
    language: python
    range: ((10, 4), (11, 12))
    substring: (254, 291)
    parameters: [self, v]
    scope: ['B']
+   body: (287, 291)
 Function: nested
    language: python
    range: ((13, 8), (14, 16))
    substring: (318, 348)
    scope: ['B', 'Nested']
+   body: (344, 348)

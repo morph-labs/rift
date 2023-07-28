@@ -5,7 +5,7 @@ from attr import dataclass
 from tree_sitter import Node
 from tree_sitter_languages import get_parser
 from textwrap import dedent
-from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Parameter, Scope, language_from_file_extension
+from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Parameter, Scope, Substring, language_from_file_extension
 
 
 def get_type(text: str, language: Language, node: Node) -> str:
@@ -112,9 +112,11 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
     document = Document(text=code_block, language=language)
     declarations: List[FunctionDeclaration] = []
     docstring = ""
+    body_sub = None
 
-    def mk_fun_decl(id: Node, node: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
+    def mk_fun_decl(id: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
         return FunctionDeclaration(
+            body=body_sub,
             docstring=docstring,
             document=document,
             language=language,
@@ -125,17 +127,23 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
             scope=scope,
             substring=(node.start_byte, node.end_byte)
         )
+    
     previous_node = node.prev_sibling
     if previous_node is not None and previous_node.type == 'comment':
         docstring_ = code_block[previous_node.start_byte:previous_node.end_byte]
         if docstring_.startswith('/**'):
             docstring = docstring_
+
+    body_node = node.child_by_field_name('body')
+    if body_node is not None:
+        body_sub = (body_node.start_byte, body_node.end_byte)
+
     if node.type in ['class_definition']:
-        body = node.child_by_field_name('body')
+        body_node = node.child_by_field_name('body')
         name = node.child_by_field_name('name')
-        if body is not None and name is not None:
+        if body_node is not None and name is not None:
             scope = scope + [code_block[name.start_byte:name.end_byte]]
-            for child in body.children:
+            for child in body_node.children:
                 declarations += find_function_declarations(
                     code_block, language, child, scope)
     elif node.type in ['decorated_definition']:  # python decorator
@@ -164,7 +172,7 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
         if id is None:
             return []
         declarations.append(mk_fun_decl(
-            id=id, node=node, parameters=parameters, return_type=type))
+            id=id, parameters=parameters, return_type=type))
     elif node.type in ['function_definition', 'function_declaration']:
         id: Optional[Node] = None
         for child in node.children:
@@ -180,15 +188,14 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
         if return_type_node is not None:
             return_type = get_type(
                 text=code_block, language=language, node=return_type_node)
-        body = node.child_by_field_name('body')
-        if body is not None and len(body.children) > 0 and body.children[0].type == 'expression_statement':
-            stmt = body.children[0]
+        if body_node is not None and len(body_node.children) > 0 and body_node.children[0].type == 'expression_statement':
+            stmt = body_node.children[0]
             if len(stmt.children) > 0 and stmt.children[0].type == 'string':
                 docstring_node = stmt.children[0]
                 docstring = code_block[docstring_node.start_byte:docstring_node.end_byte]
         if id is not None:
             declarations.append(mk_fun_decl(
-                id=id, node=node, parameters=parameters, return_type=return_type))
+                id=id, parameters=parameters, return_type=return_type))
 
     elif node.type in ['lexical_declaration', 'variable_declaration']:
         # arrow functions in js/ts e.g. let foo = x => x+1
@@ -203,7 +210,7 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
                     elif grandchild.type == 'arrow_function':
                         is_arrow_function = True
                 if is_arrow_function and id is not None:
-                    declarations.append(mk_fun_decl(id, node))
+                    declarations.append(mk_fun_decl(id=id))
     return declarations
 
 
@@ -371,6 +378,8 @@ def symbol_table_to_str(symbol_table):
                 lines.append(f"   scope: {d.scope}")
             if d.docstring != "":
                 lines.append(f"   docstring: {d.docstring}")
+            if d.body is not None:
+                lines.append(f"   body: {d.body}")
     output = '\n'.join(lines)
     return output
 
