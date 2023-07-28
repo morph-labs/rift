@@ -2,9 +2,9 @@ import difflib
 import os
 import re
 from textwrap import dedent
-from typing import List
+from typing import List, Optional
 from rift.IR.ir import FunctionDeclaration, IR, Language
-from rift.IR.parser import parse_code_block
+from rift.IR.parser import functions_missing_types_in_ir, parse_code_block
 
 
 def extract_blocks_from_response(response: str) -> List[str]:
@@ -50,7 +50,13 @@ def parse_code_blocks(code_blocks: List[str], language: Language) -> IR:
     return ir
 
 
-def replace_functions_in_document(ir_doc: IR, ir_blocks: IR, document: str, replace_body: bool) -> str:
+def replace_functions_in_document(
+    ir_doc: IR,
+    ir_blocks: IR,
+    document: str,
+    replace_body: bool,
+    filter_function_names: Optional[List[str]] = None,
+) -> str:
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
 
@@ -74,7 +80,8 @@ def replace_functions_in_document(ir_doc: IR, ir_blocks: IR, document: str, repl
     for function_declaration in function_declarations_in_document:
         function_in_blocks = ir_blocks.symbol_table.get(
             function_declaration.name)
-        if isinstance(function_in_blocks, FunctionDeclaration):
+        filter = True if filter_function_names is None else function_declaration.name in filter_function_names
+        if filter and isinstance(function_in_blocks, FunctionDeclaration):
             if replace_body:
                 new_function_text = function_in_blocks.get_substring()
                 start_replace, end_replace = function_declaration.substring
@@ -100,7 +107,11 @@ def replace_functions_in_document(ir_doc: IR, ir_blocks: IR, document: str, repl
     return modified_document
 
 
-def replace_functions_from_code_blocks(code_blocks: List[str], document: str, language: Language, replace_body: bool) -> str:
+def replace_functions_from_code_blocks(
+    code_blocks: List[str], document: str,
+        language: Language, replace_body: bool,
+        filter_function_names: Optional[List[str]] = None,
+) -> str:
     """
     Generates a new document by replacing functions in the original document with the corresponding functions
     from the code blocks.
@@ -115,7 +126,7 @@ def replace_functions_from_code_blocks(code_blocks: List[str], document: str, la
     """
     ir_blocks = parse_code_blocks(code_blocks=code_blocks, language=language)
     ir_doc = parse_code_blocks(code_blocks=[document], language=language)
-    return replace_functions_in_document(ir_doc=ir_doc, ir_blocks=ir_blocks, document=document, replace_body=replace_body)
+    return replace_functions_in_document(filter_function_names=filter_function_names, ir_doc=ir_doc, ir_blocks=ir_blocks, document=document, replace_body=replace_body)
 
 ############################
 #### TESTS FROM HERE ON ####
@@ -231,6 +242,9 @@ class Test:
         @cache
         def get_num_tokens2(content: t1) -> t2:           
             return some(imaginary(code))
+                       
+        def foo() -> string:
+            print("This should be ignored as the return type was not missing")
         ```
 
         Some other thoutghts:
@@ -258,8 +272,15 @@ def test_response():
 
     language = "python"
     code_blocks3 = extract_blocks_from_response(Test.response3)
+    ir = IR(symbol_table={})
+    parse_code_block(ir, Test.code3, language)
+    missing_types = functions_missing_types_in_ir(ir)
+    functions_missing_types = [
+        mt.function_declaration.name for mt in missing_types]
     new_document3 = replace_functions_from_code_blocks(
-        code_blocks=code_blocks3, document=Test.code3, language=language, replace_body=False)
+        code_blocks=code_blocks3, document=Test.code3,
+        filter_function_names=functions_missing_types,
+        language=language, replace_body=False)
     new_test_output += f"\n\nNew document3:\n```\n{new_document3}```"
 
     if new_test_output != old_test_output:
