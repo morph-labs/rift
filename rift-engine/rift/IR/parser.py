@@ -246,6 +246,9 @@ class MissingType:
 
     def __repr__(self) -> str:
         return self.__str__()
+    
+    def __int__(self) -> int:
+        return len(self.parameters) + int(self.return_type)
 
 
 def functions_missing_types_in_ir(ir: IR) -> List[MissingType]:
