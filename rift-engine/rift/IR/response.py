@@ -7,7 +7,7 @@ from rift.IR.ir import FunctionDeclaration, IR, Language
 from rift.IR.parser import functions_missing_types_in_ir, parse_code_block
 
 
-def extract_blocks_from_response(response: str) -> List[str]:
+def extract_blocks_from_response(response: bytes) -> List[bytes]:
     """
     Extract code blocks from a response string.
 
@@ -17,23 +17,23 @@ def extract_blocks_from_response(response: str) -> List[str]:
     Returns:
         List[str]: A list of strings, each string being a block of code from the response.
     """
-    code_blocks = []
-    current_block = ""
+    code_blocks: List[bytes] = []
+    current_block = b""
     inside_code_block = False
     for line in response.splitlines():
-        if line.startswith("```"):
+        if line.startswith(b"```"):
             if inside_code_block:
                 code_blocks.append(current_block)
-                current_block = ""
+                current_block = b""
                 inside_code_block = False
             else:
                 inside_code_block = True
         elif inside_code_block:
-            current_block += line + "\n"
+            current_block += line + b"\n"
     return code_blocks
 
 
-def parse_code_blocks(code_blocks: List[str], language: Language) -> IR:
+def parse_code_blocks(code_blocks: List[bytes], language: Language) -> IR:
     """
     Parses code blocks and returns intermediate representation (IR).
 
@@ -53,10 +53,10 @@ def parse_code_blocks(code_blocks: List[str], language: Language) -> IR:
 def replace_functions_in_document(
     ir_doc: IR,
     ir_blocks: IR,
-    document: str,
+    document: bytes,
     replace_body: bool,
     filter_function_names: Optional[List[str]] = None,
-) -> str:
+) -> bytes:
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
 
@@ -93,7 +93,8 @@ def replace_functions_in_document(
                 new_function_text = function_in_blocks.get_substring_without_body()
                 old_function_text = function_declaration.get_substring_without_body()
                 # Get trailing newline and/or whitespace from old text
-                old_trailing_whitespace = re.search(r'\s*$', old_function_text)
+                old_trailing_whitespace = re.search(
+                    rb'\s*$', old_function_text)
                 # Add it to new text
                 if old_trailing_whitespace is not None:
                     new_function_text = new_function_text.rstrip()
@@ -108,10 +109,10 @@ def replace_functions_in_document(
 
 
 def replace_functions_from_code_blocks(
-    code_blocks: List[str], document: str,
+    code_blocks: List[bytes], document: bytes,
         language: Language, replace_body: bool,
         filter_function_names: Optional[List[str]] = None,
-) -> str:
+) -> bytes:
     """
     Generates a new document by replacing functions in the original document with the corresponding functions
     from the code blocks.
@@ -153,7 +154,7 @@ class Test:
           *x = 1;
           return 0;
         }
-    """).lstrip()
+    """).lstrip().encode("utf-8")
 
     response1 = dedent("""
         To fix the error reported in the `main` function, you need to make the following changes:
@@ -185,7 +186,7 @@ class Test:
           return 0;
         }
         ```
-    """).lstrip()
+    """).lstrip().encode("utf-8")
 
     response2 = dedent("""
         The bug is caused by dereferencing a potentially null pointer `x` on line 18. To fix this bug, we need to modify the following functions:
@@ -213,7 +214,7 @@ class Test:
         In the `foo()` function, we allocate memory for `x` using `malloc()` and then assign a value of 0 to `*x`. This ensures that `x` is not null when it is passed back to `main()`.
 
         In `main()`, we add a call to `free(x)` to release the allocated memory before the program exits.
-        """).lstrip()
+        """).lstrip().encode("utf-8")
 
     code3 = dedent("""
         def foo() -> None:
@@ -229,7 +230,7 @@ class Test:
         
         def bar() -> None:
             print("Hello world!")
-        """).lstrip()
+        """).lstrip().encode("utf-8")
 
     response3 = dedent("""
         Here are the required changes:
@@ -250,7 +251,7 @@ class Test:
         Some other thoutghts:
         - this
         
-        """).lstrip()
+        """).lstrip().encode("utf-8")
 
 
 def test_response():
@@ -264,11 +265,11 @@ def test_response():
     code_blocks1 = extract_blocks_from_response(Test.response1)
     new_document1 = replace_functions_from_code_blocks(
         code_blocks=code_blocks1, document=Test.document, language=language, replace_body=True)
-    new_test_output += f"\nNew document1:\n```\n{new_document1}```"
+    new_test_output += f"\nNew document1:\n```\n{new_document1.decode()}```"
     code_blocks2 = extract_blocks_from_response(Test.response2)
     new_document2 = replace_functions_from_code_blocks(
         code_blocks=code_blocks2, document=Test.document, language=language, replace_body=True)
-    new_test_output += f"\n\nNew document2:\n```\n{new_document2}```"
+    new_test_output += f"\n\nNew document2:\n```\n{new_document2.decode()}```"
 
     language = "python"
     code_blocks3 = extract_blocks_from_response(Test.response3)
@@ -281,7 +282,7 @@ def test_response():
         code_blocks=code_blocks3, document=Test.code3,
         filter_function_names=functions_missing_types,
         language=language, replace_body=False)
-    new_test_output += f"\n\nNew document3:\n```\n{new_document3}```"
+    new_test_output += f"\n\nNew document3:\n```\n{new_document3.decode()}```"
 
     if new_test_output != old_test_output:
         diff = difflib.unified_diff(old_test_output.splitlines(keepends=True),

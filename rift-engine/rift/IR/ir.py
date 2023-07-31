@@ -12,7 +12,7 @@ Scope = List[str]  # e.g. ["A", "B"] for class B inside class A
 
 @dataclass
 class Document:
-    text: str
+    text: bytes
     language: Language
 
 
@@ -27,9 +27,10 @@ class SymbolInfo(ABC):
     substring: Substring
 
     # return the substring of the document that corresponds to this symbol info
-    def get_substring(self) -> str:
+    def get_substring(self) -> bytes:
         start, end = self.substring
         return self.document.text[start:end]
+
 
 @dataclass
 class Parameter:
@@ -55,7 +56,7 @@ class FunctionDeclaration(SymbolInfo):
     parameters: List[Parameter]
     return_type: Optional[str] = None
 
-    def get_substring_without_body(self) -> str:
+    def get_substring_without_body(self) -> bytes:
         if self.body is None:
             return self.get_substring()
         else:
@@ -63,14 +64,16 @@ class FunctionDeclaration(SymbolInfo):
             body_start, body_end = self.body
             return self.document.text[start:body_start]
 
+
 @dataclass
 class Statement:
     type: str
 
     def __str__(self):
         return self.type
-    
+
     __repr__ = __str__
+
 
 @dataclass
 class IR:
