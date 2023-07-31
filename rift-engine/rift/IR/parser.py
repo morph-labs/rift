@@ -402,8 +402,6 @@ def test_parsing():
         old_symbol_table = f.read()
     ir = get_ir()
 
-    print(f"Statements: {ir.statements}")
-
     symbol_table_str = symbol_table_to_str(ir.symbol_table)
     if symbol_table_str != old_symbol_table:
         diff = difflib.unified_diff(old_symbol_table.splitlines(keepends=True),
