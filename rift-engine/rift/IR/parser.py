@@ -5,7 +5,7 @@ from attr import dataclass
 from tree_sitter import Node
 from tree_sitter_languages import get_parser
 from textwrap import dedent
-from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Parameter, Scope, Substring, language_from_file_extension
+from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Parameter, Scope, Statement, Substring, language_from_file_extension
 
 
 def get_type(text: str, language: Language, node: Node) -> str:
@@ -213,12 +213,16 @@ def find_function_declarations(code_block: str, language: Language, node: Node, 
                     declarations.append(mk_fun_decl(id=id))
     return declarations
 
+def parse_statement(node: Node) -> Statement:
+    return Statement(type=node.type)
 
 def parse_code_block(ir: IR, code_block: str, language: Language) -> None:
     parser = get_parser(language)
     tree = parser.parse(code_block.encode())
     declarations: List[FunctionDeclaration] = []
     for node in tree.root_node.children:
+        statement = parse_statement(node)
+        ir.statements.append(statement)
         declarations += find_function_declarations(
             code_block=code_block, language=language, node=node, scope=[])
     for declaration in declarations:
@@ -232,7 +236,7 @@ class MissingType:
     return_type: bool = False
 
     def __str__(self) -> str:
-        s = f"Function {self.function_declaration.name} is missing type annotations"
+        s = f"Function `{self.function_declaration.name}` is missing type annotations"
         if self.parameters != []:
             if len(self.parameters) == 1:
                 s += f" in parameter '{self.parameters[0]}'"
@@ -397,10 +401,13 @@ def test_parsing():
     with open(symbol_table_file, 'r') as f:
         old_symbol_table = f.read()
     ir = get_ir()
-    symbol_table_fixture = symbol_table_to_str(ir.symbol_table)
-    if symbol_table_fixture != old_symbol_table:
+
+    print(f"Statements: {ir.statements}")
+
+    symbol_table_str = symbol_table_to_str(ir.symbol_table)
+    if symbol_table_str != old_symbol_table:
         diff = difflib.unified_diff(old_symbol_table.splitlines(keepends=True),
-                                    symbol_table_fixture.splitlines(keepends=True))
+                                    symbol_table_str.splitlines(keepends=True))
         diff_output = ''.join(diff)
 
         # if you want to update the symbol table, set this to True
@@ -408,7 +415,7 @@ def test_parsing():
         if update_symbol_table:
             print("Updating Symbol Table...")
             with open(symbol_table_file, 'w') as f:
-                f.write(symbol_table_fixture)
+                f.write(symbol_table_str)
 
         assert update_symbol_table, f"Symbol Table has changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
 

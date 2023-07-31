@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, Tuple
 
 Language = Literal["c", "cpp", "javascript", "python", "typescript", "tsx"]
@@ -64,8 +64,18 @@ class FunctionDeclaration(SymbolInfo):
             return self.document.text[start:body_start]
 
 @dataclass
+class Statement:
+    type: str
+
+    def __str__(self):
+        return self.type
+    
+    __repr__ = __str__
+
+@dataclass
 class IR:
     symbol_table: Dict[Identifier, SymbolInfo]
+    statements: List[Statement] = field(default_factory=list)
 
 
 def language_from_file_extension(file_path: str) -> Optional[Language]:
