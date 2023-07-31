@@ -246,7 +246,7 @@ class MissingType:
 
     def __repr__(self) -> str:
         return self.__str__()
-    
+
     def __int__(self) -> int:
         return len(self.parameters) + int(self.return_type)
 
@@ -259,9 +259,12 @@ def functions_missing_types_in_ir(ir: IR) -> List[MissingType]:
         if isinstance(d, FunctionDeclaration):
             missing_parameters = []
             missing_return = False
-            if d.parameters != []:
-                for p in d.parameters:
-                    if p.type is None and not (p.name == "self" and d.language == "python"):
+            parameters = d.parameters
+            if parameters != []:
+                if (parameters[0].name == "self" or parameters[0].name == "cls") and d.language == "python" and d.scope != []:
+                    parameters = parameters[1:]
+                for p in parameters:
+                    if p.type is None:
                         missing_parameters.append(p.name)
             if d.return_type is None:
                 missing_return = True
@@ -409,6 +412,7 @@ def test_parsing():
 
         assert update_symbol_table, f"Symbol Table has changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
 
+
 def test_missing_types():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     missing_types_file = os.path.join(script_dir, 'missing_types.txt')
@@ -442,4 +446,3 @@ def test_missing_types_in_project():
         for mt in missing_types:
             print(f"  {mt}")
         print()
-
