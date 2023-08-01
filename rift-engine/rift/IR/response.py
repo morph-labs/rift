@@ -7,7 +7,7 @@ from rift.IR.ir import FunctionDeclaration, IR, Language
 from rift.IR.parser import functions_missing_types_in_ir, parse_code_block
 
 
-def extract_blocks_from_response(response: bytes) -> List[bytes]:
+def extract_blocks_from_response(response: str) -> List[bytes]:
     """
     Extract code blocks from a response string.
 
@@ -17,20 +17,21 @@ def extract_blocks_from_response(response: bytes) -> List[bytes]:
     Returns:
         List[str]: A list of strings, each string being a block of code from the response.
     """
-    code_blocks: List[bytes] = []
-    current_block = b""
+    code_blocks: List[str] = []
+    current_block : str = ""
     inside_code_block = False
     for line in response.splitlines():
-        if line.startswith(b"```"):
+        if line.startswith("```"):
             if inside_code_block:
                 code_blocks.append(current_block)
-                current_block = b""
+                current_block = ""
                 inside_code_block = False
             else:
                 inside_code_block = True
         elif inside_code_block:
-            current_block += line + b"\n"
-    return code_blocks
+            current_block += line + "\n"
+    code_blocks_bytes = [block.encode("utf-8") for block in code_blocks]
+    return code_blocks_bytes
 
 
 def parse_code_blocks(code_blocks: List[bytes], language: Language) -> IR:
@@ -186,7 +187,7 @@ class Test:
           return 0;
         }
         ```
-    """).lstrip().encode("utf-8")
+    """).lstrip()
 
     response2 = dedent("""
         The bug is caused by dereferencing a potentially null pointer `x` on line 18. To fix this bug, we need to modify the following functions:
@@ -214,7 +215,7 @@ class Test:
         In the `foo()` function, we allocate memory for `x` using `malloc()` and then assign a value of 0 to `*x`. This ensures that `x` is not null when it is passed back to `main()`.
 
         In `main()`, we add a call to `free(x)` to release the allocated memory before the program exits.
-        """).lstrip().encode("utf-8")
+        """).lstrip()
 
     code3 = dedent("""
         def foo() -> None:
@@ -251,7 +252,7 @@ class Test:
         Some other thoutghts:
         - this
         
-        """).lstrip().encode("utf-8")
+        """).lstrip()
 
 
 def test_response():
