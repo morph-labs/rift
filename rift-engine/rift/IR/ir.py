@@ -9,17 +9,37 @@ Range = Tuple[Pos, Pos]  # ((start_line, start_column), (end_line, end_column))
 Substring = Tuple[int, int]  # (start_byte, end_byte)
 Scope = List[str]  # e.g. ["A", "B"] for class B inside class A
 
+@dataclass
+class Code:
+    bytes: bytes
+    def __str__(self):
+        return self.bytes.decode()
+    __repr__ = __str__
+
+    def apply_edit(self, edit: "CodeEdit") -> "Code":
+        return edit.apply(self)
+    
+    def apply_edits(self, edits: List["CodeEdit"]) -> "Code":
+        code = self
+        # sort the edits in descending order of their start position
+        edits.sort(key=lambda x: -x.substring[0])
+        for edit in edits:
+            code = code.apply_edit(edit)
+        return code
 
 @dataclass
-class Document:
-    text: bytes
-    language: Language
+class CodeEdit:
+    substring: Substring
+    new_bytes: bytes
 
+    def apply(self, code: Code) -> Code:
+        start, end = self.substring
+        return Code(code.bytes[:start] + self.new_bytes + code.bytes[end:])
 
 @dataclass
 class SymbolInfo(ABC):
     """Abstract class for symbol information."""
-    document: Document
+    code: Code
     language: Language
     name: str
     range: Range
@@ -29,7 +49,7 @@ class SymbolInfo(ABC):
     # return the substring of the document that corresponds to this symbol info
     def get_substring(self) -> bytes:
         start, end = self.substring
-        return self.document.text[start:end]
+        return self.code.bytes[start:end]
     
     def get_qualified_id(self) -> QualifiedId:
         return tuple(self.scope + [self.name])
@@ -64,7 +84,7 @@ class FunctionDeclaration(SymbolInfo):
         else:
             start, end = self.substring
             body_start, body_end = self.body
-            return self.document.text[start:body_start]
+            return self.code.bytes[start:body_start]
 
 
 @dataclass
@@ -99,7 +119,7 @@ class IR:
             d = self._symbol_table[id]
             if isinstance(d, FunctionDeclaration):
                 lines.append(
-                    f"Function: {d.name}\n   language: {d.document.language}\n   range: {d.range}\n   substring: {d.substring}")
+                    f"Function: {d.name}\n   language: {d.language}\n   range: {d.range}\n   substring: {d.substring}")
                 if d.parameters != []:
                     lines.append(f"   parameters: {d.parameters}")
                 if d.return_type is not None:

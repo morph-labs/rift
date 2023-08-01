@@ -8,7 +8,7 @@ from typing import AsyncIterable, ClassVar, List, Optional, Type, Dict
 
 from rift.agents.cli_agent import Agent, ClientParams, launcher
 from rift.agents.util import ainput
-from rift.IR.ir import IR, language_from_file_extension
+from rift.IR.ir import IR, Code, language_from_file_extension
 from rift.IR.parser import FileMissingTypes, MissingType, files_missing_types_in_project, functions_missing_types_in_ir, parse_code_block
 from rift.IR.response import extract_blocks_from_response, replace_functions_from_code_blocks
 import rift.util.file_diff as file_diff
@@ -39,7 +39,7 @@ Prompt = List[Message]
 
 class MissingTypePrompt:
     @staticmethod
-    def mk_user_msg(missing_types: List[MissingType], code: bytes) -> str:
+    def mk_user_msg(missing_types: List[MissingType], code: Code) -> str:
         missing_str = ""
         n = 0
         for mt in missing_types:
@@ -50,11 +50,13 @@ class MissingTypePrompt:
         {missing_str}
 
         The code is:
+        ```
         {code}
+        ```
         """).lstrip()
 
     @staticmethod
-    def create_prompt_for_file(missing_types: List[MissingType], code: bytes) -> Prompt:
+    def create_prompt_for_file(missing_types: List[MissingType], code: Code) -> Prompt:
         system_msg = dedent("""
             Act as an expert software developer.
             For each function to modify, give an *edit block* per the example below.
@@ -110,9 +112,10 @@ class MissingTypesAgent(Agent):
                 self.console.print(f"code_blocks:\n{code_blocks}\n")
             filter_function_ids = [
                 mt.function_declaration.get_qualified_id() for mt in fmt.missing_types]
-            new_document = replace_functions_from_code_blocks(
+            edits = replace_functions_from_code_blocks(
                 code_blocks=code_blocks, document=fmt.code,
                 filter_function_ids=filter_function_ids, language=language, replace_body=False)
+            new_document = fmt.code.apply_edits(edits)
             new_ir = IR()
             parse_code_block(new_ir, new_document, language)
             new_missing_types = functions_missing_types_in_ir(new_ir)
@@ -123,7 +126,7 @@ class MissingTypesAgent(Agent):
                 self.console.print(f"new_document:\n{new_document}\n")
             path = os.path.join(self.root_dir, fmt.path_from_root)
             file_change = file_diff.get_file_change(
-                path=path, new_content=new_document.decode())
+                path=path, new_content=str(new_document))
             if self.debug:
                 self.console.print(f"file_change:\n{file_change}\n")
             file_process.file_change = file_change
@@ -164,10 +167,11 @@ class MissingTypesAgent(Agent):
             print_missing(fmt)
             tot_num_missing += count_missing(fmt.missing_types)
             if Config.include_only_functions_missing_types:
-                code = b""
+                bytes = b""
                 for mt in fmt.missing_types:
-                    code += mt.function_declaration.get_substring()
-                    code += b"\n"
+                    bytes += mt.function_declaration.get_substring()
+                    bytes += b"\n"
+                code = Code(bytes)
             else:
                 code = fmt.code
             prompt = MissingTypePrompt.create_prompt_for_file(

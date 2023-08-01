@@ -5,15 +5,14 @@ from dataclasses import dataclass, field
 from tree_sitter import Node
 from tree_sitter_languages import get_parser
 from textwrap import dedent
-from rift.IR.ir import Document, FunctionDeclaration, Language, IR, Parameter, Scope, Statement, Substring, language_from_file_extension
+from rift.IR.ir import Code, FunctionDeclaration, Language, IR, Parameter, Scope, Statement, Substring, language_from_file_extension
 
-
-def get_type(text: bytes, language: Language, node: Node) -> str:
+def get_type(code: Code, language: Language, node: Node) -> str:
     if language in ["typescript", "tsx"] and node.type == 'type_annotation' and len(node.children) >= 2:
         # TS: first child should be ":" and second child should be type
         second_child = node.children[1]
-        return text[second_child.start_byte:second_child.end_byte].decode()
-    return text[node.start_byte:node.end_byte].decode()
+        return code.bytes[second_child.start_byte:second_child.end_byte].decode()
+    return code.bytes[node.start_byte:node.end_byte].decode()
 
 
 def add_c_cpp_declarators_to_type(type: str, declarators: List[str]) -> str:
@@ -40,53 +39,53 @@ def extract_c_cpp_declarators(node: Node) -> Tuple[List[str], Node]:
     return declarators, final_node
 
 
-def get_c_cpp_parameter(text: bytes, node: Node) -> Parameter:
+def get_c_cpp_parameter(code: Code, node: Node) -> Parameter:
     declarators, final_node = extract_c_cpp_declarators(node)
     type_node = node.child_by_field_name('type')
     if type_node is None:
         raise Exception(f"Could not find type node in {node}")
-    type = text[type_node.start_byte:type_node.end_byte].decode()
+    type = code.bytes[type_node.start_byte:type_node.end_byte].decode()
     type = add_c_cpp_declarators_to_type(type, declarators)
     name = ""
     if final_node.type == 'identifier':
-        name = text[final_node.start_byte:final_node.end_byte].decode()
+        name = code.bytes[final_node.start_byte:final_node.end_byte].decode()
     return Parameter(name=name, type=type)
 
 
-def get_parameters(text: bytes, language: Language, node: Node) -> List[Parameter]:
+def get_parameters(code: Code, language: Language, node: Node) -> List[Parameter]:
     parameters: List[Parameter] = []
     for child in node.children:
         if child.type == 'identifier':
-            name = text[child.start_byte:child.end_byte].decode()
+            name = code.bytes[child.start_byte:child.end_byte].decode()
             parameters.append(Parameter(name=name))
         elif child.type == 'typed_parameter':
             name = ""
             type = ""
             for grandchild in child.children:
                 if grandchild.type == 'identifier':
-                    name = text[grandchild.start_byte:grandchild.end_byte].decode()
+                    name = code.bytes[grandchild.start_byte:grandchild.end_byte].decode()
                 elif grandchild.type == 'type':
-                    type = text[grandchild.start_byte:grandchild.end_byte].decode()
+                    type = code.bytes[grandchild.start_byte:grandchild.end_byte].decode()
             parameters.append(Parameter(name=name, type=type))
         elif child.type == 'parameter_declaration':
             if language in ['c', 'cpp']:
-                parameters.append(get_c_cpp_parameter(text, child))
+                parameters.append(get_c_cpp_parameter(code, child))
             else:
                 type = ""
                 type_node = child.child_by_field_name('type')
                 if type_node is not None:
-                    type = str(text[type_node.start_byte:type_node.end_byte])
-                name = text[child.start_byte:child.end_byte].decode()
+                    type = code.bytes[type_node.start_byte:type_node.end_byte].decode()
+                name = code.bytes[child.start_byte:child.end_byte].decode()
                 parameters.append(Parameter(name=name, type=type))
         elif child.type == 'required_parameter' or child.type == 'optional_parameter':
             name = ""
             pattern_node = child.child_by_field_name('pattern')
             if pattern_node is not None:
-                name = text[pattern_node.start_byte:pattern_node.end_byte].decode()
+                name = code.bytes[pattern_node.start_byte:pattern_node.end_byte].decode()
             type = None
             type_node = child.child_by_field_name('type')
             if type_node is not None:
-                type = get_type(text=text, language=language, node=type_node)
+                type = get_type(code=code, language=language, node=type_node)
             parameters.append(Parameter(name=name, type=type,
                               optional=child.type == 'optional_parameter'))
     return parameters
@@ -108,8 +107,7 @@ def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node
         return None
 
 
-def find_function_declarations(code_block: bytes, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
-    document = Document(text=code_block, language=language)
+def find_function_declarations(code: Code, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
     declarations: List[FunctionDeclaration] = []
     docstring: str = ""
     body_sub = None
@@ -118,9 +116,9 @@ def find_function_declarations(code_block: bytes, language: Language, node: Node
         return FunctionDeclaration(
             body=body_sub,
             docstring=docstring,
-            document=document,
+            code=code,
             language=language,
-            name=code_block[id.start_byte:id.end_byte].decode(),
+            name=code.bytes[id.start_byte:id.end_byte].decode(),
             parameters=parameters,
             range=(node.start_point, node.end_point),
             return_type=return_type,
@@ -130,7 +128,7 @@ def find_function_declarations(code_block: bytes, language: Language, node: Node
 
     previous_node = node.prev_sibling
     if previous_node is not None and previous_node.type == 'comment':
-        docstring_ = code_block[previous_node.start_byte:previous_node.end_byte].decode(
+        docstring_ = code.bytes[previous_node.start_byte:previous_node.end_byte].decode(
         )
         if docstring_.startswith('/**'):
             docstring = docstring_
@@ -144,20 +142,20 @@ def find_function_declarations(code_block: bytes, language: Language, node: Node
         name = node.child_by_field_name('name')
         if body_node is not None and name is not None:
             scope = scope + \
-                [code_block[name.start_byte:name.end_byte].decode()]
+                [code.bytes[name.start_byte:name.end_byte].decode()]
             for child in body_node.children:
                 declarations += find_function_declarations(
-                    code_block, language, child, scope)
+                    code, language, child, scope)
     elif node.type in ['decorated_definition']:  # python decorator
         defitinion = node.child_by_field_name('definition')
         if defitinion is not None:
             declarations += find_function_declarations(
-                code_block, language, defitinion, scope)
+                code, language, defitinion, scope)
     elif node.type == 'function_definition' and language in ['c', 'cpp']:
         type_node = node.child_by_field_name('type')
         type = None
         if type_node is not None:
-            type = get_type(text=code_block, language=language, node=type_node)
+            type = get_type(code=code, language=language, node=type_node)
         res = find_c_cpp_function_declarator(node)
         if res is None or type is None:
             return []
@@ -170,7 +168,7 @@ def find_function_declarations(code_block: bytes, language: Language, node: Node
                 id = child
             elif child.type == 'parameter_list':
                 parameters = get_parameters(
-                    text=code_block, language=language, node=child)
+                    code=code, language=language, node=child)
         if id is None:
             return []
         declarations.append(mk_fun_decl(
@@ -184,17 +182,17 @@ def find_function_declarations(code_block: bytes, language: Language, node: Node
         parameters_node = node.child_by_field_name('parameters')
         if parameters_node is not None:
             parameters = get_parameters(
-                text=code_block, language=language, node=parameters_node)
+                code=code, language=language, node=parameters_node)
         return_type: Optional[str] = None
         return_type_node = node.child_by_field_name('return_type')
         if return_type_node is not None:
             return_type = get_type(
-                text=code_block, language=language, node=return_type_node)
+                code=code, language=language, node=return_type_node)
         if body_node is not None and len(body_node.children) > 0 and body_node.children[0].type == 'expression_statement':
             stmt = body_node.children[0]
             if len(stmt.children) > 0 and stmt.children[0].type == 'string':
                 docstring_node = stmt.children[0]
-                docstring = code_block[docstring_node.start_byte:docstring_node.end_byte].decode(
+                docstring = code.bytes[docstring_node.start_byte:docstring_node.end_byte].decode(
                 )
         if id is not None:
             declarations.append(mk_fun_decl(
@@ -221,15 +219,15 @@ def parse_statement(node: Node) -> Statement:
     return Statement(type=node.type)
 
 
-def parse_code_block(ir: IR, code_block: bytes, language: Language) -> None:
+def parse_code_block(ir: IR, code: Code, language: Language) -> None:
     parser = get_parser(language)
-    tree = parser.parse(code_block)
+    tree = parser.parse(code.bytes)
     declarations: List[FunctionDeclaration] = []
     for node in tree.root_node.children:
         statement = parse_statement(node)
         ir.statements.append(statement)
         declarations += find_function_declarations(
-            code_block=code_block, language=language, node=node, scope=[])
+            code=code, language=language, node=node, scope=[])
     for declaration in declarations:
         ir.add_symbol(declaration)
 
@@ -282,23 +280,23 @@ def functions_missing_types_in_ir(ir: IR) -> List[MissingType]:
     return functions_missing_types
 
 
-def functions_missing_types_in_file(path: str) -> Tuple[List[MissingType], bytes, IR]:
+def functions_missing_types_in_file(path: str) -> Tuple[List[MissingType], Code, IR]:
     """Given a file path, parse the file and find function declarations that are missing types in the parameters or the return type."""
     ir = IR()
     language = language_from_file_extension(path)
     if language is None:
-        return ([], b"", ir)
+        return ([], Code(b""), ir)
     with open(path, 'r', encoding='utf-8') as f:
-        code_block = f.read().encode('utf-8')
-    parse_code_block(ir, code_block, language)
-    return (functions_missing_types_in_ir(ir), code_block, ir)
+        code = Code(f.read().encode('utf-8'))
+    parse_code_block(ir, code, language)
+    return (functions_missing_types_in_ir(ir), code, ir)
 
 
 @dataclass
 class FileMissingTypes:
     path_from_root: str
     missing_types: List[MissingType]
-    code: bytes
+    code: Code
     ir: IR
 
 
@@ -378,11 +376,11 @@ class Tests:
 
 def get_ir():
     ir = IR()
-    parse_code_block(ir, Tests.code_c, 'c')
-    parse_code_block(ir, Tests.code_js, 'javascript')
-    parse_code_block(ir, Tests.code_ts, 'typescript')
-    parse_code_block(ir, Tests.code_tsx, 'tsx')
-    parse_code_block(ir, Tests.code_py, 'python')
+    parse_code_block(ir, Code(Tests.code_c), 'c')
+    parse_code_block(ir, Code(Tests.code_js), 'javascript')
+    parse_code_block(ir, Code(Tests.code_ts), 'typescript')
+    parse_code_block(ir, Code(Tests.code_tsx), 'tsx')
+    parse_code_block(ir, Code(Tests.code_py), 'python')
     return ir
 
 
