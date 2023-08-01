@@ -25,7 +25,7 @@ class Config:
     @classmethod
     def root_dir(cls) -> str:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        return os.path.dirname(script_dir) + "/rpc2"
+        return os.path.dirname(script_dir) + "/llm"
 
 
 @dataclass
@@ -82,7 +82,11 @@ class FileProcess:
     file_missing_types: FileMissingTypes
     prompt: Prompt
     file_change: Optional[file_diff.FileChange] = None
-    new_missing: Optional[int] = None
+    new_num_missing: Optional[int] = None
+
+
+def count_missing(missing_types: List[MissingType]) -> int:
+    return sum([int(mt) for mt in missing_types])
 
 
 @dataclass
@@ -112,9 +116,9 @@ class MissingTypesAgent(Agent):
             new_ir = IR()
             parse_code_block(new_ir, new_document, language)
             new_missing_types = functions_missing_types_in_ir(new_ir)
-            new_num_missing = sum([int(mt) for mt in new_missing_types])
+            new_num_missing = count_missing(new_missing_types)
             self.console.print(
-                f"Received types for `{fmt.path_from_root}` ({new_num_missing} missing)")
+                f"Received types for `{fmt.path_from_root}` ({new_num_missing}/{count_missing(file_process.file_missing_types.missing_types)} missing)")
             if self.debug:
                 self.console.print(f"new_document:\n{new_document}\n")
             path = os.path.join(self.root_dir, fmt.path_from_root)
@@ -123,13 +127,12 @@ class MissingTypesAgent(Agent):
             if self.debug:
                 self.console.print(f"file_change:\n{file_change}\n")
             file_process.file_change = file_change
-            file_process.new_missing = new_num_missing
+            file_process.new_num_missing = new_num_missing
 
     async def process_file(self, file_process: FileProcess) -> None:
         fmt = file_process.file_missing_types
-        num_missing = sum([int(mt) for mt in fmt.missing_types])
         self.console.print(
-            f"Getting types for `{fmt.path_from_root}` ({num_missing} missing)")
+            f"Fetching types for `{fmt.path_from_root}`")
         api_key = os.environ["OPENAI_API_KEY"]
         if api_key is None:
             raise Exception("OPENAI_API_KEY environment variable not set")
@@ -154,10 +157,7 @@ class MissingTypesAgent(Agent):
                 self.console.print(f"  {mt}")
             self.console.print()
 
-        def count_missing(missing_types: List[MissingType]) -> int:
-            return sum([int(mt) for mt in missing_types])
-
-        file_processes = []
+        file_processes: List[FileProcess] = []
         tot_num_missing = 0
         files_missing_types = files_missing_types_in_project(self.root_dir)
         for fmt in files_missing_types:
@@ -188,8 +188,8 @@ class MissingTypesAgent(Agent):
         for fp in file_processes:
             if fp.file_change is not None:
                 file_changes.append(fp.file_change)
-            if fp.new_missing is not None:
-                tot_new_missing += fp.new_missing
+            if fp.new_num_missing is not None:
+                tot_new_missing += fp.new_num_missing
             else:
                 tot_new_missing += count_missing(
                     fp.file_missing_types.missing_types)

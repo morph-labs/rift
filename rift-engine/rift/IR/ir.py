@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, Tuple
 
 Language = Literal["c", "cpp", "javascript", "python", "typescript", "tsx"]
-Identifier = str
+QualifiedId = Tuple[str, ...] # e.g. ("A", "B", "foo") for function foo inside class B inside class A
 Pos = Tuple[int, int]  # (line, column)
 Range = Tuple[Pos, Pos]  # ((start_line, start_column), (end_line, end_column))
 Substring = Tuple[int, int]  # (start_byte, end_byte)
@@ -30,6 +30,9 @@ class SymbolInfo(ABC):
     def get_substring(self) -> bytes:
         start, end = self.substring
         return self.document.text[start:end]
+    
+    def get_qualified_id(self) -> QualifiedId:
+        return tuple(self.scope + [self.name])
 
 
 @dataclass
@@ -47,7 +50,6 @@ class Parameter:
         else:
             return f"{name}:{self.type}"
     __repr__ = __str__
-
 
 @dataclass
 class FunctionDeclaration(SymbolInfo):
@@ -74,21 +76,23 @@ class Statement:
 
     __repr__ = __str__
 
-
 @dataclass
 class IR:
-    _symbol_table: Dict[Identifier, SymbolInfo] = field(default_factory=dict)
+    _symbol_table: Dict[QualifiedId, SymbolInfo] = field(default_factory=dict)
     statements: List[Statement] = field(default_factory=list)
 
-    def lookup_symbol(self, identifier: Identifier) -> Optional[SymbolInfo]:
-        return self._symbol_table.get(identifier)
+    def lookup_symbol(self, qid: QualifiedId) -> Optional[SymbolInfo]:
+        return self._symbol_table.get(qid)
     
-    def add_symbol(self, identifier: Identifier, symbol: SymbolInfo) -> None:
-        self._symbol_table[identifier] = symbol
+    def search_symbol(self, name: str) -> List[SymbolInfo]:
+        return [symbol for symbol in self._symbol_table.values() if symbol.name == name]
+
+    def add_symbol(self, symbol: SymbolInfo) -> None:
+        self._symbol_table[symbol.get_qualified_id()] = symbol
 
     def get_function_declarations(self) -> List[FunctionDeclaration]:
         return [symbol for symbol in self._symbol_table.values() if isinstance(symbol, FunctionDeclaration)]
-    
+
     def dump_symbol_table(self) -> str:
         lines = []
         for id in self._symbol_table:
@@ -108,6 +112,7 @@ class IR:
                     lines.append(f"   body: {d.body}")
         output = '\n'.join(lines)
         return output
+
 
 def language_from_file_extension(file_path: str) -> Optional[Language]:
     if file_path.endswith(".c"):

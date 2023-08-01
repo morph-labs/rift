@@ -231,7 +231,7 @@ def parse_code_block(ir: IR, code_block: bytes, language: Language) -> None:
         declarations += find_function_declarations(
             code_block=code_block, language=language, node=node, scope=[])
     for declaration in declarations:
-        ir.add_symbol(declaration.name, declaration)
+        ir.add_symbol(declaration)
 
 
 @dataclass

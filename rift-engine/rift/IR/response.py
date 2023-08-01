@@ -77,9 +77,13 @@ def replace_functions_in_document(
 
     modified_document = document
     for function_declaration in function_declarations_in_document:
-        function_in_blocks = ir_blocks.lookup_symbol(function_declaration.name)
+        function_in_blocks_ = ir_blocks.search_symbol(function_declaration.name)
+        if len(function_in_blocks_) == 1 and isinstance(function_in_blocks_[0], FunctionDeclaration):
+            function_in_blocks = function_in_blocks_[0]
+        else:
+            function_in_blocks = None
         filter = True if filter_function_names is None else function_declaration.name in filter_function_names
-        if filter and isinstance(function_in_blocks, FunctionDeclaration):
+        if filter and function_in_blocks is not None:
             if replace_body:
                 new_function_text = function_in_blocks.get_substring()
                 start_replace, end_replace = function_declaration.substring
