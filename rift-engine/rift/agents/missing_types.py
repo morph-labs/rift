@@ -1,5 +1,5 @@
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import functools
 import openai
 import os
@@ -8,7 +8,7 @@ from typing import AsyncIterable, ClassVar, List, Optional, Type, Dict
 
 from rift.agents.cli_agent import Agent, ClientParams, launcher
 from rift.agents.util import ainput
-from rift.IR.ir import IR, Code, language_from_file_extension
+from rift.IR.ir import IR, Code, CodeEdit, Language, language_from_file_extension
 from rift.IR.parser import FileMissingTypes, MissingType, files_missing_types_in_project, functions_missing_types_in_ir, parse_code_block
 from rift.IR.response import extract_blocks_from_response, replace_functions_from_code_blocks
 import rift.util.file_diff as file_diff
@@ -18,9 +18,6 @@ class Config:
     temperature = 0
 
     model = "gpt-3.5-turbo-0613"  # ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k"]
-
-    # if set to True, only functions without type annotations will be included in the prompt's context
-    include_only_functions_missing_types = True
 
     @classmethod
     def root_dir(cls) -> str:
@@ -56,7 +53,16 @@ class MissingTypePrompt:
         """).lstrip()
 
     @staticmethod
-    def create_prompt_for_file(missing_types: List[MissingType], code: Code) -> Prompt:
+    def code_for_missing_types(missing_types: List[MissingType]) -> Code:
+        bytes = b""
+        for mt in missing_types:
+            bytes += mt.function_declaration.get_substring()
+            bytes += b"\n"
+        return Code(bytes)
+
+    @staticmethod
+    def create_prompt_for_file(missing_types: List[MissingType]) -> Prompt:
+        code = MissingTypePrompt.code_for_missing_types(missing_types)
         system_msg = dedent("""
             Act as an expert software developer.
             For each function to modify, give an *edit block* per the example below.
@@ -82,13 +88,19 @@ class MissingTypePrompt:
 @dataclass
 class FileProcess:
     file_missing_types: FileMissingTypes
-    prompt: Prompt
+    edits: List[CodeEdit] = field(default_factory=list)
     file_change: Optional[file_diff.FileChange] = None
     new_num_missing: Optional[int] = None
 
 
 def count_missing(missing_types: List[MissingType]) -> int:
     return sum([int(mt) for mt in missing_types])
+
+
+def get_num_missing_in_code(code: Code, language: Language) -> int:
+    ir = IR()
+    parse_code_block(ir, code, language)
+    return count_missing(functions_missing_types_in_ir(ir))
 
 
 @dataclass
@@ -101,36 +113,34 @@ class MissingTypesAgent(Agent):
     debug: bool = False
     root_dir: str = Config.root_dir()
 
-    def process_response(self, file_process: FileProcess, response: str) -> None:
+    def process_response(self, document: Code, language: Language,  missing_types: List[MissingType], response: str) -> List[CodeEdit]:
         if self.debug:
             self.console.print(f"response:\n{response}\n")
-        fmt = file_process.file_missing_types
-        language = language_from_file_extension(fmt.path_from_root)
-        if language is not None:
-            code_blocks = extract_blocks_from_response(response)
-            if self.debug:
-                self.console.print(f"code_blocks:\n{code_blocks}\n")
-            filter_function_ids = [
-                mt.function_declaration.get_qualified_id() for mt in fmt.missing_types]
-            edits = replace_functions_from_code_blocks(
-                code_blocks=code_blocks, document=fmt.code,
-                filter_function_ids=filter_function_ids, language=language, replace_body=False)
-            new_document = fmt.code.apply_edits(edits)
-            new_ir = IR()
-            parse_code_block(new_ir, new_document, language)
-            new_missing_types = functions_missing_types_in_ir(new_ir)
-            new_num_missing = count_missing(new_missing_types)
-            self.console.print(
-                f"Received types for `{fmt.path_from_root}` ({new_num_missing}/{count_missing(file_process.file_missing_types.missing_types)} missing)")
-            if self.debug:
-                self.console.print(f"new_document:\n{new_document}\n")
-            path = os.path.join(self.root_dir, fmt.path_from_root)
-            file_change = file_diff.get_file_change(
-                path=path, new_content=str(new_document))
-            if self.debug:
-                self.console.print(f"file_change:\n{file_change}\n")
-            file_process.file_change = file_change
-            file_process.new_num_missing = new_num_missing
+        code_blocks = extract_blocks_from_response(response)
+        if self.debug:
+            self.console.print(f"code_blocks:\n{code_blocks}\n")
+        filter_function_ids = [
+            mt.function_declaration.get_qualified_id() for mt in missing_types]
+        edits = replace_functions_from_code_blocks(
+            code_blocks=code_blocks, document=document,
+            filter_function_ids=filter_function_ids, language=language, replace_body=False)
+        return edits
+
+    async def code_edits_for_missing_files(self, document: Code, language: Language,  missing_types: List[MissingType]) -> List[CodeEdit]:
+        loop = asyncio.get_event_loop()
+        prompt = MissingTypePrompt.create_prompt_for_file(
+            missing_types=missing_types)
+        func = functools.partial(
+            openai.ChatCompletion.create, model=Config.model,
+            messages=prompt, temperature=Config.temperature)
+        completion = await loop.run_in_executor(None, func)
+        if not isinstance(completion, dict):
+            raise Exception(
+                f"Unexpected type for completion: {type(completion)}")
+        response: str = completion['choices'][0]['message']['content']
+        edits = self.process_response(
+            document=document, language=language, missing_types=missing_types, response=response)
+        return edits
 
     async def process_file(self, file_process: FileProcess) -> None:
         fmt = file_process.file_missing_types
@@ -141,17 +151,28 @@ class MissingTypesAgent(Agent):
             raise Exception("OPENAI_API_KEY environment variable not set")
         openai.api_key = api_key
 
-        loop = asyncio.get_event_loop()
-        func = functools.partial(
-            openai.ChatCompletion.create, model=Config.model,
-            messages=file_process.prompt, temperature=Config.temperature)
-        completion = await loop.run_in_executor(None, func)
+        language = fmt.language
+        document = fmt.code
+        missing_types = fmt.missing_types
 
-        if not isinstance(completion, dict):
-            raise Exception(
-                f"Unexpected type for completion: {type(completion)}")
-        response: str = completion['choices'][0]['message']['content']
-        self.process_response(file_process=file_process, response=response)
+        new_edits = await self.code_edits_for_missing_files(document, language, missing_types)
+
+        file_process.edits += new_edits
+        new_document = fmt.code.apply_edits(file_process.edits)
+        old_num_missing = count_missing(
+            file_process.file_missing_types.missing_types)
+        new_num_missing = get_num_missing_in_code(new_document, fmt.language)
+        self.console.print(
+            f"Received types for `{fmt.path_from_root}` ({new_num_missing}/{old_num_missing} missing)")
+        if self.debug:
+            self.console.print(f"new_document:\n{new_document}\n")
+        path = os.path.join(self.root_dir, fmt.path_from_root)
+        file_change = file_diff.get_file_change(
+            path=path, new_content=str(new_document))
+        if self.debug:
+            self.console.print(f"file_change:\n{file_change}\n")
+        file_process.file_change = file_change
+        file_process.new_num_missing = new_num_missing
 
     async def run(self) -> AsyncIterable[List[file_diff.FileChange]]:
         def print_missing(fmt: FileMissingTypes) -> None:
@@ -166,18 +187,8 @@ class MissingTypesAgent(Agent):
         for fmt in files_missing_types:
             print_missing(fmt)
             tot_num_missing += count_missing(fmt.missing_types)
-            if Config.include_only_functions_missing_types:
-                bytes = b""
-                for mt in fmt.missing_types:
-                    bytes += mt.function_declaration.get_substring()
-                    bytes += b"\n"
-                code = Code(bytes)
-            else:
-                code = fmt.code
-            prompt = MissingTypePrompt.create_prompt_for_file(
-                missing_types=fmt.missing_types, code=code)
             file_processes.append(FileProcess(
-                file_missing_types=fmt, prompt=prompt))
+                file_missing_types=fmt))
 
         await ainput("\n> Press any key to continue.\n")
 

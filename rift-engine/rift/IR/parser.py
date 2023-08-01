@@ -294,10 +294,11 @@ def functions_missing_types_in_file(path: str) -> Tuple[List[MissingType], Code,
 
 @dataclass
 class FileMissingTypes:
-    path_from_root: str
-    missing_types: List[MissingType]
-    code: Code
-    ir: IR
+    code: Code # code of the file
+    ir: IR # IR of the file
+    language: Language # language of the file
+    missing_types: List[MissingType] # list of missing types in the file
+    path_from_root: str # path of the file relative to the root directory
 
 
 def files_missing_types_in_project(root_path: str) -> List[FileMissingTypes]:
@@ -305,12 +306,14 @@ def files_missing_types_in_project(root_path: str) -> List[FileMissingTypes]:
     files_with_missing_types: List[FileMissingTypes] = []
     for root, dirs, files in os.walk(root_path):
         for file in files:
-            path = os.path.join(root, file)
-            (missing_types, code, ir) = functions_missing_types_in_file(path)
-            if missing_types != []:
-                path_from_root = os.path.relpath(path, root_path)
-                files_with_missing_types.append(
-                    FileMissingTypes(path_from_root, missing_types, code, ir))
+            language = language_from_file_extension(file)
+            if language is not None:
+                path = os.path.join(root, file)
+                (missing_types, code, ir) = functions_missing_types_in_file(path)
+                if missing_types != []:
+                    path_from_root = os.path.relpath(path, root_path)
+                    files_with_missing_types.append(
+                        FileMissingTypes(code, ir, language, missing_types, path_from_root))
     return files_with_missing_types
 
 
