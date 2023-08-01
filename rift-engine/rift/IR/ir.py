@@ -77,9 +77,37 @@ class Statement:
 
 @dataclass
 class IR:
-    symbol_table: Dict[Identifier, SymbolInfo]
+    _symbol_table: Dict[Identifier, SymbolInfo] = field(default_factory=dict)
     statements: List[Statement] = field(default_factory=list)
 
+    def lookup_symbol(self, identifier: Identifier) -> Optional[SymbolInfo]:
+        return self._symbol_table.get(identifier)
+    
+    def add_symbol(self, identifier: Identifier, symbol: SymbolInfo) -> None:
+        self._symbol_table[identifier] = symbol
+
+    def get_function_declarations(self) -> List[FunctionDeclaration]:
+        return [symbol for symbol in self._symbol_table.values() if isinstance(symbol, FunctionDeclaration)]
+    
+    def dump_symbol_table(self) -> str:
+        lines = []
+        for id in self._symbol_table:
+            d = self._symbol_table[id]
+            if isinstance(d, FunctionDeclaration):
+                lines.append(
+                    f"Function: {d.name}\n   language: {d.document.language}\n   range: {d.range}\n   substring: {d.substring}")
+                if d.parameters != []:
+                    lines.append(f"   parameters: {d.parameters}")
+                if d.return_type is not None:
+                    lines.append(f"   return_type: {d.return_type}")
+                if d.scope != []:
+                    lines.append(f"   scope: {d.scope}")
+                if d.docstring != "":
+                    lines.append(f"   docstring: {d.docstring}")
+                if d.body is not None:
+                    lines.append(f"   body: {d.body}")
+        output = '\n'.join(lines)
+        return output
 
 def language_from_file_extension(file_path: str) -> Optional[Language]:
     if file_path.endswith(".c"):

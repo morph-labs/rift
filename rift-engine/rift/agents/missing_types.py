@@ -25,7 +25,7 @@ class Config:
     @classmethod
     def root_dir(cls) -> str:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        return os.path.dirname(script_dir) + "/llm"  # + "/rpc2"
+        return os.path.dirname(script_dir) + "/rpc2"
 
 
 @dataclass
@@ -109,7 +109,7 @@ class MissingTypesAgent(Agent):
             new_document = replace_functions_from_code_blocks(
                 code_blocks=code_blocks, document=fmt.code,
                 filter_function_names=function_names, language=language, replace_body=False)
-            new_ir = IR(symbol_table={})
+            new_ir = IR()
             parse_code_block(new_ir, new_document, language)
             new_missing_types = functions_missing_types_in_ir(new_ir)
             new_num_missing = sum([int(mt) for mt in new_missing_types])

@@ -18,7 +18,7 @@ def extract_blocks_from_response(response: str) -> List[bytes]:
         List[str]: A list of strings, each string being a block of code from the response.
     """
     code_blocks: List[str] = []
-    current_block : str = ""
+    current_block: str = ""
     inside_code_block = False
     for line in response.splitlines():
         if line.startswith("```"):
@@ -45,7 +45,7 @@ def parse_code_blocks(code_blocks: List[bytes], language: Language) -> IR:
     Returns:
         IR: The intermediate representation of the parsed code blocks.
     """
-    ir = IR(symbol_table={})
+    ir = IR()
     for block in code_blocks:
         parse_code_block(ir, block, language)
     return ir
@@ -69,18 +69,15 @@ def replace_functions_in_document(
     Returns:
         str: The modified document with replaced functions.
     """
-    function_declarations_in_document: List[FunctionDeclaration] = []
-    for symbol_item in ir_doc.symbol_table.values():
-        if isinstance(symbol_item, FunctionDeclaration):
-            function_declarations_in_document.append(symbol_item)
+    function_declarations_in_document: List[FunctionDeclaration] = ir_doc.get_function_declarations(
+    )
 
     # sort the function declarations in descending order of their start position
     function_declarations_in_document.sort(key=lambda x: -x.substring[0])
 
     modified_document = document
     for function_declaration in function_declarations_in_document:
-        function_in_blocks = ir_blocks.symbol_table.get(
-            function_declaration.name)
+        function_in_blocks = ir_blocks.lookup_symbol(function_declaration.name)
         filter = True if filter_function_names is None else function_declaration.name in filter_function_names
         if filter and isinstance(function_in_blocks, FunctionDeclaration):
             if replace_body:
@@ -274,7 +271,7 @@ def test_response():
 
     language = "python"
     code_blocks3 = extract_blocks_from_response(Test.response3)
-    ir = IR(symbol_table={})
+    ir = IR()
     parse_code_block(ir, Test.code3, language)
     missing_types = functions_missing_types_in_ir(ir)
     functions_missing_types = [

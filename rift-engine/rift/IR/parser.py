@@ -231,7 +231,7 @@ def parse_code_block(ir: IR, code_block: bytes, language: Language) -> None:
         declarations += find_function_declarations(
             code_block=code_block, language=language, node=node, scope=[])
     for declaration in declarations:
-        ir.symbol_table[declaration.name] = declaration
+        ir.add_symbol(declaration.name, declaration)
 
 
 @dataclass
@@ -263,29 +263,28 @@ class MissingType:
 def functions_missing_types_in_ir(ir: IR) -> List[MissingType]:
     """Given an IR, find function declarations that are missing types in the parameters or the return type."""
     functions_missing_types: List[MissingType] = []
-    for id in ir.symbol_table:
-        d = ir.symbol_table[id]
-        if isinstance(d, FunctionDeclaration):
-            missing_parameters = []
-            missing_return = False
-            parameters = d.parameters
-            if parameters != []:
-                if (parameters[0].name == "self" or parameters[0].name == "cls") and d.language == "python" and d.scope != []:
-                    parameters = parameters[1:]
-                for p in parameters:
-                    if p.type is None:
-                        missing_parameters.append(p.name)
-            if d.return_type is None:
-                missing_return = True
-            if missing_parameters != [] or missing_return:
-                functions_missing_types.append(MissingType(
-                    function_declaration=d, parameters=missing_parameters, return_type=missing_return))
+    function_declarations = ir.get_function_declarations()
+    for d in function_declarations:
+        missing_parameters = []
+        missing_return = False
+        parameters = d.parameters
+        if parameters != []:
+            if (parameters[0].name == "self" or parameters[0].name == "cls") and d.language == "python" and d.scope != []:
+                parameters = parameters[1:]
+            for p in parameters:
+                if p.type is None:
+                    missing_parameters.append(p.name)
+        if d.return_type is None:
+            missing_return = True
+        if missing_parameters != [] or missing_return:
+            functions_missing_types.append(MissingType(
+                function_declaration=d, parameters=missing_parameters, return_type=missing_return))
     return functions_missing_types
 
 
 def functions_missing_types_in_file(path: str) -> Tuple[List[MissingType], bytes, IR]:
     """Given a file path, parse the file and find function declarations that are missing types in the parameters or the return type."""
-    ir = IR(symbol_table={})
+    ir = IR()
     language = language_from_file_extension(path)
     if language is None:
         return ([], b"", ir)
@@ -378,34 +377,13 @@ class Tests:
 
 
 def get_ir():
-    ir = IR(symbol_table={})
+    ir = IR()
     parse_code_block(ir, Tests.code_c, 'c')
     parse_code_block(ir, Tests.code_js, 'javascript')
     parse_code_block(ir, Tests.code_ts, 'typescript')
     parse_code_block(ir, Tests.code_tsx, 'tsx')
     parse_code_block(ir, Tests.code_py, 'python')
     return ir
-
-
-def symbol_table_to_str(symbol_table):
-    lines = []
-    for id in symbol_table:
-        d = symbol_table[id]
-        if isinstance(d, FunctionDeclaration):
-            lines.append(
-                f"Function: {d.name}\n   language: {d.document.language}\n   range: {d.range}\n   substring: {d.substring}")
-            if d.parameters != []:
-                lines.append(f"   parameters: {d.parameters}")
-            if d.return_type is not None:
-                lines.append(f"   return_type: {d.return_type}")
-            if d.scope != []:
-                lines.append(f"   scope: {d.scope}")
-            if d.docstring != "":
-                lines.append(f"   docstring: {d.docstring}")
-            if d.body is not None:
-                lines.append(f"   body: {d.body}")
-    output = '\n'.join(lines)
-    return output
 
 
 def test_parsing():
@@ -415,7 +393,7 @@ def test_parsing():
         old_symbol_table = f.read()
     ir = get_ir()
 
-    symbol_table_str = symbol_table_to_str(ir.symbol_table)
+    symbol_table_str = ir.dump_symbol_table()
     if symbol_table_str != old_symbol_table:
         diff = difflib.unified_diff(old_symbol_table.splitlines(keepends=True),
                                     symbol_table_str.splitlines(keepends=True))
