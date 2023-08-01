@@ -108,11 +108,11 @@ class MissingTypesAgent(Agent):
             code_blocks = extract_blocks_from_response(response)
             if self.debug:
                 self.console.print(f"code_blocks:\n{code_blocks}\n")
-            function_names = [
-                mt.function_declaration.name for mt in fmt.missing_types]
+            filter_function_ids = [
+                mt.function_declaration.get_qualified_id() for mt in fmt.missing_types]
             new_document = replace_functions_from_code_blocks(
                 code_blocks=code_blocks, document=fmt.code,
-                filter_function_names=function_names, language=language, replace_body=False)
+                filter_function_ids=filter_function_ids, language=language, replace_body=False)
             new_ir = IR()
             parse_code_block(new_ir, new_document, language)
             new_missing_types = functions_missing_types_in_ir(new_ir)

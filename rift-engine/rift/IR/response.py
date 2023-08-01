@@ -3,7 +3,7 @@ import os
 import re
 from textwrap import dedent
 from typing import List, Optional
-from rift.IR.ir import FunctionDeclaration, IR, Language
+from rift.IR.ir import FunctionDeclaration, IR, Language, QualifiedId
 from rift.IR.parser import functions_missing_types_in_ir, parse_code_block
 
 
@@ -56,7 +56,7 @@ def replace_functions_in_document(
     ir_blocks: IR,
     document: bytes,
     replace_body: bool,
-    filter_function_names: Optional[List[str]] = None,
+    filter_function_ids: Optional[List[QualifiedId]] = None,
 ) -> bytes:
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
@@ -77,12 +77,14 @@ def replace_functions_in_document(
 
     modified_document = document
     for function_declaration in function_declarations_in_document:
-        function_in_blocks_ = ir_blocks.search_symbol(function_declaration.name)
+        function_in_blocks_ = ir_blocks.search_symbol(
+            function_declaration.name)
         if len(function_in_blocks_) == 1 and isinstance(function_in_blocks_[0], FunctionDeclaration):
             function_in_blocks = function_in_blocks_[0]
         else:
             function_in_blocks = None
-        filter = True if filter_function_names is None else function_declaration.name in filter_function_names
+        filter = True if filter_function_ids is None else function_declaration.get_qualified_id(
+        ) in filter_function_ids
         if filter and function_in_blocks is not None:
             if replace_body:
                 new_function_text = function_in_blocks.get_substring()
@@ -113,7 +115,7 @@ def replace_functions_in_document(
 def replace_functions_from_code_blocks(
     code_blocks: List[bytes], document: bytes,
         language: Language, replace_body: bool,
-        filter_function_names: Optional[List[str]] = None,
+        filter_function_ids: Optional[List[QualifiedId]] = None,
 ) -> bytes:
     """
     Generates a new document by replacing functions in the original document with the corresponding functions
@@ -129,7 +131,7 @@ def replace_functions_from_code_blocks(
     """
     ir_blocks = parse_code_blocks(code_blocks=code_blocks, language=language)
     ir_doc = parse_code_blocks(code_blocks=[document], language=language)
-    return replace_functions_in_document(filter_function_names=filter_function_names, ir_doc=ir_doc, ir_blocks=ir_blocks, document=document, replace_body=replace_body)
+    return replace_functions_in_document(filter_function_ids=filter_function_ids, ir_doc=ir_doc, ir_blocks=ir_blocks, document=document, replace_body=replace_body)
 
 ############################
 #### TESTS FROM HERE ON ####
@@ -278,11 +280,11 @@ def test_response():
     ir = IR()
     parse_code_block(ir, Test.code3, language)
     missing_types = functions_missing_types_in_ir(ir)
-    functions_missing_types = [
-        mt.function_declaration.name for mt in missing_types]
+    filter_function_ids = [
+        mt.function_declaration.get_qualified_id() for mt in missing_types]
     new_document3 = replace_functions_from_code_blocks(
         code_blocks=code_blocks3, document=Test.code3,
-        filter_function_names=functions_missing_types,
+        filter_function_ids=filter_function_ids,
         language=language, replace_body=False)
     new_test_output += f"\n\nNew document3:\n```\n{new_document3.decode()}```"
 
