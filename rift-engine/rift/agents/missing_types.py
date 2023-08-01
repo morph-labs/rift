@@ -19,6 +19,8 @@ class Config:
 
     model = "gpt-3.5-turbo-0613"  # ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k"]
 
+    max_size_group_missing_types = 10  # maximum size for a group of missing types
+
     @classmethod
     def root_dir(cls) -> str:
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -130,9 +132,10 @@ class MissingTypesAgent(Agent):
         loop = asyncio.get_event_loop()
         prompt = MissingTypePrompt.create_prompt_for_file(
             missing_types=missing_types)
-        func = functools.partial(
-            openai.ChatCompletion.create, model=Config.model,
-            messages=prompt, temperature=Config.temperature)
+        # Partially apply parameters to ChatCompletion.create for later execution
+        func = functools.partial(openai.ChatCompletion.create, model=Config.model,
+                                 messages=prompt, temperature=Config.temperature)
+        # Run OpenAI API call concurrently to avoid blocking event loop
         completion = await loop.run_in_executor(None, func)
         if not isinstance(completion, dict):
             raise Exception(
@@ -141,6 +144,28 @@ class MissingTypesAgent(Agent):
         edits = self.process_response(
             document=document, language=language, missing_types=missing_types, response=response)
         return edits
+
+    def split_missing_types_in_groups(self, missing_types: List[MissingType]) -> List[List[MissingType]]:
+        """Split the missing types in groups of at most Config.max_size_group_missing_types,
+        and that don't contain functions with the same name."""
+        groups_of_missing_types: List[List[MissingType]] = []
+        group: List[MissingType] = []
+        for mt in missing_types:
+            group.append(mt)
+            do_split = len(group) == Config.max_size_group_missing_types
+
+            # also split if a function with the same name is in the current group (e.g. from another class)
+            for mt2 in group:
+                if mt.function_declaration.name == mt2.function_declaration.name:
+                    do_split = True
+                    break
+
+            if do_split:
+                groups_of_missing_types.append(group)
+                group = []
+        if len(group) > 0:
+            groups_of_missing_types.append(group)
+        return groups_of_missing_types
 
     async def process_file(self, file_process: FileProcess) -> None:
         fmt = file_process.file_missing_types
@@ -153,11 +178,12 @@ class MissingTypesAgent(Agent):
 
         language = fmt.language
         document = fmt.code
-        missing_types = fmt.missing_types
+        groups_of_missing_types = self.split_missing_types_in_groups(
+            fmt.missing_types)
 
-        new_edits = await self.code_edits_for_missing_files(document, language, missing_types)
-
-        file_process.edits += new_edits
+        for missing_types in groups_of_missing_types:
+            new_edits = await self.code_edits_for_missing_files(document, language, missing_types)
+            file_process.edits += new_edits
         new_document = fmt.code.apply_edits(file_process.edits)
         old_num_missing = count_missing(
             file_process.file_missing_types.missing_types)
