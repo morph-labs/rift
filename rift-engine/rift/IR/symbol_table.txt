@@ -55,42 +55,42 @@ Function: tsx
    body: (38, 50)
 Function: py
    language: python
-   range: ((1, 4), (3, 16))
-   substring: (13, 77)
+   range: ((6, 4), (8, 16))
+   substring: (70, 134)
    parameters: [x, y]
    scope: ['A']
    docstring: """This is a docstring"""
-   body: (35, 77)
+   body: (92, 134)
 Class: A
    language: python
-   range: ((0, 0), (3, 16))
-   substring: (0, 77)
+   range: ((0, 0), (8, 16))
+   substring: (0, 134)
 Function: insert_code
    language: python
-   range: ((6, 4), (9, 12))
-   substring: (111, 249)
+   range: ((11, 4), (14, 12))
+   substring: (168, 306)
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
    scope: ['B']
-   body: (245, 249)
+   body: (302, 306)
 Function: load
    language: python
-   range: ((10, 4), (11, 12))
-   substring: (254, 291)
+   range: ((15, 4), (16, 12))
+   substring: (311, 348)
    parameters: [self, v]
    scope: ['B']
-   body: (287, 291)
+   body: (344, 348)
 Function: nested
    language: python
-   range: ((13, 8), (14, 16))
-   substring: (318, 348)
+   range: ((18, 8), (19, 16))
+   substring: (375, 405)
    scope: ['B', 'Nested']
-   body: (344, 348)
+   body: (401, 405)
 Class: Nested
    language: python
-   range: ((12, 4), (14, 16))
-   substring: (296, 348)
+   range: ((17, 4), (19, 16))
+   substring: (353, 405)
 Class: B
    language: python
-   range: ((4, 0), (14, 16))
-   substring: (78, 348)
+   range: ((9, 0), (19, 16))
+   substring: (135, 405)

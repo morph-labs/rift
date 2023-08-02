@@ -113,7 +113,6 @@ def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node
 
 
 def find_declaration(code: Code, ir: IR, language: Language, node: Node, scope: Scope) -> Optional[SymbolInfo]:
-    declarations: List[FunctionDeclaration] = []
     docstring: str = ""
     body_sub = None
 
@@ -389,6 +388,11 @@ class Tests:
     """).lstrip().encode("utf-8")
     code_py = dedent("""
         class A:
+            \"\"\"
+            This is a docstring
+            for class A
+            \"\"\"
+
             def py(x, y):
                 \"\"\"This is a docstring\"\"\"
                 return x
