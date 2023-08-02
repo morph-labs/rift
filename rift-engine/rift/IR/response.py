@@ -3,8 +3,8 @@ import os
 import re
 from textwrap import dedent
 from typing import List, Optional
-from rift.IR.ir import Code, CodeEdit, FunctionDeclaration, IR, Language, QualifiedId
-from rift.IR.parser import functions_missing_types_in_ir, parse_code_block
+from rift.IR.ir import Code, CodeEdit, FunctionDeclaration, File, Language, QualifiedId
+from rift.IR.parser import functions_missing_types_in_path, parse_code_block
 
 
 def extract_blocks_from_response(response: str) -> List[Code]:
@@ -34,7 +34,7 @@ def extract_blocks_from_response(response: str) -> List[Code]:
     return code_blocks
 
 
-def parse_code_blocks(code_blocks: List[Code], language: Language) -> IR:
+def parse_code_blocks(code_blocks: List[Code], language: Language) -> File:
     """
     Parses code blocks and returns intermediate representation (IR).
 
@@ -45,15 +45,15 @@ def parse_code_blocks(code_blocks: List[Code], language: Language) -> IR:
     Returns:
         IR: The intermediate representation of the parsed code blocks.
     """
-    ir = IR()
+    ir = File()
     for block in code_blocks:
         parse_code_block(ir, block, language)
     return ir
 
 
 def replace_functions_in_document(
-    ir_doc: IR,
-    ir_blocks: IR,
+    ir_doc: File,
+    ir_blocks: File,
     document: Code,
     replace_body: bool,
     filter_function_ids: Optional[List[QualifiedId]] = None,
@@ -261,9 +261,9 @@ def test_response():
 
     language = "python"
     code_blocks3 = extract_blocks_from_response(Test.response3)
-    ir = IR()
+    ir = File()
     parse_code_block(ir, Code(Test.code3), language)
-    missing_types = functions_missing_types_in_ir(ir)
+    missing_types = functions_missing_types_in_path(ir)
     filter_function_ids = [
         mt.function_declaration.get_qualified_id() for mt in missing_types]
     document3 = Code(Test.code3)

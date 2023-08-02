@@ -114,9 +114,10 @@ class ClassDeclaration(SymbolInfo):
 
 
 @dataclass
-class IR:
-    _symbol_table: Dict[QualifiedId, SymbolInfo] = field(default_factory=dict)
+class File:
+    path: str
     statements: List[Statement] = field(default_factory=list)
+    _symbol_table: Dict[QualifiedId, SymbolInfo] = field(default_factory=dict)
 
     def lookup_symbol(self, qid: QualifiedId) -> Optional[SymbolInfo]:
         return self._symbol_table.get(qid)
@@ -155,8 +156,7 @@ class IR:
         output = '\n'.join(lines)
         return output
     
-    def dump_ir_map(self) -> str:
-        lines = []
+    def dump_map(self, indent:int, lines: List[str]) -> None:
         def dump_symbol(symbol: SymbolInfo, indent: int) -> None:
             if isinstance(symbol, FunctionDeclaration):
                 lines.append(f"{' ' * indent}Function: {symbol.name}")
@@ -172,10 +172,24 @@ class IR:
             else:
                 pass
         for statement in self.statements:
-            dump_statement(statement, 0)
-        output = '\n'.join(lines)
-        return output
+            dump_statement(statement, indent)
 
+@dataclass
+class Project:
+    _files: List[File] = field(default_factory=list)
+
+    def add_file(self, file: File):
+        self._files.append(file)
+    
+    def get_files(self):
+        return self._files
+    
+    def dump_map(self, indent:int) -> str:
+        lines = []
+        for file in self.get_files():
+            lines.append(f"{' ' * indent}File: {file.path}")
+            file.dump_map(indent+2, lines)
+        return '\n'.join(lines)
 
 def language_from_file_extension(file_path: str) -> Optional[Language]:
     if file_path.endswith(".c"):

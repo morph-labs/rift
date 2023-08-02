@@ -5,7 +5,9 @@ from dataclasses import dataclass, field
 from tree_sitter import Node
 from tree_sitter_languages import get_parser
 from textwrap import dedent
-from rift.IR.ir import ClassDeclaration, Code, Declaration, FunctionDeclaration, Language, IR, Parameter, Scope, Statement, Substring, SymbolInfo, language_from_file_extension
+from rift.IR.ir import \
+    ClassDeclaration, Code, Declaration, File, FunctionDeclaration, Language, Parameter, Project, Scope, Statement, SymbolInfo,\
+    language_from_file_extension
 
 
 def get_type(code: Code, language: Language, node: Node) -> str:
@@ -112,7 +114,7 @@ def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node
         return None
 
 
-def find_declaration(code: Code, ir: IR, language: Language, node: Node, scope: Scope) -> Optional[SymbolInfo]:
+def find_declaration(code: Code, file: File, language: Language, node: Node, scope: Scope) -> Optional[SymbolInfo]:
     docstring: str = ""
     body_sub = None
 
@@ -160,7 +162,7 @@ def find_declaration(code: Code, ir: IR, language: Language, node: Node, scope: 
             scope = scope + \
                 [code.bytes[name.start_byte:name.end_byte].decode()]
             body = process_body(
-                code=code, ir=ir, language=language, node=body_node, scope=scope)
+                code=code, file=file, language=language, node=body_node, scope=scope)
             docstring = ""
             # see if the first child is a string expression statemetns, and if so, use it as the docstring
             if body_node.child_count > 0 and body_node.children[0].type == 'expression_statement':
@@ -170,13 +172,13 @@ def find_declaration(code: Code, ir: IR, language: Language, node: Node, scope: 
                     docstring = code.bytes[docstring_node.start_byte:docstring_node.end_byte].decode(
                     )
             declaration = mk_class_decl(id=name, body=body)
-            ir.add_symbol(declaration)
+            file.add_symbol(declaration)
             return declaration
     elif node.type in ['decorated_definition']:  # python decorator
         defitinion = node.child_by_field_name('definition')
         if defitinion is not None:
             return find_declaration(
-                code, ir, language, defitinion, scope)
+                code, file, language, defitinion, scope)
     elif node.type == 'function_definition' and language in ['c', 'cpp']:
         type_node = node.child_by_field_name('type')
         type = None
@@ -199,7 +201,7 @@ def find_declaration(code: Code, ir: IR, language: Language, node: Node, scope: 
             return None
         declaration = mk_fun_decl(
             id=id, parameters=parameters, return_type=type)
-        ir.add_symbol(declaration)
+        file.add_symbol(declaration)
         return declaration
     elif node.type in ['function_definition', 'function_declaration']:
         id: Optional[Node] = None
@@ -225,7 +227,7 @@ def find_declaration(code: Code, ir: IR, language: Language, node: Node, scope: 
         if id is not None:
             declaration = (mk_fun_decl(
                 id=id, parameters=parameters, return_type=return_type))
-            ir.add_symbol(declaration)
+            file.add_symbol(declaration)
             return declaration
 
     elif node.type in ['lexical_declaration', 'variable_declaration']:
@@ -242,31 +244,31 @@ def find_declaration(code: Code, ir: IR, language: Language, node: Node, scope: 
                         is_arrow_function = True
                 if is_arrow_function and id is not None:
                     declaration = mk_fun_decl(id=id)
-                    ir.add_symbol(declaration)
+                    file.add_symbol(declaration)
                     return declaration
 
 
-def process_statement(code: Code, ir: IR, language: Language, node: Node, scope: Scope) -> Statement:
+def process_statement(code: Code, file: File, language: Language, node: Node, scope: Scope) -> Statement:
     declaration = find_declaration(
-        code=code, ir=ir, language=language, node=node, scope=scope)
+        code=code, file=file, language=language, node=node, scope=scope)
     if declaration is not None:
         return Declaration(type=node.type, symbol=declaration)
     else:
         return Statement(type=node.type)
 
 
-def process_body(code: Code, ir: IR, language: Language, node: Node, scope: Scope) -> List[Statement]:
-    return [process_statement(code=code, ir=ir, language=language, node=child, scope=scope)
+def process_body(code: Code, file: File, language: Language, node: Node, scope: Scope) -> List[Statement]:
+    return [process_statement(code=code, file=file, language=language, node=child, scope=scope)
             for child in node.children]
 
 
-def parse_code_block(ir: IR, code: Code, language: Language) -> None:
+def parse_code_block(file: File, code: Code, language: Language) -> None:
     parser = get_parser(language)
     tree = parser.parse(code.bytes)
     for node in tree.root_node.children:
         statement = process_statement(
-            code=code, ir=ir, language=language, node=node, scope=[])
-        ir.statements.append(statement)
+            code=code, file=file, language=language, node=node, scope=[])
+        file.statements.append(statement)
 
 
 @dataclass
@@ -295,10 +297,10 @@ class MissingType:
         return len(self.parameters) + int(self.return_type)
 
 
-def functions_missing_types_in_ir(ir: IR) -> List[MissingType]:
+def functions_missing_types_in_file(file: File) -> List[MissingType]:
     """Given an IR, find function declarations that are missing types in the parameters or the return type."""
     functions_missing_types: List[MissingType] = []
-    function_declarations = ir.get_function_declarations()
+    function_declarations = file.get_function_declarations()
     for d in function_declarations:
         missing_parameters = []
         missing_return = False
@@ -317,22 +319,26 @@ def functions_missing_types_in_ir(ir: IR) -> List[MissingType]:
     return functions_missing_types
 
 
-def functions_missing_types_in_file(path: str) -> Tuple[List[MissingType], Code, IR]:
+def functions_missing_types_in_path(path: str) -> Tuple[List[MissingType], Code, File]:
     """Given a file path, parse the file and find function declarations that are missing types in the parameters or the return type."""
-    ir = IR()
+    file = File(path)
     language = language_from_file_extension(path)
+    missing_types: List[MissingType] = []
     if language is None:
-        return ([], Code(b""), ir)
-    with open(path, 'r', encoding='utf-8') as f:
-        code = Code(f.read().encode('utf-8'))
-    parse_code_block(ir, code, language)
-    return (functions_missing_types_in_ir(ir), code, ir)
+        missing_types = []
+        code = Code(b"")
+    else:
+        with open(path, 'r', encoding='utf-8') as f:
+            code = Code(f.read().encode('utf-8'))
+        parse_code_block(file, code, language)
+        missing_types = functions_missing_types_in_file(file)
+    return (missing_types, code, file)
 
 
 @dataclass
 class FileMissingTypes:
     code: Code  # code of the file
-    ir: IR  # IR of the file
+    ir: File  # IR of the file
     language: Language  # language of the file
     missing_types: List[MissingType]  # list of missing types in the file
     path_from_root: str  # path of the file relative to the root directory
@@ -346,7 +352,7 @@ def files_missing_types_in_project(root_path: str) -> List[FileMissingTypes]:
             language = language_from_file_extension(file)
             if language is not None:
                 path = os.path.join(root, file)
-                (missing_types, code, ir) = functions_missing_types_in_file(path)
+                (missing_types, code, ir) = functions_missing_types_in_path(path)
                 if missing_types != []:
                     path_from_root = os.path.relpath(path, root_path)
                     files_with_missing_types.append(
@@ -419,14 +425,23 @@ class Tests:
     """).lstrip().encode("utf-8")
 
 
-def get_ir():
-    ir = IR()
-    parse_code_block(ir, Code(Tests.code_c), 'c')
-    parse_code_block(ir, Code(Tests.code_js), 'javascript')
-    parse_code_block(ir, Code(Tests.code_ts), 'typescript')
-    parse_code_block(ir, Code(Tests.code_tsx), 'tsx')
-    parse_code_block(ir, Code(Tests.code_py), 'python')
-    return ir
+def get_test_project():
+    project = Project()
+    def new_file(path):
+        file = File(path)
+        project.add_file(file)
+        return file
+    file_c = new_file("test.c")
+    parse_code_block(file_c, Code(Tests.code_c), 'c')
+    file_js = new_file("test.js")
+    parse_code_block(file_js, Code(Tests.code_js), 'javascript')
+    file_ts = new_file("test.ts")
+    parse_code_block(file_ts, Code(Tests.code_ts), 'typescript')
+    file_tsx = new_file("test.tsx")
+    parse_code_block(file_tsx, Code(Tests.code_tsx), 'tsx')
+    file_py = new_file("test.py")
+    parse_code_block(file_py, Code(Tests.code_py), 'python')
+    return project
 
 
 def test_parsing():
@@ -434,11 +449,15 @@ def test_parsing():
     symbol_table_file = os.path.join(script_dir, 'symbol_table.txt')
     with open(symbol_table_file, 'r') as f:
         old_symbol_table = f.read()
-    ir = get_ir()
+    project = get_test_project()
 
-    symbol_table_str = ir.dump_symbol_table()
-    ir_map_str = ir.dump_ir_map()
-    symbol_table_str += "\n\n==Map==\n" + ir_map_str
+    lines = []
+    for file in project.get_files():
+        lines.append(f"=== Symbol Table for {file.path} ===")
+        lines.append(file.dump_symbol_table())
+    symbol_table_str = '\n'.join(lines)
+    ir_map_str = project.dump_map(indent=0)
+    symbol_table_str += "\n\n=== Project Map ===\n" + ir_map_str
     if symbol_table_str != old_symbol_table:
         diff = difflib.unified_diff(old_symbol_table.splitlines(keepends=True),
                                     symbol_table_str.splitlines(keepends=True))
@@ -458,14 +477,17 @@ def test_missing_types():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     missing_types_file = os.path.join(script_dir, 'missing_types.txt')
     with open(missing_types_file, 'r') as f:
-        old_missing_types = f.read()
+        old_missing_types_str = f.read()
 
-    ir = get_ir()
-    missing_types = functions_missing_types_in_ir(ir)
-    new_missing_types = '\n'.join([str(mt) for mt in missing_types])
-    if new_missing_types != old_missing_types:
-        diff = difflib.unified_diff(old_missing_types.splitlines(keepends=True),
-                                    new_missing_types.splitlines(keepends=True))
+    project = get_test_project()
+    new_missing_types = []
+    for file in project.get_files():
+        missing_types = functions_missing_types_in_file(file)
+        new_missing_types += ([str(mt) for mt in missing_types])
+    new_missing_types_str = '\n'.join(new_missing_types)
+    if new_missing_types_str != old_missing_types_str:
+        diff = difflib.unified_diff(old_missing_types_str.splitlines(keepends=True),
+                                    new_missing_types_str.splitlines(keepends=True))
         diff_output = ''.join(diff)
 
         # if you want to update the missing types, set this to True
@@ -473,7 +495,7 @@ def test_missing_types():
         if update_missing_types:
             print("Updating Missing Types...")
             with open(missing_types_file, 'w') as f:
-                f.write(new_missing_types)
+                f.write(new_missing_types_str)
 
         assert update_missing_types, f"Missing Types have changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
 

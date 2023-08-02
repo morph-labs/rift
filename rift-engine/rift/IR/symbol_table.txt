@@ -1,3 +1,4 @@
+=== Symbol Table for test.c ===
 Function: aa
    language: c
    range: ((0, 0), (2, 1))
@@ -24,6 +25,7 @@ Function: main
    substring: (112, 169)
    return_type: int
    body: (123, 169)
+=== Symbol Table for test.js ===
 Function: f1
    language: javascript
    range: ((1, 0), (1, 27))
@@ -35,6 +37,7 @@ Function: f2
    range: ((3, 0), (3, 18))
    substring: (93, 111)
    docstring: /** Some docstring on an arrow function */
+=== Symbol Table for test.ts ===
 Function: ts
    language: typescript
    range: ((1, 0), (1, 56))
@@ -48,11 +51,13 @@ Function: ts2
    substring: (82, 126)
    return_type: array<number>
    body: (113, 126)
+=== Symbol Table for test.tsx ===
 Function: tsx
    language: tsx
    range: ((1, 0), (1, 27))
    substring: (23, 50)
    body: (38, 50)
+=== Symbol Table for test.py ===
 Function: py
    language: python
    range: ((6, 4), (8, 16))
@@ -99,20 +104,25 @@ Class: B
    range: ((9, 0), (19, 16))
    substring: (135, 405)
 
-==Map==
-Function: aa
-Function: foo
-Function: bb
-Function: main
-Function: f1
-Function: f2
-Function: ts
-Function: ts2
-Function: tsx
-Class: A
-  Function: py
-Class: B
-  Function: insert_code
-  Function: load
-  Class: Nested
-    Function: nested
+=== Project Map ===
+File: test.c
+  Function: aa
+  Function: foo
+  Function: bb
+  Function: main
+File: test.js
+  Function: f1
+  Function: f2
+File: test.ts
+  Function: ts
+  Function: ts2
+File: test.tsx
+  Function: tsx
+File: test.py
+  Class: A
+    Function: py
+  Class: B
+    Function: insert_code
+    Function: load
+    Class: Nested
+      Function: nested
