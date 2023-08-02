@@ -437,6 +437,8 @@ def test_parsing():
     ir = get_ir()
 
     symbol_table_str = ir.dump_symbol_table()
+    ir_map_str = ir.dump_ir_map()
+    symbol_table_str += "\n\n==Map==\n" + ir_map_str
     if symbol_table_str != old_symbol_table:
         diff = difflib.unified_diff(old_symbol_table.splitlines(keepends=True),
                                     symbol_table_str.splitlines(keepends=True))

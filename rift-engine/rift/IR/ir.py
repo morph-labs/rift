@@ -154,6 +154,27 @@ class IR:
                     lines.append(f"   docstring: {d.docstring}")
         output = '\n'.join(lines)
         return output
+    
+    def dump_ir_map(self) -> str:
+        lines = []
+        def dump_symbol(symbol: SymbolInfo, indent: int) -> None:
+            if isinstance(symbol, FunctionDeclaration):
+                lines.append(f"{' ' * indent}Function: {symbol.name}")
+            elif isinstance(symbol, ClassDeclaration):
+                lines.append(f"{' ' * indent}Class: {symbol.name}")
+                for statement in symbol.body:
+                    dump_statement(statement, indent + 2)
+            else:
+                raise NotImplementedError
+        def dump_statement(statement: Statement, indent: int) -> None:
+            if isinstance(statement, Declaration):
+                dump_symbol(statement.symbol, indent)
+            else:
+                pass
+        for statement in self.statements:
+            dump_statement(statement, 0)
+        output = '\n'.join(lines)
+        return output
 
 
 def language_from_file_extension(file_path: str) -> Optional[Language]:

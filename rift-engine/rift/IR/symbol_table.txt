@@ -98,3 +98,21 @@ Class: B
    language: python
    range: ((9, 0), (19, 16))
    substring: (135, 405)
+
+==Map==
+Function: aa
+Function: foo
+Function: bb
+Function: main
+Function: f1
+Function: f2
+Function: ts
+Function: ts2
+Function: tsx
+Class: A
+  Function: py
+Class: B
+  Function: insert_code
+  Function: load
+  Class: Nested
+    Function: nested
