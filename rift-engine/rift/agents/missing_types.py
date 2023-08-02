@@ -5,12 +5,13 @@ import openai
 import os
 from textwrap import dedent
 from typing import AsyncIterable, ClassVar, List, Optional, Type, Dict
+from rift.ir.parser import functions_missing_types_in_file
 
 from rift.agents.cli_agent import Agent, ClientParams, launcher
 from rift.agents.util import ainput
-from rift.IR.ir import File, Code, CodeEdit, Language, language_from_file_extension
-from rift.IR.parser import FileMissingTypes, MissingType, files_missing_types_in_project, functions_missing_types_in_path, parse_code_block
-from rift.IR.response import extract_blocks_from_response, replace_functions_from_code_blocks
+from rift.ir.IR import File, Code, CodeEdit, Language, language_from_file_extension
+from rift.ir.parser import FileMissingTypes, MissingType, files_missing_types_in_project, functions_missing_types_in_path, parse_code_block
+from rift.ir.response import extract_blocks_from_response, replace_functions_from_code_blocks
 import rift.util.file_diff as file_diff
 
 
@@ -100,9 +101,9 @@ def count_missing(missing_types: List[MissingType]) -> int:
 
 
 def get_num_missing_in_code(code: Code, language: Language) -> int:
-    ir = File()
-    parse_code_block(ir, code, language)
-    return count_missing(functions_missing_types_in_path(ir))
+    file = File("dummy")
+    parse_code_block(file, code, language)
+    return count_missing(functions_missing_types_in_file(file))
 
 
 @dataclass

@@ -3,8 +3,9 @@ import os
 import re
 from textwrap import dedent
 from typing import List, Optional
-from rift.IR.ir import Code, CodeEdit, FunctionDeclaration, File, Language, QualifiedId
-from rift.IR.parser import functions_missing_types_in_path, parse_code_block
+from rift.ir.parser import functions_missing_types_in_file
+from rift.ir.IR import Code, CodeEdit, FunctionDeclaration, File, Language, QualifiedId
+from rift.ir.parser import functions_missing_types_in_path, parse_code_block
 
 
 def extract_blocks_from_response(response: str) -> List[Code]:
@@ -45,7 +46,7 @@ def parse_code_blocks(code_blocks: List[Code], language: Language) -> File:
     Returns:
         IR: The intermediate representation of the parsed code blocks.
     """
-    ir = File()
+    ir = File("response")
     for block in code_blocks:
         parse_code_block(ir, block, language)
     return ir
@@ -261,9 +262,9 @@ def test_response():
 
     language = "python"
     code_blocks3 = extract_blocks_from_response(Test.response3)
-    ir = File()
+    ir = File("response3")
     parse_code_block(ir, Code(Test.code3), language)
-    missing_types = functions_missing_types_in_path(ir)
+    missing_types = functions_missing_types_in_file(ir)
     filter_function_ids = [
         mt.function_declaration.get_qualified_id() for mt in missing_types]
     document3 = Code(Test.code3)

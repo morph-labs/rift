@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from tree_sitter import Node
 from tree_sitter_languages import get_parser
 from textwrap import dedent
-from rift.IR.ir import \
+from rift.ir.IR import \
     ClassDeclaration, Code, Declaration, File, FunctionDeclaration, Language, Parameter, Project, Scope, Statement, SymbolInfo,\
     language_from_file_extension
 
