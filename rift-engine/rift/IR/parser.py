@@ -134,6 +134,7 @@ def find_declaration(code: Code, ir: IR, language: Language, node: Node, scope: 
         return ClassDeclaration(
             body=body,
             code=code,
+            docstring=docstring,
             language=language,
             name=code.bytes[id.start_byte:id.end_byte].decode(),
             range=(node.start_point, node.end_point),
@@ -160,6 +161,14 @@ def find_declaration(code: Code, ir: IR, language: Language, node: Node, scope: 
                 [code.bytes[name.start_byte:name.end_byte].decode()]
             body = process_body(
                 code=code, ir=ir, language=language, node=body_node, scope=scope)
+            docstring = ""
+            # see if the first child is a string expression statemetns, and if so, use it as the docstring
+            if body_node.child_count > 0 and body_node.children[0].type == 'expression_statement':
+                stmt = body_node.children[0]
+                if len(stmt.children) > 0 and stmt.children[0].type == 'string':
+                    docstring_node = stmt.children[0]
+                    docstring = code.bytes[docstring_node.start_byte:docstring_node.end_byte].decode(
+                    )
             declaration = mk_class_decl(id=name, body=body)
             ir.add_symbol(declaration)
             return declaration

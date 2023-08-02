@@ -65,6 +65,10 @@ Class: A
    language: python
    range: ((0, 0), (8, 16))
    substring: (0, 134)
+   docstring: """
+    This is a docstring
+    for class A
+    """
 Function: insert_code
    language: python
    range: ((11, 4), (14, 12))

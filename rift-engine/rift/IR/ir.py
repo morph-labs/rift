@@ -77,6 +77,7 @@ class Parameter:
 class SymbolInfo(ABC):
     """Abstract class for symbol information."""
     code: Code
+    docstring: str
     language: Language
     name: str
     range: Range
@@ -95,7 +96,6 @@ class SymbolInfo(ABC):
 @dataclass
 class FunctionDeclaration(SymbolInfo):
     body_sub: Optional[Substring]
-    docstring: str
     parameters: List[Parameter]
     return_type: Optional[str] = None
 
@@ -150,6 +150,8 @@ class IR:
             elif isinstance(d, ClassDeclaration):
                 lines.append(
                     f"Class: {d.name}\n   language: {d.language}\n   range: {d.range}\n   substring: {d.substring}")
+                if d.docstring != "":
+                    lines.append(f"   docstring: {d.docstring}")
         output = '\n'.join(lines)
         return output
 
