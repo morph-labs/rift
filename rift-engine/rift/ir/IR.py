@@ -115,7 +115,7 @@ class ClassDeclaration(SymbolInfo):
 
 @dataclass
 class File:
-    path: str
+    path: str # path of the file relative to the root directory
     statements: List[Statement] = field(default_factory=list)
     _symbol_table: Dict[QualifiedId, SymbolInfo] = field(default_factory=dict)
 
@@ -176,6 +176,7 @@ class File:
 
 @dataclass
 class Project:
+    root_path: str
     _files: List[File] = field(default_factory=list)
 
     def add_file(self, file: File):

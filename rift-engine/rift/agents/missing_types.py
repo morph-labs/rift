@@ -171,7 +171,7 @@ class MissingTypesAgent(Agent):
     async def process_file(self, file_process: FileProcess) -> None:
         fmt = file_process.file_missing_types
         self.console.print(
-            f"Fetching types for `{fmt.path_from_root}`")
+            f"Fetching types for `{fmt.file.path}`")
         api_key = os.environ["OPENAI_API_KEY"]
         if api_key is None:
             raise Exception("OPENAI_API_KEY environment variable not set")
@@ -190,10 +190,10 @@ class MissingTypesAgent(Agent):
             file_process.file_missing_types.missing_types)
         new_num_missing = get_num_missing_in_code(new_document, fmt.language)
         self.console.print(
-            f"Received types for `{fmt.path_from_root}` ({new_num_missing}/{old_num_missing} missing)")
+            f"Received types for `{fmt.file.path}` ({new_num_missing}/{old_num_missing} missing)")
         if self.debug:
             self.console.print(f"new_document:\n{new_document}\n")
-        path = os.path.join(self.root_dir, fmt.path_from_root)
+        path = os.path.join(self.root_dir, fmt.file.path)
         file_change = file_diff.get_file_change(
             path=path, new_content=str(new_document))
         if self.debug:
@@ -203,7 +203,7 @@ class MissingTypesAgent(Agent):
 
     async def run(self) -> AsyncIterable[List[file_diff.FileChange]]:
         def print_missing(fmt: FileMissingTypes) -> None:
-            self.console.print(f"File: {fmt.path_from_root}")
+            self.console.print(f"File: {fmt.file.path}")
             for mt in fmt.missing_types:
                 self.console.print(f"  {mt}")
             self.console.print()

@@ -319,8 +319,9 @@ def functions_missing_types_in_file(file: File) -> List[MissingType]:
     return functions_missing_types
 
 
-def functions_missing_types_in_path(path: str) -> Tuple[List[MissingType], Code, File]:
+def functions_missing_types_in_path(root:str, path: str) -> Tuple[List[MissingType], Code, File]:
     """Given a file path, parse the file and find function declarations that are missing types in the parameters or the return type."""
+    full_path = os.path.join(root, path)
     file = File(path)
     language = language_from_file_extension(path)
     missing_types: List[MissingType] = []
@@ -328,7 +329,7 @@ def functions_missing_types_in_path(path: str) -> Tuple[List[MissingType], Code,
         missing_types = []
         code = Code(b"")
     else:
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(full_path, 'r', encoding='utf-8') as f:
             code = Code(f.read().encode('utf-8'))
         parse_code_block(file, code, language)
         missing_types = functions_missing_types_in_file(file)
@@ -341,7 +342,6 @@ class FileMissingTypes:
     file: File  # ir of the file
     language: Language  # language of the file
     missing_types: List[MissingType]  # list of missing types in the file
-    path_from_root: str  # path of the file relative to the root directory
 
 
 def files_missing_types_in_project(root_path: str) -> List[FileMissingTypes]:
@@ -351,12 +351,10 @@ def files_missing_types_in_project(root_path: str) -> List[FileMissingTypes]:
         for file in files:
             language = language_from_file_extension(file)
             if language is not None:
-                path = os.path.join(root, file)
-                (missing_types, code, file) = functions_missing_types_in_path(path)
+                (missing_types, code, file) = functions_missing_types_in_path(root, file)
                 if missing_types != []:
-                    path_from_root = os.path.relpath(path, root_path)
                     files_with_missing_types.append(
-                        FileMissingTypes(code, file, language, missing_types, path_from_root))
+                        FileMissingTypes(code, file, language, missing_types))
     return files_with_missing_types
 
 
@@ -426,7 +424,8 @@ class Tests:
 
 
 def get_test_project():
-    project = Project()
+    project = Project(root_path="dummy_path")
+
     def new_file(path):
         file = File(path)
         project.add_file(file)
@@ -505,7 +504,7 @@ def test_missing_types_in_project():
     parent_dir = os.path.dirname(script_dir)
     files_missing_types = files_missing_types_in_project(parent_dir)
     for fmt in files_missing_types:
-        print(f"File: {fmt.path_from_root}")
+        print(f"File: {fmt.file.path}")
         for mt in fmt.missing_types:
             print(f"  {mt}")
         print()
