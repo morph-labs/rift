@@ -298,7 +298,7 @@ class MissingType:
 
 
 def functions_missing_types_in_file(file: File) -> List[MissingType]:
-    """Given an IR, find function declarations that are missing types in the parameters or the return type."""
+    """Find function declarations that are missing types in the parameters or the return type."""
     functions_missing_types: List[MissingType] = []
     function_declarations = file.get_function_declarations()
     for d in function_declarations:
@@ -338,7 +338,7 @@ def functions_missing_types_in_path(path: str) -> Tuple[List[MissingType], Code,
 @dataclass
 class FileMissingTypes:
     code: Code  # code of the file
-    ir: File  # IR of the file
+    file: File  # ir of the file
     language: Language  # language of the file
     missing_types: List[MissingType]  # list of missing types in the file
     path_from_root: str  # path of the file relative to the root directory
@@ -352,11 +352,11 @@ def files_missing_types_in_project(root_path: str) -> List[FileMissingTypes]:
             language = language_from_file_extension(file)
             if language is not None:
                 path = os.path.join(root, file)
-                (missing_types, code, ir) = functions_missing_types_in_path(path)
+                (missing_types, code, file) = functions_missing_types_in_path(path)
                 if missing_types != []:
                     path_from_root = os.path.relpath(path, root_path)
                     files_with_missing_types.append(
-                        FileMissingTypes(code, ir, language, missing_types, path_from_root))
+                        FileMissingTypes(code, file, language, missing_types, path_from_root))
     return files_with_missing_types
 
 

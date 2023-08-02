@@ -9,8 +9,8 @@ from rift.ir.parser import functions_missing_types_in_file
 
 from rift.agents.cli_agent import Agent, ClientParams, launcher
 from rift.agents.util import ainput
-from rift.ir.IR import File, Code, CodeEdit, Language, language_from_file_extension
-from rift.ir.parser import FileMissingTypes, MissingType, files_missing_types_in_project, functions_missing_types_in_path, parse_code_block
+import rift.ir.IR as IR
+from rift.ir.parser import FileMissingTypes, MissingType, files_missing_types_in_project, parse_code_block
 from rift.ir.response import extract_blocks_from_response, replace_functions_from_code_blocks
 import rift.util.file_diff as file_diff
 
@@ -39,7 +39,7 @@ Prompt = List[Message]
 
 class MissingTypePrompt:
     @staticmethod
-    def mk_user_msg(missing_types: List[MissingType], code: Code) -> str:
+    def mk_user_msg(missing_types: List[MissingType], code: IR.Code) -> str:
         missing_str = ""
         n = 0
         for mt in missing_types:
@@ -56,12 +56,12 @@ class MissingTypePrompt:
         """).lstrip()
 
     @staticmethod
-    def code_for_missing_types(missing_types: List[MissingType]) -> Code:
+    def code_for_missing_types(missing_types: List[MissingType]) -> IR.Code:
         bytes = b""
         for mt in missing_types:
             bytes += mt.function_declaration.get_substring()
             bytes += b"\n"
-        return Code(bytes)
+        return IR.Code(bytes)
 
     @staticmethod
     def create_prompt_for_file(missing_types: List[MissingType]) -> Prompt:
@@ -91,7 +91,7 @@ class MissingTypePrompt:
 @dataclass
 class FileProcess:
     file_missing_types: FileMissingTypes
-    edits: List[CodeEdit] = field(default_factory=list)
+    edits: List[IR.CodeEdit] = field(default_factory=list)
     file_change: Optional[file_diff.FileChange] = None
     new_num_missing: Optional[int] = None
 
@@ -100,8 +100,8 @@ def count_missing(missing_types: List[MissingType]) -> int:
     return sum([int(mt) for mt in missing_types])
 
 
-def get_num_missing_in_code(code: Code, language: Language) -> int:
-    file = File("dummy")
+def get_num_missing_in_code(code: IR.Code, language: IR.Language) -> int:
+    file = IR.File("dummy")
     parse_code_block(file, code, language)
     return count_missing(functions_missing_types_in_file(file))
 
@@ -116,7 +116,7 @@ class MissingTypesAgent(Agent):
     debug: bool = False
     root_dir: str = Config.root_dir()
 
-    def process_response(self, document: Code, language: Language,  missing_types: List[MissingType], response: str) -> List[CodeEdit]:
+    def process_response(self, document: IR.Code, language: IR.Language,  missing_types: List[MissingType], response: str) -> List[IR.CodeEdit]:
         if self.debug:
             self.console.print(f"response:\n{response}\n")
         code_blocks = extract_blocks_from_response(response)
@@ -129,7 +129,7 @@ class MissingTypesAgent(Agent):
             filter_function_ids=filter_function_ids, language=language, replace_body=False)
         return edits
 
-    async def code_edits_for_missing_files(self, document: Code, language: Language,  missing_types: List[MissingType]) -> List[CodeEdit]:
+    async def code_edits_for_missing_files(self, document: IR.Code, language: IR.Language,  missing_types: List[MissingType]) -> List[IR.CodeEdit]:
         loop = asyncio.get_event_loop()
         prompt = MissingTypePrompt.create_prompt_for_file(
             missing_types=missing_types)

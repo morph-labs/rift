@@ -4,11 +4,11 @@ import re
 from textwrap import dedent
 from typing import List, Optional
 from rift.ir.parser import functions_missing_types_in_file
-from rift.ir.IR import Code, CodeEdit, FunctionDeclaration, File, Language, QualifiedId
+import rift.ir.IR as IR
 from rift.ir.parser import functions_missing_types_in_path, parse_code_block
 
 
-def extract_blocks_from_response(response: str) -> List[Code]:
+def extract_blocks_from_response(response: str) -> List[IR.Code]:
     """
     Extract code blocks from a response string.
 
@@ -31,11 +31,11 @@ def extract_blocks_from_response(response: str) -> List[Code]:
                 inside_code_block = True
         elif inside_code_block:
             current_block += line + "\n"
-    code_blocks = [Code(block.encode("utf-8")) for block in code_blocks_str]
+    code_blocks = [IR.Code(block.encode("utf-8")) for block in code_blocks_str]
     return code_blocks
 
 
-def parse_code_blocks(code_blocks: List[Code], language: Language) -> File:
+def parse_code_blocks(code_blocks: List[IR.Code], language: IR.Language) -> IR.File:
     """
     Parses code blocks and returns intermediate representation (IR).
 
@@ -46,31 +46,31 @@ def parse_code_blocks(code_blocks: List[Code], language: Language) -> File:
     Returns:
         IR: The intermediate representation of the parsed code blocks.
     """
-    ir = File("response")
+    file = IR.File("response")
     for block in code_blocks:
-        parse_code_block(ir, block, language)
-    return ir
+        parse_code_block(file, block, language)
+    return file
 
 
 def replace_functions_in_document(
-    ir_doc: File,
-    ir_blocks: File,
-    document: Code,
+    ir_doc: IR.File,
+    ir_blocks: IR.File,
+    document: IR.Code,
     replace_body: bool,
-    filter_function_ids: Optional[List[QualifiedId]] = None,
-) -> List[CodeEdit]:
+    filter_function_ids: Optional[List[IR.QualifiedId]] = None,
+) -> List[IR.CodeEdit]:
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
     """
-    function_declarations_in_document: List[FunctionDeclaration] = \
+    function_declarations_in_document: List[IR.FunctionDeclaration] = \
         ir_doc.get_function_declarations()
 
-    code_edits: List[CodeEdit] = []
+    code_edits: List[IR.CodeEdit] = []
 
     for function_declaration in function_declarations_in_document:
         function_in_blocks_ = ir_blocks.search_symbol(
             function_declaration.name)
-        if len(function_in_blocks_) == 1 and isinstance(function_in_blocks_[0], FunctionDeclaration):
+        if len(function_in_blocks_) == 1 and isinstance(function_in_blocks_[0], IR.FunctionDeclaration):
             function_in_blocks = function_in_blocks_[0]
         else:
             function_in_blocks = None
@@ -96,16 +96,16 @@ def replace_functions_in_document(
                 end_replace = start_replace + len(old_function_text)
                 substring = (start_replace, end_replace)
                 new_bytes = new_function_text
-            code_edit = CodeEdit(substring=substring, new_bytes=new_bytes)
+            code_edit = IR.CodeEdit(substring=substring, new_bytes=new_bytes)
             code_edits.append(code_edit)
     return code_edits
 
 
 def replace_functions_from_code_blocks(
-    code_blocks: List[Code], document: Code,
-        language: Language, replace_body: bool,
-        filter_function_ids: Optional[List[QualifiedId]] = None,
-) -> List[CodeEdit]:
+    code_blocks: List[IR.Code], document: IR.Code,
+        language: IR.Language, replace_body: bool,
+        filter_function_ids: Optional[List[IR.QualifiedId]] = None,
+) -> List[IR.CodeEdit]:
     """
     Generates a new document by replacing functions in the original document with the corresponding functions
     from the code blocks.
@@ -246,15 +246,15 @@ def test_response():
         old_test_output = f.read()
     new_test_output = ""
 
-    language: Language = "c"
+    language: IR.Language = "c"
     code_blocks1 = extract_blocks_from_response(Test.response1)
-    document1 = Code(Test.document)
+    document1 = IR.Code(Test.document)
     edits1 = replace_functions_from_code_blocks(
         code_blocks=code_blocks1, document=document1, language=language, replace_body=True)
     new_document1 = document1.apply_edits(edits1)
     new_test_output += f"\nNew document1:\n```\n{new_document1}```"
     code_blocks2 = extract_blocks_from_response(Test.response2)
-    document2 = Code(Test.document)
+    document2 = IR.Code(Test.document)
     edits2 = replace_functions_from_code_blocks(
         code_blocks=code_blocks2, document=document2, language=language, replace_body=True)
     new_document2 = document2.apply_edits(edits2)
@@ -262,12 +262,12 @@ def test_response():
 
     language = "python"
     code_blocks3 = extract_blocks_from_response(Test.response3)
-    ir = File("response3")
-    parse_code_block(ir, Code(Test.code3), language)
-    missing_types = functions_missing_types_in_file(ir)
+    file = IR.File("response3")
+    parse_code_block(file, IR.Code(Test.code3), language)
+    missing_types = functions_missing_types_in_file(file)
     filter_function_ids = [
         mt.function_declaration.get_qualified_id() for mt in missing_types]
-    document3 = Code(Test.code3)
+    document3 = IR.Code(Test.code3)
     edits3 = replace_functions_from_code_blocks(
         code_blocks=code_blocks3, document=document3,
         filter_function_ids=filter_function_ids,
