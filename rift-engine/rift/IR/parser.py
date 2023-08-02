@@ -5,7 +5,8 @@ from dataclasses import dataclass, field
 from tree_sitter import Node
 from tree_sitter_languages import get_parser
 from textwrap import dedent
-from rift.IR.ir import Code, FunctionDeclaration, Language, IR, Parameter, Scope, Statement, Substring, language_from_file_extension
+from rift.IR.ir import ClassDeclaration, Code, Declaration, FunctionDeclaration, Language, IR, Parameter, Scope, Statement, Substring, SymbolInfo, language_from_file_extension
+
 
 def get_type(code: Code, language: Language, node: Node) -> str:
     if language in ["typescript", "tsx"] and node.type == 'type_annotation' and len(node.children) >= 2:
@@ -63,9 +64,11 @@ def get_parameters(code: Code, language: Language, node: Node) -> List[Parameter
             type = ""
             for grandchild in child.children:
                 if grandchild.type == 'identifier':
-                    name = code.bytes[grandchild.start_byte:grandchild.end_byte].decode()
+                    name = code.bytes[grandchild.start_byte:grandchild.end_byte].decode(
+                    )
                 elif grandchild.type == 'type':
-                    type = code.bytes[grandchild.start_byte:grandchild.end_byte].decode()
+                    type = code.bytes[grandchild.start_byte:grandchild.end_byte].decode(
+                    )
             parameters.append(Parameter(name=name, type=type))
         elif child.type == 'parameter_declaration':
             if language in ['c', 'cpp']:
@@ -74,14 +77,16 @@ def get_parameters(code: Code, language: Language, node: Node) -> List[Parameter
                 type = ""
                 type_node = child.child_by_field_name('type')
                 if type_node is not None:
-                    type = code.bytes[type_node.start_byte:type_node.end_byte].decode()
+                    type = code.bytes[type_node.start_byte:type_node.end_byte].decode(
+                    )
                 name = code.bytes[child.start_byte:child.end_byte].decode()
                 parameters.append(Parameter(name=name, type=type))
         elif child.type == 'required_parameter' or child.type == 'optional_parameter':
             name = ""
             pattern_node = child.child_by_field_name('pattern')
             if pattern_node is not None:
-                name = code.bytes[pattern_node.start_byte:pattern_node.end_byte].decode()
+                name = code.bytes[pattern_node.start_byte:pattern_node.end_byte].decode(
+                )
             type = None
             type_node = child.child_by_field_name('type')
             if type_node is not None:
@@ -107,14 +112,14 @@ def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node
         return None
 
 
-def find_function_declarations(code: Code, language: Language, node: Node, scope: Scope) -> List[FunctionDeclaration]:
+def find_declaration(code: Code, ir: IR, language: Language, node: Node, scope: Scope) -> Optional[SymbolInfo]:
     declarations: List[FunctionDeclaration] = []
     docstring: str = ""
     body_sub = None
 
     def mk_fun_decl(id: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
         return FunctionDeclaration(
-            body=body_sub,
+            body_sub=body_sub,
             docstring=docstring,
             code=code,
             language=language,
@@ -122,6 +127,17 @@ def find_function_declarations(code: Code, language: Language, node: Node, scope
             parameters=parameters,
             range=(node.start_point, node.end_point),
             return_type=return_type,
+            scope=scope,
+            substring=(node.start_byte, node.end_byte)
+        )
+
+    def mk_class_decl(id: Node, body: List[Statement]):
+        return ClassDeclaration(
+            body=body,
+            code=code,
+            language=language,
+            name=code.bytes[id.start_byte:id.end_byte].decode(),
+            range=(node.start_point, node.end_point),
             scope=scope,
             substring=(node.start_byte, node.end_byte)
         )
@@ -143,14 +159,16 @@ def find_function_declarations(code: Code, language: Language, node: Node, scope
         if body_node is not None and name is not None:
             scope = scope + \
                 [code.bytes[name.start_byte:name.end_byte].decode()]
-            for child in body_node.children:
-                declarations += find_function_declarations(
-                    code, language, child, scope)
+            body = process_body(
+                code=code, ir=ir, language=language, node=body_node, scope=scope)
+            declaration = mk_class_decl(id=name, body=body)
+            ir.add_symbol(declaration)
+            return declaration
     elif node.type in ['decorated_definition']:  # python decorator
         defitinion = node.child_by_field_name('definition')
         if defitinion is not None:
-            declarations += find_function_declarations(
-                code, language, defitinion, scope)
+            return find_declaration(
+                code, ir, language, defitinion, scope)
     elif node.type == 'function_definition' and language in ['c', 'cpp']:
         type_node = node.child_by_field_name('type')
         type = None
@@ -158,7 +176,7 @@ def find_function_declarations(code: Code, language: Language, node: Node, scope
             type = get_type(code=code, language=language, node=type_node)
         res = find_c_cpp_function_declarator(node)
         if res is None or type is None:
-            return []
+            return None
         declarators, fun_node = res
         type = add_c_cpp_declarators_to_type(type, declarators)
         id: Optional[Node] = None
@@ -170,9 +188,11 @@ def find_function_declarations(code: Code, language: Language, node: Node, scope
                 parameters = get_parameters(
                     code=code, language=language, node=child)
         if id is None:
-            return []
-        declarations.append(mk_fun_decl(
-            id=id, parameters=parameters, return_type=type))
+            return None
+        declaration = mk_fun_decl(
+            id=id, parameters=parameters, return_type=type)
+        ir.add_symbol(declaration)
+        return declaration
     elif node.type in ['function_definition', 'function_declaration']:
         id: Optional[Node] = None
         for child in node.children:
@@ -195,8 +215,10 @@ def find_function_declarations(code: Code, language: Language, node: Node, scope
                 docstring = code.bytes[docstring_node.start_byte:docstring_node.end_byte].decode(
                 )
         if id is not None:
-            declarations.append(mk_fun_decl(
+            declaration = (mk_fun_decl(
                 id=id, parameters=parameters, return_type=return_type))
+            ir.add_symbol(declaration)
+            return declaration
 
     elif node.type in ['lexical_declaration', 'variable_declaration']:
         # arrow functions in js/ts e.g. let foo = x => x+1
@@ -211,25 +233,32 @@ def find_function_declarations(code: Code, language: Language, node: Node, scope
                     elif grandchild.type == 'arrow_function':
                         is_arrow_function = True
                 if is_arrow_function and id is not None:
-                    declarations.append(mk_fun_decl(id=id))
-    return declarations
+                    declaration = mk_fun_decl(id=id)
+                    ir.add_symbol(declaration)
+                    return declaration
 
 
-def parse_statement(node: Node) -> Statement:
-    return Statement(type=node.type)
+def process_statement(code: Code, ir: IR, language: Language, node: Node, scope: Scope) -> Statement:
+    declaration = find_declaration(
+        code=code, ir=ir, language=language, node=node, scope=scope)
+    if declaration is not None:
+        return Declaration(type=node.type, symbol=declaration)
+    else:
+        return Statement(type=node.type)
+
+
+def process_body(code: Code, ir: IR, language: Language, node: Node, scope: Scope) -> List[Statement]:
+    return [process_statement(code=code, ir=ir, language=language, node=child, scope=scope)
+            for child in node.children]
 
 
 def parse_code_block(ir: IR, code: Code, language: Language) -> None:
     parser = get_parser(language)
     tree = parser.parse(code.bytes)
-    declarations: List[FunctionDeclaration] = []
     for node in tree.root_node.children:
-        statement = parse_statement(node)
+        statement = process_statement(
+            code=code, ir=ir, language=language, node=node, scope=[])
         ir.statements.append(statement)
-        declarations += find_function_declarations(
-            code=code, language=language, node=node, scope=[])
-    for declaration in declarations:
-        ir.add_symbol(declaration)
 
 
 @dataclass
@@ -294,11 +323,11 @@ def functions_missing_types_in_file(path: str) -> Tuple[List[MissingType], Code,
 
 @dataclass
 class FileMissingTypes:
-    code: Code # code of the file
-    ir: IR # IR of the file
-    language: Language # language of the file
-    missing_types: List[MissingType] # list of missing types in the file
-    path_from_root: str # path of the file relative to the root directory
+    code: Code  # code of the file
+    ir: IR  # IR of the file
+    language: Language  # language of the file
+    missing_types: List[MissingType]  # list of missing types in the file
+    path_from_root: str  # path of the file relative to the root directory
 
 
 def files_missing_types_in_project(root_path: str) -> List[FileMissingTypes]:

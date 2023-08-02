@@ -61,6 +61,10 @@ Function: py
    scope: ['A']
    docstring: """This is a docstring"""
    body: (35, 77)
+Class: A
+   language: python
+   range: ((0, 0), (3, 16))
+   substring: (0, 77)
 Function: insert_code
    language: python
    range: ((6, 4), (9, 12))
@@ -82,3 +86,11 @@ Function: nested
    substring: (318, 348)
    scope: ['B', 'Nested']
    body: (344, 348)
+Class: Nested
+   language: python
+   range: ((12, 4), (14, 16))
+   substring: (296, 348)
+Class: B
+   language: python
+   range: ((4, 0), (14, 16))
+   substring: (78, 348)

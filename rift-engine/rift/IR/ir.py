@@ -3,22 +3,25 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, Tuple
 
 Language = Literal["c", "cpp", "javascript", "python", "typescript", "tsx"]
-QualifiedId = Tuple[str, ...] # e.g. ("A", "B", "foo") for function foo inside class B inside class A
+# e.g. ("A", "B", "foo") for function foo inside class B inside class A
+QualifiedId = Tuple[str, ...]
 Pos = Tuple[int, int]  # (line, column)
 Range = Tuple[Pos, Pos]  # ((start_line, start_column), (end_line, end_column))
 Substring = Tuple[int, int]  # (start_byte, end_byte)
 Scope = List[str]  # e.g. ["A", "B"] for class B inside class A
 
+
 @dataclass
 class Code:
     bytes: bytes
+
     def __str__(self):
         return self.bytes.decode()
     __repr__ = __str__
 
     def apply_edit(self, edit: "CodeEdit") -> "Code":
         return edit.apply(self)
-    
+
     def apply_edits(self, edits: List["CodeEdit"]) -> "Code":
         code = self
         # sort the edits in descending order of their start position
@@ -26,6 +29,7 @@ class Code:
         for edit in edits:
             code = code.apply_edit(edit)
         return code
+
 
 @dataclass
 class CodeEdit:
@@ -36,23 +40,20 @@ class CodeEdit:
         start, end = self.substring
         return Code(code.bytes[:start] + self.new_bytes + code.bytes[end:])
 
-@dataclass
-class SymbolInfo(ABC):
-    """Abstract class for symbol information."""
-    code: Code
-    language: Language
-    name: str
-    range: Range
-    scope: Scope
-    substring: Substring
 
-    # return the substring of the document that corresponds to this symbol info
-    def get_substring(self) -> bytes:
-        start, end = self.substring
-        return self.code.bytes[start:end]
-    
-    def get_qualified_id(self) -> QualifiedId:
-        return tuple(self.scope + [self.name])
+@dataclass
+class Statement:
+    type: str
+
+    def __str__(self):
+        return self.type
+
+    __repr__ = __str__
+
+
+@dataclass
+class Declaration(Statement):
+    symbol: "SymbolInfo"
 
 
 @dataclass
@@ -71,30 +72,46 @@ class Parameter:
             return f"{name}:{self.type}"
     __repr__ = __str__
 
+
+@dataclass
+class SymbolInfo(ABC):
+    """Abstract class for symbol information."""
+    code: Code
+    language: Language
+    name: str
+    range: Range
+    scope: Scope
+    substring: Substring
+
+    # return the substring of the document that corresponds to this symbol info
+    def get_substring(self) -> bytes:
+        start, end = self.substring
+        return self.code.bytes[start:end]
+
+    def get_qualified_id(self) -> QualifiedId:
+        return tuple(self.scope + [self.name])
+
+
 @dataclass
 class FunctionDeclaration(SymbolInfo):
-    body: Optional[Substring]
+    body_sub: Optional[Substring]
     docstring: str
     parameters: List[Parameter]
     return_type: Optional[str] = None
 
     def get_substring_without_body(self) -> bytes:
-        if self.body is None:
+        if self.body_sub is None:
             return self.get_substring()
         else:
             start, end = self.substring
-            body_start, body_end = self.body
+            body_start, body_end = self.body_sub
             return self.code.bytes[start:body_start]
 
 
 @dataclass
-class Statement:
-    type: str
+class ClassDeclaration(SymbolInfo):
+    body: List[Statement]
 
-    def __str__(self):
-        return self.type
-
-    __repr__ = __str__
 
 @dataclass
 class IR:
@@ -103,7 +120,7 @@ class IR:
 
     def lookup_symbol(self, qid: QualifiedId) -> Optional[SymbolInfo]:
         return self._symbol_table.get(qid)
-    
+
     def search_symbol(self, name: str) -> List[SymbolInfo]:
         return [symbol for symbol in self._symbol_table.values() if symbol.name == name]
 
@@ -128,8 +145,11 @@ class IR:
                     lines.append(f"   scope: {d.scope}")
                 if d.docstring != "":
                     lines.append(f"   docstring: {d.docstring}")
-                if d.body is not None:
-                    lines.append(f"   body: {d.body}")
+                if d.body_sub is not None:
+                    lines.append(f"   body: {d.body_sub}")
+            elif isinstance(d, ClassDeclaration):
+                lines.append(
+                    f"Class: {d.name}\n   language: {d.language}\n   range: {d.range}\n   substring: {d.substring}")
         output = '\n'.join(lines)
         return output
 
