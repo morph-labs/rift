@@ -271,6 +271,23 @@ def parse_code_block(file: File, code: Code, language: Language) -> None:
         file.statements.append(statement)
 
 
+def parse_files_in_project(root_path: str) -> Project:
+    """"Parse all files with known extension starting from the root path."""
+    project = Project(root_path=root_path)
+    for root, dirs, files in os.walk(root_path):
+        for file in files:
+            language = language_from_file_extension(file)
+            if language is not None:
+                full_path = os.path.join(root, file)
+                path_from_root = os.path.relpath(full_path, root_path)
+                with open(os.path.join(root_path, full_path), 'r', encoding='utf-8') as f:
+                    code = Code(f.read().encode('utf-8'))
+                file_ir = File(path=path_from_root)
+                parse_code_block(file=file_ir, code=code, language=language)
+                project.add_file(file=file_ir)
+    return project
+
+
 @dataclass
 class MissingType:
     function_declaration: FunctionDeclaration
@@ -319,7 +336,7 @@ def functions_missing_types_in_file(file: File) -> List[MissingType]:
     return functions_missing_types
 
 
-def functions_missing_types_in_path(root:str, path: str) -> Tuple[List[MissingType], Code, File]:
+def functions_missing_types_in_path(root: str, path: str) -> Tuple[List[MissingType], Code, File]:
     """Given a file path, parse the file and find function declarations that are missing types in the parameters or the return type."""
     full_path = os.path.join(root, path)
     file = File(path)
@@ -344,17 +361,16 @@ class FileMissingTypes:
     missing_types: List[MissingType]  # list of missing types in the file
 
 
-def files_missing_types_in_project(root_path: str) -> List[FileMissingTypes]:
+def files_missing_types_in_project(project: Project) -> List[FileMissingTypes]:
     """"Return a list of files with missing types, and the missing types in each file."""
     files_with_missing_types: List[FileMissingTypes] = []
-    for root, dirs, files in os.walk(root_path):
-        for file in files:
-            language = language_from_file_extension(file)
-            if language is not None:
-                (missing_types, code, file) = functions_missing_types_in_path(root, file)
-                if missing_types != []:
-                    files_with_missing_types.append(
-                        FileMissingTypes(code, file, language, missing_types))
+    for file in project.get_files():
+        missing_types = functions_missing_types_in_file(file)
+        if missing_types != []:
+            decl = missing_types[0].function_declaration
+            language = decl.language
+            code = decl.code
+            files_with_missing_types.append(FileMissingTypes(code, file, language, missing_types))
     return files_with_missing_types
 
 
@@ -426,20 +442,15 @@ class Tests:
 def get_test_project():
     project = Project(root_path="dummy_path")
 
-    def new_file(path):
+    def new_file(code: Code, path: str, language: Language) -> None:
         file = File(path)
+        parse_code_block(file, code, language)
         project.add_file(file)
-        return file
-    file_c = new_file("test.c")
-    parse_code_block(file_c, Code(Tests.code_c), 'c')
-    file_js = new_file("test.js")
-    parse_code_block(file_js, Code(Tests.code_js), 'javascript')
-    file_ts = new_file("test.ts")
-    parse_code_block(file_ts, Code(Tests.code_ts), 'typescript')
-    file_tsx = new_file("test.tsx")
-    parse_code_block(file_tsx, Code(Tests.code_tsx), 'tsx')
-    file_py = new_file("test.py")
-    parse_code_block(file_py, Code(Tests.code_py), 'python')
+    new_file(Code(Tests.code_c), "test.c", 'c')
+    new_file(Code(Tests.code_js), "test.js", 'javascript')
+    new_file(Code(Tests.code_ts), "test.ts", 'typescript')
+    new_file(Code(Tests.code_tsx), "test.tsx", 'tsx')
+    new_file(Code(Tests.code_py), "test.py", 'python')
     return project
 
 
@@ -502,7 +513,8 @@ def test_missing_types():
 def test_missing_types_in_project():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(script_dir)
-    files_missing_types = files_missing_types_in_project(parent_dir)
+    project = parse_files_in_project(root_path=parent_dir)
+    files_missing_types = files_missing_types_in_project(project)
     for fmt in files_missing_types:
         print(f"File: {fmt.file.path}")
         for mt in fmt.missing_types:
