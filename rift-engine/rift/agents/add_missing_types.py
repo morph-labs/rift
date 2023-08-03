@@ -112,7 +112,7 @@ class MissingTypesAgent(Agent):
     run_params: Type[MissingTypesParams] = MissingTypesParams
     splash: Optional[
         str
-    ] = "--MISSING TYPES--\n"
+    ] = "--- Add Missing Types ---\n"
     debug: bool = False
     root_dir: str = Config.root_dir()
 
