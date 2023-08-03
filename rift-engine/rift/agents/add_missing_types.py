@@ -5,12 +5,12 @@ import openai
 import os
 from textwrap import dedent
 from typing import AsyncIterable, ClassVar, List, Optional, Type, Dict
-from rift.ir.parser import functions_missing_types_in_file
 
 from rift.agents.cli_agent import Agent, ClientParams, launcher
 from rift.agents.util import ainput
 import rift.ir.IR as IR
-from rift.ir.parser import FileMissingTypes, MissingType, files_missing_types_in_project, parse_code_block
+from rift.ir.missing_types import FileMissingTypes, MissingType, files_missing_types_in_project, functions_missing_types_in_file
+import rift.ir.parser as parser
 from rift.ir.response import extract_blocks_from_response, replace_functions_from_code_blocks
 import rift.util.file_diff as file_diff
 
@@ -102,7 +102,7 @@ def count_missing(missing_types: List[MissingType]) -> int:
 
 def get_num_missing_in_code(code: IR.Code, language: IR.Language) -> int:
     file = IR.File("dummy")
-    parse_code_block(file, code, language)
+    parser.parse_code_block(file, code, language)
     return count_missing(functions_missing_types_in_file(file))
 
 
@@ -210,7 +210,8 @@ class MissingTypesAgent(Agent):
 
         file_processes: List[FileProcess] = []
         tot_num_missing = 0
-        files_missing_types = files_missing_types_in_project(self.root_dir)
+        project = parser.parse_files_in_project(self.root_dir)
+        files_missing_types = files_missing_types_in_project(project)
         for fmt in files_missing_types:
             print_missing(fmt)
             tot_num_missing += count_missing(fmt.missing_types)
