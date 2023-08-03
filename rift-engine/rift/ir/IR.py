@@ -185,7 +185,7 @@ class Project:
     def get_files(self):
         return self._files
     
-    def dump_map(self, indent:int) -> str:
+    def dump_map(self, indent:int = 0) -> str:
         lines = []
         for file in self.get_files():
             lines.append(f"{' ' * indent}File: {file.path}")

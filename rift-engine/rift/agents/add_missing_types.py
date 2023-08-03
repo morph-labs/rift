@@ -16,11 +16,10 @@ import rift.util.file_diff as file_diff
 
 
 class Config:
-    temperature = 0
-
-    model = "gpt-3.5-turbo-0613"  # ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k"]
-
+    debug = False
     max_size_group_missing_types = 10  # maximum size for a group of missing types
+    model = "gpt-3.5-turbo-0613"  # ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k"]
+    temperature = 0
 
     @classmethod
     def root_dir(cls) -> str:
@@ -112,8 +111,8 @@ class MissingTypesAgent(Agent):
     run_params: Type[MissingTypesParams] = MissingTypesParams
     splash: Optional[
         str
-    ] = "--- Add Missing Types ---\n"
-    debug: bool = False
+    ] = "@@@ Add Missing Types @@@\n"
+    debug = Config.debug
     root_dir: str = Config.root_dir()
 
     def process_response(self, document: IR.Code, language: IR.Language,  missing_types: List[MissingType], response: str) -> List[IR.CodeEdit]:
@@ -211,7 +210,10 @@ class MissingTypesAgent(Agent):
         file_processes: List[FileProcess] = []
         tot_num_missing = 0
         project = parser.parse_files_in_project(self.root_dir)
+        if self.debug:
+            self.console.print(f"\n=== Project Map ===\n{project.dump_map()}\n")
         files_missing_types = files_missing_types_in_project(project)
+        self.console.print(f"\n=== Missing Types ===\n")
         for fmt in files_missing_types:
             print_missing(fmt)
             tot_num_missing += count_missing(fmt.missing_types)
