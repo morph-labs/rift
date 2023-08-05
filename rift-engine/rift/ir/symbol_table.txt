@@ -106,23 +106,29 @@ Class: B
 
 === Project Map ===
 File: test.c
-  Function: aa
-  Function: foo
-  Function: bb
-  Function: main
+  int aa() 
+  int * foo(int **x) 
+  int bb() 
+  int main() 
 File: test.js
-  Function: f1
-  Function: f2
+  function f1() 
+  let f2 = x => x+1;
 File: test.ts
-  Function: ts
-  Function: ts2
+  function ts(x:number, opt?:string) : number 
+  function ts2() : array<number> 
 File: test.tsx
-  Function: tsx
+  function tsx() 
 File: test.py
   Class: A
-    Function: py
+    def py(x, y):
+        
   Class: B
-    Function: insert_code
-    Function: load
+    async def insert_code(
+        self, document: str, cursor_offset: int, goal: Optional[str] = None
+    ) -> InsertCodeResult:
+        
+    async def load(self, v):
+        
     Class: Nested
-      Function: nested
+      def nested():
+            

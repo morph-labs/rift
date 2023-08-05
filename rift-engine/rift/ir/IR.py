@@ -159,7 +159,9 @@ class File:
     def dump_map(self, indent:int, lines: List[str]) -> None:
         def dump_symbol(symbol: SymbolInfo, indent: int) -> None:
             if isinstance(symbol, FunctionDeclaration):
-                lines.append(f"{' ' * indent}Function: {symbol.name}")
+                decl_without_body = symbol.get_substring_without_body().decode()
+                #lines.append(f"{' ' * indent}Function: {symbol.name}")
+                lines.append(f"{' ' * indent}{decl_without_body}")
             elif isinstance(symbol, ClassDeclaration):
                 lines.append(f"{' ' * indent}Class: {symbol.name}")
                 for statement in symbol.body:
