@@ -79,6 +79,7 @@ class SymbolInfo(ABC):
     body_sub: Optional[Substring]
     code: Code
     docstring: str
+    exported: bool
     language: Language
     name: str
     range: Range

@@ -47,10 +47,10 @@ Function: ts
    body: (69, 81)
 Function: ts2
    language: typescript
-   range: ((2, 0), (2, 44))
-   substring: (82, 126)
+   range: ((2, 7), (2, 51))
+   substring: (89, 133)
    return_type: array<number>
-   body: (113, 126)
+   body: (120, 133)
 === Symbol Table for test.tsx ===
 Function: tsx
    language: tsx

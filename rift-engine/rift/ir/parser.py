@@ -116,13 +116,15 @@ def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node
 
 def find_declaration(code: Code, file: File, language: Language, node: Node, scope: Scope) -> Optional[SymbolInfo]:
     docstring: str = ""
+    exported = False
     body_sub = None
 
     def mk_fun_decl(id: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
         return FunctionDeclaration(
             body_sub=body_sub,
-            docstring=docstring,
             code=code,
+            docstring=docstring,
+            exported=exported,
             language=language,
             name=code.bytes[id.start_byte:id.end_byte].decode(),
             parameters=parameters,
@@ -138,6 +140,7 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
             body_sub=body_sub,
             code=code,
             docstring=docstring,
+            exported=exported,
             language=language,
             name=code.bytes[id.start_byte:id.end_byte].decode(),
             range=(node.start_point, node.end_point),
@@ -182,11 +185,13 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
                 id=name, body=body, superclasses=superclasses)
             file.add_symbol(declaration)
             return declaration
+
     elif node.type in ['decorated_definition']:  # python decorator
         defitinion = node.child_by_field_name('definition')
         if defitinion is not None:
             return find_declaration(
                 code, file, language, defitinion, scope)
+
     elif node.type == 'function_definition' and language in ['c', 'cpp']:
         type_node = node.child_by_field_name('type')
         type = None
@@ -211,6 +216,7 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
             id=id, parameters=parameters, return_type=type)
         file.add_symbol(declaration)
         return declaration
+
     elif node.type in ['function_definition', 'function_declaration']:
         id: Optional[Node] = None
         for child in node.children:
@@ -255,6 +261,11 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
                     file.add_symbol(declaration)
                     return declaration
 
+    elif node.type == 'export_statement' and language in ['js', 'typescript', 'tsx']:
+        if len(node.children) >= 2:
+            exported = True
+            return find_declaration(
+                code=code, file=file, language=language, node=node.children[1], scope=scope)
 
 def process_statement(code: Code, file: File, language: Language, node: Node, scope: Scope) -> Statement:
     declaration = find_declaration(
@@ -337,7 +348,13 @@ class Tests:
     code_ts = dedent("""
         type a = readonly b[][];
         function ts(x:number, opt?:string) : number { return x }
-        function ts2() : array<number> { return [] }
+        export function ts2() : array<number> { return [] }
+        class A {
+            constructor() {}
+            async load(v: number) {
+                return v
+            }
+        }
     """).lstrip().encode('utf-8')
     code_tsx = dedent("""
         d = <div> "abc" </div>
