@@ -51,6 +51,10 @@ Function: ts2
    substring: (89, 133)
    return_type: array<number>
    body: (120, 133)
+Class: A
+   language: typescript
+   range: ((3, 7), (8, 1))
+   substring: (141, 224)
 === Symbol Table for test.tsx ===
 Function: tsx
    language: tsx
@@ -116,6 +120,7 @@ File: test.js
 File: test.ts
   function ts(x:number, opt?:string) : number 
   function ts2() : array<number> 
+  class A 
 File: test.tsx
   function tsx() 
 File: test.py

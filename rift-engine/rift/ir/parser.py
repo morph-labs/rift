@@ -160,7 +160,7 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
     if body_node is not None:
         body_sub = (body_node.start_byte, body_node.end_byte)
 
-    if node.type in ['class_definition']:
+    if node.type in ['class_definition', 'class_declaration']:
         superclasses_node = node.child_by_field_name('superclasses')
         superclasses = None
         if superclasses_node is not None:
@@ -349,7 +349,7 @@ class Tests:
         type a = readonly b[][];
         function ts(x:number, opt?:string) : number { return x }
         export function ts2() : array<number> { return [] }
-        class A {
+        export class A {
             constructor() {}
             async load(v: number) {
                 return v
