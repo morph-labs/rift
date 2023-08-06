@@ -132,7 +132,7 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
             substring=(node.start_byte, node.end_byte)
         )
 
-    def mk_class_decl(id: Node, body: List[Statement]):
+    def mk_class_decl(id: Node, body: List[Statement], superclasses: Optional[str]):
         return ClassDeclaration(
             body=body,
             code=code,
@@ -141,7 +141,8 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
             name=code.bytes[id.start_byte:id.end_byte].decode(),
             range=(node.start_point, node.end_point),
             scope=scope,
-            substring=(node.start_byte, node.end_byte)
+            substring=(node.start_byte, node.end_byte),
+            superclasses=superclasses,
         )
 
     previous_node = node.prev_sibling
@@ -156,6 +157,10 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
         body_sub = (body_node.start_byte, body_node.end_byte)
 
     if node.type in ['class_definition']:
+        superclasses_node = node.child_by_field_name('superclasses')
+        superclasses = None
+        if superclasses_node is not None:
+            superclasses = code.bytes[superclasses_node.start_byte:superclasses_node.end_byte].decode()
         body_node = node.child_by_field_name('body')
         name = node.child_by_field_name('name')
         if body_node is not None and name is not None:
@@ -171,7 +176,8 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
                     docstring_node = stmt.children[0]
                     docstring = code.bytes[docstring_node.start_byte:docstring_node.end_byte].decode(
                     )
-            declaration = mk_class_decl(id=name, body=body)
+            declaration = mk_class_decl(
+                id=name, body=body, superclasses=superclasses)
             file.add_symbol(declaration)
             return declaration
     elif node.type in ['decorated_definition']:  # python decorator
@@ -330,7 +336,7 @@ class Tests:
         function tsx() { return d }
     """).lstrip().encode("utf-8")
     code_py = dedent("""
-        class A:
+        class A(C,D):
             \"\"\"
             This is a docstring
             for class A

@@ -61,15 +61,15 @@ Function: tsx
 Function: py
    language: python
    range: ((6, 4), (8, 16))
-   substring: (70, 134)
+   substring: (75, 139)
    parameters: [x, y]
    scope: ['A']
    docstring: """This is a docstring"""
-   body: (92, 134)
-Class: A
+   body: (97, 139)
+Class: A(C,D)
    language: python
    range: ((0, 0), (8, 16))
-   substring: (0, 134)
+   substring: (0, 139)
    docstring: """
     This is a docstring
     for class A
@@ -77,32 +77,32 @@ Class: A
 Function: insert_code
    language: python
    range: ((11, 4), (14, 12))
-   substring: (168, 306)
+   substring: (173, 311)
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
    scope: ['B']
-   body: (302, 306)
+   body: (307, 311)
 Function: load
    language: python
    range: ((15, 4), (16, 12))
-   substring: (311, 348)
+   substring: (316, 353)
    parameters: [self, v]
    scope: ['B']
-   body: (344, 348)
+   body: (349, 353)
 Function: nested
    language: python
    range: ((18, 8), (19, 16))
-   substring: (375, 405)
+   substring: (380, 410)
    scope: ['B', 'Nested']
-   body: (401, 405)
+   body: (406, 410)
 Class: Nested
    language: python
    range: ((17, 4), (19, 16))
-   substring: (353, 405)
+   substring: (358, 410)
 Class: B
    language: python
    range: ((9, 0), (19, 16))
-   substring: (135, 405)
+   substring: (140, 410)
 
 === Project Map ===
 File: test.c

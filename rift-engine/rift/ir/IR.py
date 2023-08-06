@@ -92,6 +92,10 @@ class SymbolInfo(ABC):
     def get_qualified_id(self) -> QualifiedId:
         return tuple(self.scope + [self.name])
 
+    @abstractmethod
+    def dump(self, lines: List[str]) -> None:
+        raise NotImplementedError
+
 
 @dataclass
 class FunctionDeclaration(SymbolInfo):
@@ -107,15 +111,40 @@ class FunctionDeclaration(SymbolInfo):
             body_start, body_end = self.body_sub
             return self.code.bytes[start:body_start]
 
+    def dump(self, lines: List[str]) -> None:
+        lines.append(
+            f"Function: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}")
+        if self.parameters != []:
+            lines.append(f"   parameters: {self.parameters}")
+        if self.return_type is not None:
+            lines.append(f"   return_type: {self.return_type}")
+        if self.scope != []:
+            lines.append(f"   scope: {self.scope}")
+        if self.docstring != "":
+            lines.append(f"   docstring: {self.docstring}")
+        if self.body_sub is not None:
+            lines.append(f"   body: {self.body_sub}")
+
 
 @dataclass
 class ClassDeclaration(SymbolInfo):
     body: List[Statement]
+    superclasses: Optional[str]
+
+    def dump(self, lines: List[str]) -> None:
+        if self.superclasses is not None:
+            id = self.name + self.superclasses
+        else:
+            id = self.name
+        lines.append(
+            f"Class: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}")
+        if self.docstring != "":
+            lines.append(f"   docstring: {self.docstring}")
 
 
 @dataclass
 class File:
-    path: str # path of the file relative to the root directory
+    path: str  # path of the file relative to the root directory
     statements: List[Statement] = field(default_factory=list)
     _symbol_table: Dict[QualifiedId, SymbolInfo] = field(default_factory=dict)
 
@@ -135,32 +164,15 @@ class File:
         lines = []
         for id in self._symbol_table:
             d = self._symbol_table[id]
-            if isinstance(d, FunctionDeclaration):
-                lines.append(
-                    f"Function: {d.name}\n   language: {d.language}\n   range: {d.range}\n   substring: {d.substring}")
-                if d.parameters != []:
-                    lines.append(f"   parameters: {d.parameters}")
-                if d.return_type is not None:
-                    lines.append(f"   return_type: {d.return_type}")
-                if d.scope != []:
-                    lines.append(f"   scope: {d.scope}")
-                if d.docstring != "":
-                    lines.append(f"   docstring: {d.docstring}")
-                if d.body_sub is not None:
-                    lines.append(f"   body: {d.body_sub}")
-            elif isinstance(d, ClassDeclaration):
-                lines.append(
-                    f"Class: {d.name}\n   language: {d.language}\n   range: {d.range}\n   substring: {d.substring}")
-                if d.docstring != "":
-                    lines.append(f"   docstring: {d.docstring}")
+            d.dump(lines)
         output = '\n'.join(lines)
         return output
-    
-    def dump_map(self, indent:int, lines: List[str]) -> None:
+
+    def dump_map(self, indent: int, lines: List[str]) -> None:
         def dump_symbol(symbol: SymbolInfo, indent: int) -> None:
             if isinstance(symbol, FunctionDeclaration):
                 decl_without_body = symbol.get_substring_without_body().decode()
-                #lines.append(f"{' ' * indent}Function: {symbol.name}")
+                # lines.append(f"{' ' * indent}Function: {symbol.name}")
                 lines.append(f"{' ' * indent}{decl_without_body}")
             elif isinstance(symbol, ClassDeclaration):
                 lines.append(f"{' ' * indent}Class: {symbol.name}")
@@ -168,6 +180,7 @@ class File:
                     dump_statement(statement, indent + 2)
             else:
                 raise NotImplementedError
+
         def dump_statement(statement: Statement, indent: int) -> None:
             if isinstance(statement, Declaration):
                 dump_symbol(statement.symbol, indent)
@@ -176,6 +189,7 @@ class File:
         for statement in self.statements:
             dump_statement(statement, indent)
 
+
 @dataclass
 class Project:
     root_path: str
@@ -183,16 +197,17 @@ class Project:
 
     def add_file(self, file: File):
         self._files.append(file)
-    
+
     def get_files(self):
         return self._files
-    
-    def dump_map(self, indent:int = 0) -> str:
+
+    def dump_map(self, indent: int = 0) -> str:
         lines = []
         for file in self.get_files():
             lines.append(f"{' ' * indent}File: {file.path}")
             file.dump_map(indent+2, lines)
         return '\n'.join(lines)
+
 
 def language_from_file_extension(file_path: str) -> Optional[Language]:
     if file_path.endswith(".c"):
