@@ -119,16 +119,19 @@ File: test.ts
 File: test.tsx
   function tsx() 
 File: test.py
-  Class: A
+  class A(C,D):
+    
     def py(x, y):
         
-  Class: B
+  class B:
+    
     async def insert_code(
         self, document: str, cursor_offset: int, goal: Optional[str] = None
     ) -> InsertCodeResult:
         
     async def load(self, v):
         
-    Class: Nested
+    class Nested:
+        
       def nested():
             

@@ -76,6 +76,7 @@ class Parameter:
 @dataclass
 class SymbolInfo(ABC):
     """Abstract class for symbol information."""
+    body_sub: Optional[Substring]
     code: Code
     docstring: str
     language: Language
@@ -92,17 +93,6 @@ class SymbolInfo(ABC):
     def get_qualified_id(self) -> QualifiedId:
         return tuple(self.scope + [self.name])
 
-    @abstractmethod
-    def dump(self, lines: List[str]) -> None:
-        raise NotImplementedError
-
-
-@dataclass
-class FunctionDeclaration(SymbolInfo):
-    body_sub: Optional[Substring]
-    parameters: List[Parameter]
-    return_type: Optional[str] = None
-
     def get_substring_without_body(self) -> bytes:
         if self.body_sub is None:
             return self.get_substring()
@@ -110,6 +100,16 @@ class FunctionDeclaration(SymbolInfo):
             start, end = self.substring
             body_start, body_end = self.body_sub
             return self.code.bytes[start:body_start]
+
+    @abstractmethod
+    def dump(self, lines: List[str]) -> None:
+        raise NotImplementedError
+
+
+@dataclass
+class FunctionDeclaration(SymbolInfo):
+    parameters: List[Parameter]
+    return_type: Optional[str] = None
 
     def dump(self, lines: List[str]) -> None:
         lines.append(
@@ -128,6 +128,7 @@ class FunctionDeclaration(SymbolInfo):
 
 @dataclass
 class ClassDeclaration(SymbolInfo):
+    body_sub: Optional[Substring]
     body: List[Statement]
     superclasses: Optional[str]
 
@@ -160,26 +161,18 @@ class File:
     def get_function_declarations(self) -> List[FunctionDeclaration]:
         return [symbol for symbol in self._symbol_table.values() if isinstance(symbol, FunctionDeclaration)]
 
-    def dump_symbol_table(self) -> str:
-        lines = []
+    def dump_symbol_table(self, lines: List[str]) -> None:
         for id in self._symbol_table:
             d = self._symbol_table[id]
             d.dump(lines)
-        output = '\n'.join(lines)
-        return output
 
     def dump_map(self, indent: int, lines: List[str]) -> None:
         def dump_symbol(symbol: SymbolInfo, indent: int) -> None:
-            if isinstance(symbol, FunctionDeclaration):
-                decl_without_body = symbol.get_substring_without_body().decode()
-                # lines.append(f"{' ' * indent}Function: {symbol.name}")
-                lines.append(f"{' ' * indent}{decl_without_body}")
-            elif isinstance(symbol, ClassDeclaration):
-                lines.append(f"{' ' * indent}Class: {symbol.name}")
+            decl_without_body = symbol.get_substring_without_body().decode()
+            lines.append(f"{' ' * indent}{decl_without_body}")
+            if isinstance(symbol, ClassDeclaration):
                 for statement in symbol.body:
                     dump_statement(statement, indent + 2)
-            else:
-                raise NotImplementedError
 
         def dump_statement(statement: Statement, indent: int) -> None:
             if isinstance(statement, Declaration):

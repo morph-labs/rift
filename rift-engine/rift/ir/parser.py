@@ -135,6 +135,7 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
     def mk_class_decl(id: Node, body: List[Statement], superclasses: Optional[str]):
         return ClassDeclaration(
             body=body,
+            body_sub=body_sub,
             code=code,
             docstring=docstring,
             language=language,
@@ -160,7 +161,8 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
         superclasses_node = node.child_by_field_name('superclasses')
         superclasses = None
         if superclasses_node is not None:
-            superclasses = code.bytes[superclasses_node.start_byte:superclasses_node.end_byte].decode()
+            superclasses = code.bytes[superclasses_node.start_byte:superclasses_node.end_byte].decode(
+            )
         body_node = node.child_by_field_name('body')
         name = node.child_by_field_name('name')
         if body_node is not None and name is not None:
@@ -384,7 +386,7 @@ def test_parsing():
     lines = []
     for file in project.get_files():
         lines.append(f"=== Symbol Table for {file.path} ===")
-        lines.append(file.dump_symbol_table())
+        file.dump_symbol_table(lines=lines)
     symbol_table_str = '\n'.join(lines)
     ir_map_str = project.dump_map(indent=0)
     symbol_table_str += "\n\n=== Project Map ===\n" + ir_map_str
