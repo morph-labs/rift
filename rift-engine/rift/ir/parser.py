@@ -217,10 +217,10 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
         file.add_symbol(declaration)
         return declaration
 
-    elif node.type in ['function_definition', 'function_declaration']:
+    elif node.type in ['function_definition', 'function_declaration', 'method_definition']:
         id: Optional[Node] = None
         for child in node.children:
-            if child.type == 'identifier':
+            if child.type in ['identifier', 'property_identifier']:
                 id = child
         parameters: List[Parameter] = []
         parameters_node = node.child_by_field_name('parameters')

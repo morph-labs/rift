@@ -51,6 +51,19 @@ Function: ts2
    substring: (89, 133)
    return_type: array<number>
    body: (120, 133)
+Function: constructor
+   language: typescript
+   range: ((4, 4), (4, 20))
+   substring: (155, 171)
+   scope: ['A']
+   body: (169, 171)
+Function: load
+   language: typescript
+   range: ((5, 4), (7, 5))
+   substring: (176, 222)
+   parameters: [v:number]
+   scope: ['A']
+   body: (198, 222)
 Class: A
    language: typescript
    range: ((3, 7), (8, 1))
@@ -121,6 +134,8 @@ File: test.ts
   function ts(x:number, opt?:string) : number 
   function ts2() : array<number> 
   class A 
+    constructor() 
+    async load(v: number) 
 File: test.tsx
   function tsx() 
 File: test.py
