@@ -6,7 +6,7 @@ from tree_sitter_languages import get_parser
 from typing import Callable, List, Optional, Tuple
 
 from rift.ir.IR import \
-    ClassDeclaration, Code, Declaration, File, FunctionDeclaration, Language, Parameter, Project, Scope, Statement, SymbolInfo,\
+    ClassDeclaration, Code, Declaration, File, FunctionDeclaration, Language, Parameter, Project, Scope, Statement, SymbolInfo, TypeDeclaration,\
     language_from_file_extension
 
 
@@ -149,6 +149,20 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
             superclasses=superclasses,
         )
 
+    def mk_type_decl(id: Node, is_interface: bool):
+        return TypeDeclaration(
+            body_sub=body_sub,
+            code=code,
+            docstring=docstring,
+            exported=exported,
+            language=language,
+            name=code.bytes[id.start_byte:id.end_byte].decode(),
+            range=(node.start_point, node.end_point),
+            scope=scope,
+            substring=(node.start_byte, node.end_byte),
+            is_interface=is_interface,
+        )
+
     previous_node = node.prev_sibling
     if previous_node is not None and previous_node.type == 'comment':
         docstring_ = code.bytes[previous_node.start_byte:previous_node.end_byte].decode(
@@ -267,6 +281,15 @@ def find_declaration(code: Code, file: File, language: Language, node: Node, sco
             return find_declaration(
                 code=code, file=file, language=language, node=node.children[1], scope=scope)
 
+    elif node.type in ['interface_declaration', 'type_alias_declaration']:
+        id: Optional[Node] = node.child_by_field_name('name')
+        if id is not None:
+            is_interface = node.type == 'interface_declaration'
+            declaration = mk_type_decl(id=id, is_interface=is_interface)
+            file.add_symbol(declaration)
+            return declaration
+
+
 def process_statement(code: Code, file: File, language: Language, node: Node, scope: Scope) -> Statement:
     declaration = find_declaration(
         code=code, file=file, language=language, node=node, scope=scope)
@@ -355,6 +378,11 @@ class Tests:
                 return v
             }
         }
+        interface RunHelperSyncResult {
+            id: number
+            text: string
+        }
+        type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
     """).lstrip().encode('utf-8')
     code_tsx = dedent("""
         d = <div> "abc" </div>

@@ -38,6 +38,10 @@ Function: f2
    substring: (93, 111)
    docstring: /** Some docstring on an arrow function */
 === Symbol Table for test.ts ===
+Type: a
+   language: typescript
+   range: ((0, 0), (0, 24))
+   substring: (0, 24)
 Function: ts
    language: typescript
    range: ((1, 0), (1, 56))
@@ -68,6 +72,14 @@ Class: A
    language: typescript
    range: ((3, 7), (8, 1))
    substring: (141, 224)
+Interface: RunHelperSyncResult
+   language: typescript
+   range: ((9, 0), (12, 1))
+   substring: (225, 290)
+Type: HelperStatus
+   language: typescript
+   range: ((13, 0), (13, 74))
+   substring: (291, 365)
 === Symbol Table for test.tsx ===
 Function: tsx
    language: tsx
@@ -131,11 +143,14 @@ File: test.js
   function f1() 
   let f2 = x => x+1;
 File: test.ts
+  type a = readonly b[][];
   function ts(x:number, opt?:string) : number 
   function ts2() : array<number> 
   class A 
     constructor() 
     async load(v: number) 
+  interface RunHelperSyncResult 
+  type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
 File: test.tsx
   function tsx() 
 File: test.py

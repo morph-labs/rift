@@ -129,7 +129,6 @@ class FunctionDeclaration(SymbolInfo):
 
 @dataclass
 class ClassDeclaration(SymbolInfo):
-    body_sub: Optional[Substring]
     body: List[Statement]
     superclasses: Optional[str]
 
@@ -143,6 +142,15 @@ class ClassDeclaration(SymbolInfo):
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
 
+@dataclass
+class TypeDeclaration(SymbolInfo):
+    is_interface: bool
+    def dump(self, lines: List[str]) -> None:
+        kind = "Interface" if self.is_interface else "Type"
+        lines.append(
+            f"{kind}: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}")
+        if self.docstring != "":
+            lines.append(f"   docstring: {self.docstring}")
 
 @dataclass
 class File:
@@ -183,6 +191,22 @@ class File:
         for statement in self.statements:
             dump_statement(statement, indent)
 
+    def dump_elements(self, elements: List[str]) -> None:
+        def dump_symbol(symbol: SymbolInfo) -> None:
+            decl_without_body = symbol.get_substring_without_body().decode()
+            elements.append(decl_without_body)
+            if isinstance(symbol, ClassDeclaration):
+                for statement in symbol.body:
+                    dump_statement(statement)
+
+        def dump_statement(statement: Statement) -> None:
+            if isinstance(statement, Declaration):
+                dump_symbol(statement.symbol)
+            else:
+                pass
+        for statement in self.statements:
+            dump_statement(statement)
+
 
 @dataclass
 class Project:
@@ -201,6 +225,12 @@ class Project:
             lines.append(f"{' ' * indent}File: {file.path}")
             file.dump_map(indent+2, lines)
         return '\n'.join(lines)
+    
+    def dump_elements(self) -> List[str]:
+        elements: List[str] = []
+        for file in self.get_files():
+            file.dump_elements(elements)
+        return elements
 
 
 def language_from_file_extension(file_path: str) -> Optional[Language]:
