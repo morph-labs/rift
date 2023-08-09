@@ -19,12 +19,12 @@ https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903
 **Codebase-wide edits**
 
 <!-- TODO: pranav -->
-![aider screencast](assets/aider-screencast.gif) <!-- TODO: pranav -->
+![aider screencast](assets/aider.gif)
 
 **Contextual codebase generation**
 
 <!-- TODO: pranav -->
-![smol screencast](assets/smol-screencast.gif) <!-- TODO: pranav -->
+![smol screencast](assets/smol.gif)
 
 ## Tips
 - Press Command+K to focus the Rift Omnibar.
