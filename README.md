@@ -14,7 +14,7 @@ https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903
 **Conversational code editing**
 
 <!-- TODO: pranav -->
-![code edit screencast](assets/code-edit-screencast.gif) <!-- TODO: pranav -->
+![code edit screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/code-edit.gif)
 
 **Codebase-wide edits**
 
