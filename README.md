@@ -13,18 +13,15 @@ https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903
 ## Features
 **Conversational code editing**
 
-<!-- TODO: pranav -->
 ![code edit screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/code-edit.gif)
 
 **Codebase-wide edits**
 
-<!-- TODO: pranav -->
-![aider screencast](assets/aider.gif)
+![aider screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/aider.gif)
 
 **Contextual codebase generation**
 
-<!-- TODO: pranav -->
-![smol screencast](assets/smol.gif)
+![smol screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/smol.gif)
 
 ## Tips
 - Press Command+K to focus the Rift Omnibar.
