@@ -1,7 +1,7 @@
 # Rift
 Rift is open-source infrastructure for AI-native development environments. Rift makes your IDE *agentic*. Software will soon be written mostly by AI software engineers that work alongside you. Codebases will soon be living, spatial artifacts that *maintain context*, *listen to*, *anticipate*, *react to*, and *execute* your every intent. The [Rift Code Engine](./rift-engine/) implements an AI-native extension of the [language server protocol](https://microsoft.github.io/language-server-protocol/). The [Rift VSCode extension](./editors/rift-vscode) implements an client and end-user interface which is the first step into that future.
 
-https://github.com/morph-labs/rift/assets/13114790/70797610-fbed-4f05-ac9c-66c217b7e0e9
+https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903b26f909
 
 - [Discord](https://discord.gg/wa5sgWMfqv)
 - [Getting started](#getting-started)
