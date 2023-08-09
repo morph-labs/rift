@@ -9,8 +9,11 @@ Rift (https://www.github.com/morph-labs/rift) is an open-source AI-native langua
 Today, with Rift, you can do all of the following without ever leaving VSCode or copy-pasting from a browser chat window:
 
 - Generate an entire workspace, or a module based on other parts of your codebase
+![smol screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/smol.gif)
 - Conversationally iterate on code edits over selected regions which are streamed directly into your editor window
+![code edit screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/code-edit.gif)
 - Request, review, and iterate on PRs: codebase-wide, multi-file diffs
+![aider screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/aider.gif)
 
 ## Installation
 
