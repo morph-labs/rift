@@ -49,19 +49,19 @@ If the automatic installation of the Rift Code Engine fails, follow the below in
   - On Mac OSX:
     - Install [homebrew](https://brew.sh).
     - `brew install python@3.10`
-    - `mkdir ~/.morph/ && cd ~/.morph/ && python3.10 -m venv env`
-    - `source ./env/bin/activate/`
+    - `mkdir -p ~/.morph/ && cd ~/.morph/ && python3.10 -m venv env`
+    - `source ./env/bin/activate`
   - On Linux:
     - On Ubuntu:
       - `sudo apt install software-properties-common -y`
       - `sudo add-apt-repository ppa:deadsnakes/ppa`
       - `sudo apt install python3.10 && sudo apt install python3.10-venv`
-      - `mkdir ~/.morph/ && cd ~/.morph/ && python3.10 -m venv env`
-      - `source ./env/bin/activate/`
+      - `mkdir -p ~/.morph/ && cd ~/.morph/ && python3.10 -m venv env`
+      - `source ./env/bin/activate`
     - On Arch:
       - `yay -S python310`
-      - `mkdir ~/.morph/ && cd ~/.morph/ && python3.10 -m venv env`
-      - `source ./env/bin/activate/`
+      - `mkdir -p ~/.morph/ && cd ~/.morph/ && python3.10 -m venv env`
+      - `source ./env/bin/activate`
 - Install Rift. We recommend that you `pip install` Rift in a dedicated Python >=3.10 virtual environment from this repository.
   - Make sure that `which pip` returns a path whose prefix matches the location of a virtual environment, such as the one installed above.
   <!-- - Using `pip` and PyPI: -->
