@@ -1,12 +1,15 @@
-import os
 import difflib
-from typing import List, Optional, Tuple
+import os
 from dataclasses import dataclass, field
+from textwrap import dedent
+from typing import List, Optional, Tuple
+
 from tree_sitter import Node
 from tree_sitter_languages import get_parser
-from textwrap import dedent
-import rift.ir.parser as parser
+
 import rift.ir.IR as IR
+import rift.ir.parser as parser
+
 
 @dataclass
 class MissingType:
@@ -43,20 +46,34 @@ def functions_missing_types_in_file(file: IR.File) -> List[MissingType]:
         missing_return = False
         parameters = d.parameters
         if parameters != []:
-            if (parameters[0].name == "self" or parameters[0].name == "cls") and d.language == "python" and d.scope != []:
+            if (
+                (parameters[0].name == "self" or parameters[0].name == "cls")
+                and d.language == "python"
+                and d.scope != []
+            ):
                 parameters = parameters[1:]
             for p in parameters:
                 if p.type is None:
                     missing_parameters.append(p.name)
         if d.return_type is None:
-            missing_return = True
+            if not d.has_return and d.language in ["javascript", "typescript", "tsx"]:
+                pass
+            else:
+                missing_return = True
         if missing_parameters != [] or missing_return:
-            functions_missing_types.append(MissingType(
-                function_declaration=d, parameters=missing_parameters, return_type=missing_return))
+            functions_missing_types.append(
+                MissingType(
+                    function_declaration=d,
+                    parameters=missing_parameters,
+                    return_type=missing_return,
+                )
+            )
     return functions_missing_types
 
 
-def functions_missing_types_in_path(root: str, path: str) -> Tuple[List[MissingType], IR.Code, IR.File]:
+def functions_missing_types_in_path(
+    root: str, path: str
+) -> Tuple[List[MissingType], IR.Code, IR.File]:
     """Given a file path, parse the file and find function declarations that are missing types in the parameters or the return type."""
     full_path = os.path.join(root, path)
     file = IR.File(path)
@@ -66,8 +83,8 @@ def functions_missing_types_in_path(root: str, path: str) -> Tuple[List[MissingT
         missing_types = []
         code = IR.Code(b"")
     else:
-        with open(full_path, 'r', encoding='utf-8') as f:
-            code = IR.Code(f.read().encode('utf-8'))
+        with open(full_path, "r", encoding="utf-8") as f:
+            code = IR.Code(f.read().encode("utf-8"))
         parser.parse_code_block(file, code, language)
         missing_types = functions_missing_types_in_file(file)
     return (missing_types, code, file)
@@ -82,7 +99,7 @@ class FileMissingTypes:
 
 
 def files_missing_types_in_project(project: IR.Project) -> List[FileMissingTypes]:
-    """"Return a list of files with missing types, and the missing types in each file."""
+    """ "Return a list of files with missing types, and the missing types in each file."""
     files_with_missing_types: List[FileMissingTypes] = []
     for file in project.get_files():
         missing_types = functions_missing_types_in_file(file)
@@ -98,31 +115,36 @@ def files_missing_types_in_project(project: IR.Project) -> List[FileMissingTypes
 #### TESTS FROM HERE ON ####
 ############################
 
+
 def test_missing_types():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    missing_types_file = os.path.join(script_dir, 'missing_types.txt')
-    with open(missing_types_file, 'r') as f:
+    missing_types_file = os.path.join(script_dir, "missing_types.txt")
+    with open(missing_types_file, "r") as f:
         old_missing_types_str = f.read()
 
     project = parser.get_test_project()
     new_missing_types = []
     for file in project.get_files():
         missing_types = functions_missing_types_in_file(file)
-        new_missing_types += ([str(mt) for mt in missing_types])
-    new_missing_types_str = '\n'.join(new_missing_types)
+        new_missing_types += [str(mt) for mt in missing_types]
+    new_missing_types_str = "\n".join(new_missing_types)
     if new_missing_types_str != old_missing_types_str:
-        diff = difflib.unified_diff(old_missing_types_str.splitlines(keepends=True),
-                                    new_missing_types_str.splitlines(keepends=True))
-        diff_output = ''.join(diff)
+        diff = difflib.unified_diff(
+            old_missing_types_str.splitlines(keepends=True),
+            new_missing_types_str.splitlines(keepends=True),
+        )
+        diff_output = "".join(diff)
 
         # if you want to update the missing types, set this to True
         update_missing_types = os.getenv("UPDATE_TESTS", "False") == "True"
         if update_missing_types:
             print("Updating Missing Types...")
-            with open(missing_types_file, 'w') as f:
+            with open(missing_types_file, "w") as f:
                 f.write(new_missing_types_str)
 
-        assert update_missing_types, f"Missing Types have changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
+        assert (
+            update_missing_types
+        ), f"Missing Types have changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
 
 
 def test_missing_types_in_project():

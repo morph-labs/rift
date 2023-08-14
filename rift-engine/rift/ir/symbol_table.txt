@@ -32,6 +32,7 @@ Function: f1
    substring: (22, 49)
    docstring: /** Some docstring */
    body: (36, 49)
+   has_return: True
 Function: f2
    language: javascript
    range: ((3, 0), (3, 18))
@@ -49,12 +50,14 @@ Function: ts
    parameters: [x:number, opt?:string]
    return_type: number
    body: (69, 81)
+   has_return: True
 Function: ts2
    language: typescript
    range: ((2, 7), (2, 51))
    substring: (89, 133)
    return_type: array<number>
    body: (120, 133)
+   has_return: True
 Function: constructor
    language: typescript
    range: ((4, 4), (4, 20))
@@ -68,6 +71,7 @@ Function: load
    parameters: [v:number]
    scope: ['A']
    body: (198, 222)
+   has_return: True
 Class: A
    language: typescript
    range: ((3, 7), (8, 1))
@@ -86,6 +90,7 @@ Function: tsx
    range: ((1, 0), (1, 27))
    substring: (23, 50)
    body: (38, 50)
+   has_return: True
 === Symbol Table for test.py ===
 Function: py
    language: python
@@ -95,6 +100,7 @@ Function: py
    scope: ['A']
    docstring: """This is a docstring"""
    body: (97, 139)
+   has_return: True
 Class: A(C,D)
    language: python
    range: ((0, 0), (8, 16))

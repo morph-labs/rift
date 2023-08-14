@@ -17,6 +17,7 @@ class Code:
 
     def __str__(self):
         return self.bytes.decode()
+
     __repr__ = __str__
 
     def apply_edit(self, edit: "CodeEdit") -> "Code":
@@ -70,12 +71,14 @@ class Parameter:
             return name
         else:
             return f"{name}:{self.type}"
+
     __repr__ = __str__
 
 
 @dataclass
 class SymbolInfo(ABC):
     """Abstract class for symbol information."""
+
     body_sub: Optional[Substring]
     code: Code
     docstring: str
@@ -109,12 +112,14 @@ class SymbolInfo(ABC):
 
 @dataclass
 class FunctionDeclaration(SymbolInfo):
+    has_return: bool
     parameters: List[Parameter]
     return_type: Optional[str] = None
 
     def dump(self, lines: List[str]) -> None:
         lines.append(
-            f"Function: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}")
+            f"Function: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+        )
         if self.parameters != []:
             lines.append(f"   parameters: {self.parameters}")
         if self.return_type is not None:
@@ -125,6 +130,8 @@ class FunctionDeclaration(SymbolInfo):
             lines.append(f"   docstring: {self.docstring}")
         if self.body_sub is not None:
             lines.append(f"   body: {self.body_sub}")
+        if self.has_return:
+            lines.append(f"   has_return: {self.has_return}")
 
 
 @dataclass
@@ -138,19 +145,24 @@ class ClassDeclaration(SymbolInfo):
         else:
             id = self.name
         lines.append(
-            f"Class: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}")
+            f"Class: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+        )
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
+
 
 @dataclass
 class TypeDeclaration(SymbolInfo):
     is_interface: bool
+
     def dump(self, lines: List[str]) -> None:
         kind = "Interface" if self.is_interface else "Type"
         lines.append(
-            f"{kind}: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}")
+            f"{kind}: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+        )
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
+
 
 @dataclass
 class File:
@@ -168,7 +180,11 @@ class File:
         self._symbol_table[symbol.get_qualified_id()] = symbol
 
     def get_function_declarations(self) -> List[FunctionDeclaration]:
-        return [symbol for symbol in self._symbol_table.values() if isinstance(symbol, FunctionDeclaration)]
+        return [
+            symbol
+            for symbol in self._symbol_table.values()
+            if isinstance(symbol, FunctionDeclaration)
+        ]
 
     def dump_symbol_table(self, lines: List[str]) -> None:
         for id in self._symbol_table:
@@ -188,6 +204,7 @@ class File:
                 dump_symbol(statement.symbol, indent)
             else:
                 pass
+
         for statement in self.statements:
             dump_statement(statement, indent)
 
@@ -204,6 +221,7 @@ class File:
                 dump_symbol(statement.symbol)
             else:
                 pass
+
         for statement in self.statements:
             dump_statement(statement)
 
@@ -223,9 +241,9 @@ class Project:
         lines = []
         for file in self.get_files():
             lines.append(f"{' ' * indent}File: {file.path}")
-            file.dump_map(indent+2, lines)
-        return '\n'.join(lines)
-    
+            file.dump_map(indent + 2, lines)
+        return "\n".join(lines)
+
     def dump_elements(self) -> List[str]:
         elements: List[str] = []
         for file in self.get_files():
@@ -236,7 +254,12 @@ class Project:
 def language_from_file_extension(file_path: str) -> Optional[Language]:
     if file_path.endswith(".c"):
         return "c"
-    elif file_path.endswith(".cpp") or file_path.endswith(".cc") or file_path.endswith(".cxx") or file_path.endswith(".c++"):
+    elif (
+        file_path.endswith(".cpp")
+        or file_path.endswith(".cc")
+        or file_path.endswith(".cxx")
+        or file_path.endswith(".c++")
+    ):
         return "cpp"
     elif file_path.endswith(".js"):
         return "javascript"

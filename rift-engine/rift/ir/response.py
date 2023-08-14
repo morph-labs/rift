@@ -3,10 +3,10 @@ import os
 import re
 from textwrap import dedent
 from typing import List, Optional
-from rift.ir.missing_types import functions_missing_types_in_file
 
-import rift.ir.parser as parser
 import rift.ir.IR as IR
+import rift.ir.parser as parser
+from rift.ir.missing_types import functions_missing_types_in_file
 
 
 def extract_blocks_from_response(response: str) -> List[IR.Code]:
@@ -63,15 +63,17 @@ def replace_functions_in_document(
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
     """
-    function_declarations_in_document: List[IR.FunctionDeclaration] = \
-        ir_doc.get_function_declarations()
+    function_declarations_in_document: List[
+        IR.FunctionDeclaration
+    ] = ir_doc.get_function_declarations()
 
     code_edits: List[IR.CodeEdit] = []
 
     for function_declaration in function_declarations_in_document:
-        function_in_blocks_ = ir_blocks.search_symbol(
-            function_declaration.name)
-        if len(function_in_blocks_) == 1 and isinstance(function_in_blocks_[0], IR.FunctionDeclaration):
+        function_in_blocks_ = ir_blocks.search_symbol(function_declaration.name)
+        if len(function_in_blocks_) == 1 and isinstance(
+            function_in_blocks_[0], IR.FunctionDeclaration
+        ):
             function_in_blocks = function_in_blocks_[0]
         else:
             function_in_blocks = None
@@ -87,8 +89,7 @@ def replace_functions_in_document(
                 new_function_text = function_in_blocks.get_substring_without_body()
                 old_function_text = function_declaration.get_substring_without_body()
                 # Get trailing newline and/or whitespace from old text
-                old_trailing_whitespace = re.search(
-                    rb'\s*$', old_function_text)
+                old_trailing_whitespace = re.search(rb"\s*$", old_function_text)
                 # Add it to new text
                 if old_trailing_whitespace is not None:
                     new_function_text = new_function_text.rstrip()
@@ -103,9 +104,11 @@ def replace_functions_in_document(
 
 
 def replace_functions_from_code_blocks(
-    code_blocks: List[IR.Code], document: IR.Code,
-        language: IR.Language, replace_body: bool,
-        filter_function_ids: Optional[List[IR.QualifiedId]] = None,
+    code_blocks: List[IR.Code],
+    document: IR.Code,
+    language: IR.Language,
+    replace_body: bool,
+    filter_function_ids: Optional[List[IR.QualifiedId]] = None,
 ) -> List[IR.CodeEdit]:
     """
     Generates a new document by replacing functions in the original document with the corresponding functions
@@ -113,7 +116,14 @@ def replace_functions_from_code_blocks(
     """
     ir_blocks = parse_code_blocks(code_blocks=code_blocks, language=language)
     ir_doc = parse_code_blocks(code_blocks=[document], language=language)
-    return replace_functions_in_document(filter_function_ids=filter_function_ids, ir_doc=ir_doc, ir_blocks=ir_blocks, document=document, replace_body=replace_body)
+    return replace_functions_in_document(
+        filter_function_ids=filter_function_ids,
+        ir_doc=ir_doc,
+        ir_blocks=ir_blocks,
+        document=document,
+        replace_body=replace_body,
+    )
+
 
 ############################
 #### TESTS FROM HERE ON ####
@@ -121,7 +131,9 @@ def replace_functions_from_code_blocks(
 
 
 class Test:
-    document = dedent("""
+    document = (
+        dedent(
+            """
         int aa() {
           return 0;
         }
@@ -140,9 +152,14 @@ class Test:
           *x = 1;
           return 0;
         }
-    """).lstrip().encode("utf-8")
+    """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
 
-    response1 = dedent("""
+    response1 = dedent(
+        """
         To fix the error reported in the `main` function, you need to make the following changes:
 
         1. Modify the `foo` function to validate the pointer passed to it and assign it a value only if it is not null.
@@ -172,9 +189,11 @@ class Test:
           return 0;
         }
         ```
-    """).lstrip()
+    """
+    ).lstrip()
 
-    response2 = dedent("""
+    response2 = dedent(
+        """
         The bug is caused by dereferencing a potentially null pointer `x` on line 18. To fix this bug, we need to modify the following functions:
 
         1. `foo()`
@@ -200,9 +219,12 @@ class Test:
         In the `foo()` function, we allocate memory for `x` using `malloc()` and then assign a value of 0 to `*x`. This ensures that `x` is not null when it is passed back to `main()`.
 
         In `main()`, we add a call to `free(x)` to release the allocated memory before the program exits.
-        """).lstrip()
+        """
+    ).lstrip()
 
-    code3 = dedent("""
+    code3 = (
+        dedent(
+            """
         def foo() -> None:
             print("Hello world!")
 
@@ -216,9 +238,14 @@ class Test:
         
         def bar() -> None:
             print("Hello world!")
-        """).lstrip().encode("utf-8")
+        """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
 
-    response3 = dedent("""
+    response3 = dedent(
+        """
         Here are the required changes:
 
         ```
@@ -237,13 +264,14 @@ class Test:
         Some other thoutghts:
         - this
         
-        """).lstrip()
+        """
+    ).lstrip()
 
 
 def test_response():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    test_output_file = os.path.join(script_dir, 'response_test.txt')
-    with open(test_output_file, 'r') as f:
+    test_output_file = os.path.join(script_dir, "response_test.txt")
+    with open(test_output_file, "r") as f:
         old_test_output = f.read()
     new_test_output = ""
 
@@ -251,13 +279,15 @@ def test_response():
     code_blocks1 = extract_blocks_from_response(Test.response1)
     document1 = IR.Code(Test.document)
     edits1 = replace_functions_from_code_blocks(
-        code_blocks=code_blocks1, document=document1, language=language, replace_body=True)
+        code_blocks=code_blocks1, document=document1, language=language, replace_body=True
+    )
     new_document1 = document1.apply_edits(edits1)
     new_test_output += f"\nNew document1:\n```\n{new_document1}```"
     code_blocks2 = extract_blocks_from_response(Test.response2)
     document2 = IR.Code(Test.document)
     edits2 = replace_functions_from_code_blocks(
-        code_blocks=code_blocks2, document=document2, language=language, replace_body=True)
+        code_blocks=code_blocks2, document=document2, language=language, replace_body=True
+    )
     new_document2 = document2.apply_edits(edits2)
     new_test_output += f"\n\nNew document2:\n```\n{new_document2}```"
 
@@ -266,26 +296,31 @@ def test_response():
     file = IR.File("response3")
     parser.parse_code_block(file, IR.Code(Test.code3), language)
     missing_types = functions_missing_types_in_file(file)
-    filter_function_ids = [
-        mt.function_declaration.get_qualified_id() for mt in missing_types]
+    filter_function_ids = [mt.function_declaration.get_qualified_id() for mt in missing_types]
     document3 = IR.Code(Test.code3)
     edits3 = replace_functions_from_code_blocks(
-        code_blocks=code_blocks3, document=document3,
+        code_blocks=code_blocks3,
+        document=document3,
         filter_function_ids=filter_function_ids,
-        language=language, replace_body=False)
+        language=language,
+        replace_body=False,
+    )
     new_document3 = document3.apply_edits(edits3)
     new_test_output += f"\n\nNew document3:\n```\n{new_document3}```"
 
     if new_test_output != old_test_output:
-        diff = difflib.unified_diff(old_test_output.splitlines(keepends=True),
-                                    new_test_output.splitlines(keepends=True))
-        diff_output = ''.join(diff)
+        diff = difflib.unified_diff(
+            old_test_output.splitlines(keepends=True), new_test_output.splitlines(keepends=True)
+        )
+        diff_output = "".join(diff)
 
         # if you want to update the missing types, set this to True
         update_missing_types = os.getenv("UPDATE_TESTS", "False") == "True"
         if update_missing_types:
             print("Updating Missing Types...")
-            with open(test_output_file, 'w') as f:
+            with open(test_output_file, "w") as f:
                 f.write(new_test_output)
 
-        assert update_missing_types, f"Missing Types have changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
+        assert (
+            update_missing_types
+        ), f"Missing Types have changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
