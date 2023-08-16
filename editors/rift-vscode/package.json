@@ -4,7 +4,7 @@
   "publisher": "morph",
   "displayName": "Rift",
   "description": "Rift: an AI-native language server for your personal AI software engineer.",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "icon": "resources/vsce-icon.png",
   "engines": {
     "vscode": "^1.71.0"

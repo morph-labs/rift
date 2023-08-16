@@ -338,9 +338,9 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         status_code = resp.status
         message = await self.get_error_message(resp)
         message = f"{status_code} error from {self.base_url}: {message}"
-        logging.error(message)
+        logger.error(message)
         if status_code == 404 and self.default_model == "gpt-4":
-            logging.info(
+            logger.error(
                 "Please double check you have access to GPT-4 API: https://openai.com/waitlist/gpt-4-api"
             )
         raise OpenAIError(message=message, status=status_code)

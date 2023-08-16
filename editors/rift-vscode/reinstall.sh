@@ -15,7 +15,7 @@ echo "Running npm i"
 npm i
 
 echo "Creating VSIX package..."
-vsce package
+npx @vscode/vsce package
 
 # You may need to replace the '*.vsix' wildcard with the actual VSIX filename if it's different.
 echo "Installing extension..."

@@ -62,13 +62,17 @@ If the automatic installation of the Rift Code Engine fails, follow the below in
       - `yay -S python310`
       - `mkdir -p ~/.morph/ && cd ~/.morph/ && python3.10 -m venv env`
       - `source ./env/bin/activate`
+  - On Windows:
+    - We recommend that you use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) with Ubuntu. Once inside a WSL shell, follow the Ubuntu installation instructions above.
+    - Make sure **inbound connections over port 7797 from WSL to Windows** are allowed (e.g. try following this [guide](https://www.nextofwindows.com/allow-server-running-inside-wsl-to-be-accessible-outside-windows-10-host) but for port 7797 instead of 3000).
+    - On Windows we recommend that users disable `rift.autostart` in VSCode and run Rift manually as `~/.morph/env/bin/rift` after following the installation instrucitons below.
 - Install Rift. We recommend that you `pip install` Rift in a dedicated Python >=3.10 virtual environment from this repository.
   - Make sure that `which pip` returns a path whose prefix matches the location of a virtual environment, such as the one installed above.
   <!-- - Using `pip` and PyPI: -->
   <!--   - `pip install --upgrade 'pyrift[all]'` -->
   <!--     - `[all]` is required to pull in direct dependencies needed for third-party agents like Aider, Smol Dev, and GPT Engineer. -->
   - using `pip` from GitHub:
-    - `pip install "git+https://github.com/morph-labs/rift.git@dc27f3b299b79e37b1bcd169efa2216aa07f65b0#egg=pyrift&subdirectory=rift-engine"`
+    - `pip install "git+https://github.com/morph-labs/rift.git@main#egg=pyrift&subdirectory=rift-engine"`
   - From source:
     - `cd ~/.morph/ && git clone git@github.com:morph-labs/rift && cd ./rift/rift-engine/ && pip install -e .`
       

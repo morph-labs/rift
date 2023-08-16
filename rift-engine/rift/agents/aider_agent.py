@@ -401,7 +401,9 @@ class Aider(agent.ThirdPartyAgent):
                 event.clear()
             try:
                 await aider_fut
-            except (Exception, SystemExit) as e:
+            except SystemExit as e:
                 logger.info(f"[aider] caught {e}, exiting")
+            except Exception as e:
+                logger.error(f"[aider] caught {e}, exiting")
             finally:
                 await self.send_progress()

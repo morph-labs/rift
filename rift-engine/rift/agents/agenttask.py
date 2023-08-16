@@ -66,7 +66,7 @@ class AgentTask:
             # raise e
         except Exception as e:
             self._error = e
-            logger.info(f"[AgentTask] caught error: {e}")
+            logger.error(f"[AgentTask] error: {e}")
             logger.info(traceback.format_exc())
         finally:
             self._running = False

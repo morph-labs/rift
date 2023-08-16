@@ -417,6 +417,7 @@ export class MorphLanguageClient
                 await this.create_client();
             }
         });
+        this.client.onNotification("morph/error", async (params: any) => {vscode.window.showErrorMessage(params.msg)});
         await this.client.start();
         console.log("rift-engine started");
     }

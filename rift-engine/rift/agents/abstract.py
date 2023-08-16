@@ -208,7 +208,7 @@ class Agent:
             )
             return response["message"].strip()
         except Exception as exception:
-            logger.info(f"[request_chat] failed, caught {exception=}")
+            logger.error(f"[request_chat] failed, caught {exception=}")
             raise exception
 
     async def send_chat_update(self, msg: str, prepend: bool = False):

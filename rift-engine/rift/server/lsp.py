@@ -15,6 +15,7 @@ from rift.lsp import LspServer as BaseLspServer
 from rift.lsp import rpc_method
 from rift.rpc import RpcServerStatus
 from rift.util.ofdict import ofdict
+import pydantic
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,10 @@ class LspLogHandler(logging.Handler):
         level = t_map.get(record.levelno, 4)
         if level > 3:
             return
+        if level == 1:
+            t = asyncio.create_task(self.server.send_error(self.format(record)))
+            self.tasks.add(t)
+            t.add_done_callback(self.tasks.discard) # cute
         t = asyncio.create_task(
             self.server.notify(
                 "window/logMessage",
@@ -149,7 +154,7 @@ class LspServer(BaseLspServer):
                 yield from glob.glob(filepath, root="/" if filepath.startswith("/") else None)
 
         # Initialize dictionary to store resulting TextDocumentItems
-        result_documents: Dict[str, lsp.TextDocumentItem]
+        result_documents: Dict[str, lsp.TextDocumentItem] = dict()
         # Process and combine all file paths, and for each...
         for file_path in join_filepaths(preprocess_filepaths(params.patterns)):
             # Open the file for reading
@@ -275,26 +280,35 @@ class LspServer(BaseLspServer):
 
     @rpc_method("morph/create_agent")
     async def on_create(self, params_as_dict: Any):
-        agent_type = params_as_dict["agent_type"]
-        agent_id = str(uuid.uuid4())[:8]
-        params_as_dict["agent_id"] = agent_id
+        try:
+            agent_type = params_as_dict["agent_type"]
+            agent_id = str(uuid.uuid4())[:8]
+            params_as_dict["agent_id"] = agent_id
 
-        logger = logging.getLogger(__name__)
-        agent_cls = AGENT_REGISTRY[agent_type]
+            logger = logging.getLogger(__name__)
+            agent_cls = AGENT_REGISTRY[agent_type]
 
-        logger.info(f"[on_create] {agent_cls.params_cls=}")
-        params_with_id = ofdict(agent_cls.params_cls, params_as_dict)
-        agent = await agent_cls.create(params=params_with_id, server=self)
+            logger.info(f"[on_create] {agent_cls.params_cls=}")
+            params_with_id = ofdict(agent_cls.params_cls, params_as_dict)
+            agent = await agent_cls.create(params=params_with_id, server=self)
 
-        self.active_agents[agent_id] = agent
-        t = asyncio.create_task(agent.main())
+            self.active_agents[agent_id] = agent
+            t = asyncio.create_task(agent.main())
 
-        def main_callback(fut):
-            if fut.exception():
-                logger.info(f"[on_run] caught exception={fut.exception()=}")
+            def main_callback(fut):
+                if fut.exception():
+                    logger.info(f"[on_run] caught exception={fut.exception()=}")
 
-        t.add_done_callback(main_callback)
-        return CreateAgentResult(id=agent_id)
+            t.add_done_callback(main_callback)
+            return CreateAgentResult(id=agent_id)
+        except pydantic.error_wrappers.ValidationError as e:
+            await self.send_error(f"Error (possibly due to unset API key):\n{e}")
+
+        except Exception as e:
+            await self.send_error(str(e))
+
+    async def send_error(self, msg: str):
+        await self.notify("morph/error", {"msg": msg})
 
     @rpc_method("morph/cancel")
     async def on_cancel(self, params: AgentIdParams):
