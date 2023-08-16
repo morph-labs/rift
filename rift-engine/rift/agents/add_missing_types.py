@@ -166,13 +166,19 @@ def get_num_missing_in_code(code: IR.Code, language: IR.Language) -> int:
     agent_description="Infer missing type signatures",
     display_name="Type Inference",
     agent_icon="""\
-<svg width="34px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <!-- T remains unchanged -->
-    <path transform="scale(0.8) translate(-3,3)" d="M5 7V6C5 4.89543 5.89543 4 7 4H12M19 7V6C19 4.89543 18.1046 4 17 4H12M12 4V20M12 20H9M12 20H15" stroke="#292929" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-
-    <!-- ? moved further to the right -->
-    <path transform="translate(0,0)" d="M15.1777 8.79421C15.1777 5.06857 21.0323 5.0686 21.0323 8.79421C21.0323 11.4554 18.3711 10.9231 18.3711 14.1164" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path transform="translate(0,0)" d="M18.3711 18.385L18.3817 18.3732" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_636_8979)">
+<path d="M11.4446 5.05713H9.07153V12.8574C9.07153 13.3066 8.97144 13.6411 8.77124 13.8608C8.57104 14.0757 8.31226 14.1831 7.99487 14.1831C7.67261 14.1831 7.40894 14.0732 7.20386 13.8535C7.00366 13.6338 6.90356 13.3018 6.90356 12.8574V5.05713H4.53052C4.15942 5.05713 3.88354 4.97656 3.70288 4.81543C3.52222 4.64941 3.43188 4.43213 3.43188 4.16357C3.43188 3.88525 3.52466 3.66553 3.71021 3.50439C3.90063 3.34326 4.17407 3.2627 4.53052 3.2627H11.4446C11.8206 3.2627 12.0989 3.3457 12.2795 3.51172C12.4651 3.67773 12.5579 3.89502 12.5579 4.16357C12.5579 4.43213 12.4651 4.64941 12.2795 4.81543C12.094 4.97656 11.8157 5.05713 11.4446 5.05713Z" fill="#CCCCCC"/>
+<rect x="13.8284" y="8.2998" width="1" height="4" rx="0.5" transform="rotate(45 13.8284 8.2998)" fill="#D9D9D9"/>
+<rect x="11" y="6.8999" width="1" height="4" rx="0.5" transform="rotate(-45 11 6.8999)" fill="#D9D9D9"/>
+<rect width="1" height="4" rx="0.5" transform="matrix(-0.707107 0.707107 0.707107 0.707107 2.30737 8.40674)" fill="#D9D9D9"/>
+<rect width="1" height="4" rx="0.5" transform="matrix(-0.707107 -0.707107 -0.707107 0.707107 5.13574 7.00684)" fill="#D9D9D9"/>
+</g>
+<defs>
+<clipPath id="clip0_636_8979">
+<rect width="16" height="16" fill="white"/>
+</clipPath>
+</defs>
 </svg>""",
 )
 @dataclass
