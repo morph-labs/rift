@@ -14,34 +14,34 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class TestAgentParams(AgentParams):
+class SampleAgentParams(AgentParams):
     textDocument: TextDocumentIdentifier
     instructionPrompt: Optional[str] = None
 
 
 @dataclass
-class TestAgentState(AgentState):
-    params: TestAgentParams
+class SampleAgentState(AgentState):
+    params: SampleAgentParams
     messages: list[openai.Message]
 
 
 """uncomment this to register the agent and access it from the Rift extension"""
 # @agent(
-#     agent_description="Test agent for testing purposes",
-#     display_name="Test Agent"
+#     agent_description="Sample agent for testing purposes",
+#     display_name="Sample Agent"
 # )
 
 
 @dataclass
-class TestAgent(Agent):
+class SampleAgent(Agent):
     """
-    TestAgent is a minimal implementation of the Agent API.
+    SampleAgent is a minimal implementation of the Agent API.
     It is used for testing purposes.
     """
 
-    state: Optional[TestAgentState] = None
-    agent_type: str = "test_agent"
-    params_cls: ClassVar[Any] = TestAgentParams
+    state: Optional[SampleAgentState] = None
+    agent_type: str = "sample_agent"
+    params_cls: ClassVar[Any] = SampleAgentParams
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     _response_buffer: str = ""
 
@@ -96,21 +96,21 @@ class TestAgent(Agent):
             logger.info(f"[_run_chat_thread] caught exception={e}, exiting")
 
     @classmethod
-    async def create(cls, params: TestAgentParams, server):
-        # Convert the parameters to a TestAgentParams object
+    async def create(cls, params: SampleAgentParams, server):
+        # Convert the parameters to a SampleAgentParams object
 
         # Create the initial state
-        state = TestAgentState(
+        state = SampleAgentState(
             params=params,
             messages=[openai.Message.assistant("test")],
         )
 
-        # Create the TestAgent object
+        # Create the SampleAgent object
         obj = cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
         )
 
-        # Return the TestAgent object
+        # Return the SampleAgent object
         return obj
