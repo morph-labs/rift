@@ -1,10 +1,10 @@
 {
   "name": "rift-vscode",
   "repository": "https://www.github.com/morph-labs/rift",
-  "publisher": "morph",
+  "publisher": "Morph",
   "displayName": "Rift",
   "description": "Rift: an AI-native language server for your personal AI software engineer.",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "icon": "resources/vsce-icon.png",
   "engines": {
     "vscode": "^1.71.0"
