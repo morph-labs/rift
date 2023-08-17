@@ -2,7 +2,7 @@
 
 ### [Download for VSCode](https://marketplace.visualstudio.com/items?itemName=Morph.rift-vscode)
 
-Rift is open-source infrastructure for AI-native development environments. Rift makes your IDE *agentic*. Software will soon be written mostly by AI software engineers that work alongside you. Codebases will soon be living, spatial artifacts that *maintain context*, *listen to*, *anticipate*, *react to*, and *execute* your every intent. The [Rift Code Engine](./rift-engine/) implements an AI-native extension of the [language server protocol](https://microsoft.github.io/language-server-protocol/). The [Rift VSCode extension](./editors/rift-vscode) implements an client and end-user interface which is the first step into that future.
+Rift is open-source infrastructure for AI-native development environments. Rift makes your IDE *agentic*. Software will soon be written mostly by AI software engineers that work alongside you. Codebases will soon be living, spatial artifacts that *maintain context*, *listen to*, *anticipate*, *react to*, and *execute* your every intent. The [Rift Code Engine](./rift-engine/) implements an AI-native extension of the [language server protocol](https://microsoft.github.io/language-server-protocol/). The [Rift VSCode extension](./editors/rift-vscode) implements a client and end-user interface which is the first step into that future.
 
 https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903b26f909
 
@@ -66,7 +66,7 @@ If the automatic installation of the Rift Code Engine fails, follow the below in
   - On Windows:
     - We recommend that you use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) with Ubuntu. Once inside a WSL shell, follow the Ubuntu installation instructions above.
     - Make sure **inbound connections over port 7797 from WSL to Windows** are allowed (e.g. try following this [guide](https://www.nextofwindows.com/allow-server-running-inside-wsl-to-be-accessible-outside-windows-10-host) but for port 7797 instead of 3000).
-    - On Windows we recommend that users disable `rift.autostart` in VSCode and run Rift manually as `~/.morph/env/bin/rift` after following the installation instrucitons below.
+    - On Windows we recommend that users disable `rift.autostart` in VSCode and run Rift manually as `~/.morph/env/bin/rift` after following the installation instructions below.
 - Install Rift. We recommend that you `pip install` Rift in a dedicated Python >=3.10 virtual environment from this repository.
   - Make sure that `which pip` returns a path whose prefix matches the location of a virtual environment, such as the one installed above.
   <!-- - Using `pip` and PyPI: -->
