@@ -1,7 +1,4 @@
-import difflib
-import logging
 import os
-from textwrap import dedent
 from typing import Callable, List, Optional, Tuple
 
 from tree_sitter import Node
@@ -226,7 +223,7 @@ def find_declaration(
         body_node = node.child_by_field_name("body")
         name = node.child_by_field_name("name")
         if body_node is not None and name is not None:
-            scope = scope + [code.bytes[name.start_byte : name.end_byte].decode()]
+            scope = scope + code.bytes[name.start_byte : name.end_byte].decode() + "."
             body = process_body(
                 code=code, file=file, language=language, node=body_node, scope=scope
             )
@@ -356,7 +353,7 @@ def parse_code_block(file: File, code: Code, language: Language) -> None:
     parser = get_parser(language)
     tree = parser.parse(code.bytes)
     for node in tree.root_node.children:
-        statement = process_statement(code=code, file=file, language=language, node=node, scope=[])
+        statement = process_statement(code=code, file=file, language=language, node=node, scope="")
         file.statements.append(statement)
 
 

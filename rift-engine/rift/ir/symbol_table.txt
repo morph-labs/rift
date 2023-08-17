@@ -62,14 +62,14 @@ Function: constructor
    language: typescript
    range: ((4, 4), (4, 20))
    substring: (155, 171)
-   scope: ['A']
+   scope: A.
    body: (169, 171)
 Function: load
    language: typescript
    range: ((5, 4), (7, 5))
    substring: (176, 222)
    parameters: [v:number]
-   scope: ['A']
+   scope: A.
    body: (198, 222)
    has_return: True
 Class: A
@@ -97,7 +97,7 @@ Function: py
    range: ((6, 4), (8, 16))
    substring: (75, 139)
    parameters: [x, y]
-   scope: ['A']
+   scope: A.
    docstring: """This is a docstring"""
    body: (97, 139)
    has_return: True
@@ -115,20 +115,20 @@ Function: insert_code
    substring: (173, 311)
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
-   scope: ['B']
+   scope: B.
    body: (307, 311)
 Function: load
    language: python
    range: ((15, 4), (16, 12))
    substring: (316, 353)
    parameters: [self, v]
-   scope: ['B']
+   scope: B.
    body: (349, 353)
 Function: nested
    language: python
    range: ((18, 8), (19, 16))
    substring: (380, 410)
-   scope: ['B', 'Nested']
+   scope: B.Nested.
    body: (406, 410)
 Class: Nested
    language: python

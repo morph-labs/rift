@@ -4,11 +4,11 @@ from typing import Dict, List, Literal, Optional, Tuple
 
 Language = Literal["c", "cpp", "javascript", "python", "typescript", "tsx"]
 # e.g. ("A", "B", "foo") for function foo inside class B inside class A
-QualifiedId = Tuple[str, ...]
+QualifiedId = str
 Pos = Tuple[int, int]  # (line, column)
 Range = Tuple[Pos, Pos]  # ((start_line, start_column), (end_line, end_column))
 Substring = Tuple[int, int]  # (start_byte, end_byte)
-Scope = List[str]  # e.g. ["A", "B"] for class B inside class A
+Scope = str  # e.g. "A.B." for class B inside class A
 
 
 @dataclass
@@ -95,7 +95,7 @@ class SymbolInfo(ABC):
         return self.code.bytes[start:end]
 
     def get_qualified_id(self) -> QualifiedId:
-        return tuple(self.scope + [self.name])
+        return self.scope + self.name
 
     def get_substring_without_body(self) -> bytes:
         if self.body_sub is None:
@@ -124,7 +124,7 @@ class FunctionDeclaration(SymbolInfo):
             lines.append(f"   parameters: {self.parameters}")
         if self.return_type is not None:
             lines.append(f"   return_type: {self.return_type}")
-        if self.scope != []:
+        if self.scope != "":
             lines.append(f"   scope: {self.scope}")
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
