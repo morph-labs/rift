@@ -138,6 +138,28 @@ Class: B
    language: python
    range: ((9, 0), (19, 16))
    substring: (140, 410)
+=== Symbol Table for test.cpp ===
+Function: add
+   language: cpp
+   range: ((2, 4), (2, 17))
+   substring: (32, 45)
+   return_type: void
+   scope: namespace_name::
+   body: (43, 45)
+Function: print
+   language: cpp
+   range: ((5, 12), (5, 25))
+   substring: (94, 107)
+   return_type: void
+   scope: namespace_name::student.
+Class: student
+   language: cpp
+   range: ((3, 4), (6, 5))
+   substring: (50, 113)
+Namespace: namespace_name
+   language: cpp
+   range: ((0, 0), (7, 1))
+   substring: (0, 116)
 
 === Project Map ===
 File: test.c
@@ -176,3 +198,9 @@ File: test.py
         
       def nested():
             
+File: test.cpp
+  namespace namespace_name 
+
+    void add() 
+    class student 
+      void print();

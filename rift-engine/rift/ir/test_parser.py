@@ -105,6 +105,23 @@ class Tests:
         .lstrip()
         .encode("utf-8")
     )
+    code_cpp = (
+        dedent(
+            """
+        namespace namespace_name 
+        {
+            void add() {}
+            class student {
+                public:
+                    void print();
+            };
+        }
+    """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
+
 
 
 def get_test_project():
@@ -120,6 +137,7 @@ def get_test_project():
     new_file(IR.Code(Tests.code_ts), "test.ts", "typescript")
     new_file(IR.Code(Tests.code_tsx), "test.tsx", "tsx")
     new_file(IR.Code(Tests.code_py), "test.py", "python")
+    new_file(IR.Code(Tests.code_cpp), "test.cpp", "cpp")
     return project
 
 

@@ -150,6 +150,18 @@ class ClassDeclaration(SymbolInfo):
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
 
+@dataclass
+class NamespaceDeclaration(SymbolInfo):
+    body: List[Statement]
+
+    def dump(self, lines: List[str]) -> None:
+        id = self.name
+        lines.append(
+            f"Namespace: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+        )
+        if self.docstring != "":
+            lines.append(f"   docstring: {self.docstring}")
+
 
 @dataclass
 class TypeDeclaration(SymbolInfo):
@@ -195,7 +207,7 @@ class File:
         def dump_symbol(symbol: SymbolInfo, indent: int) -> None:
             decl_without_body = symbol.get_substring_without_body().decode()
             lines.append(f"{' ' * indent}{decl_without_body}")
-            if isinstance(symbol, ClassDeclaration):
+            if isinstance(symbol, ClassDeclaration) or isinstance(symbol, NamespaceDeclaration):
                 for statement in symbol.body:
                     dump_statement(statement, indent + 2)
 
