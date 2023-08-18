@@ -25,7 +25,6 @@ from rift.ir.missing_types import (
     functions_missing_types_in_file,
 )
 from rift.ir.response import extract_blocks_from_response, replace_functions_from_code_blocks
-from rift.llm.create import ModelConfig
 from rift.lsp import LspServer
 from rift.util.TextStream import TextStream
 
@@ -189,7 +188,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
     debug = Config.debug
 
     @classmethod
-    async def create(cls, params: MissingTypesParams, server):
+    async def create(cls, params: MissingTypesParams, server: LspServer) -> agent.ThirdPartyAgent:
         state = MissingTypesAgentState(
             params=params,
             messages=[],
@@ -374,24 +373,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
                 agent.RequestChatRequest(messages=self.get_state().messages)
             )
             return result
-
-        config = cast(ModelConfig,
-                      self.get_server().model_config  # type: ignore
-                      )
-
-        logger.info(f"config: {config}")
-
-        if config.openaiKey is not None:
-            openai.api_key = config.openaiKey.get_secret_value()
-        else:
-            openai.api_key = os.environ.get("OPENAI_API_KEY")
-
-        if openai.api_key is None:
-            await self.send_chat_update(
-                "OpenAI key missing: set the Openai Key in the Rift settings or as the `OPENAI_API_KEY` environment variable and run the agent again."
-            )
-            return MissingTypesResult()
-
+        
         await self.send_progress()
         text_document = self.get_state().params.textDocument
         if text_document is not None:
