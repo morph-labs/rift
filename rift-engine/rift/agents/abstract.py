@@ -4,7 +4,7 @@ import os
 from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, ClassVar, Dict, List, Optional, Type
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 from pydantic import BaseModel
 
@@ -13,6 +13,7 @@ import rift.lsp.types as lsp
 from rift.agents.agenttask import AgentTask
 from rift.llm.openai_types import Message as ChatMessage
 from rift.lsp import LspServer as BaseLspServer
+from rift.util.TextStream import TextStream
 
 logger = logging.getLogger(__name__)
 
@@ -212,8 +213,15 @@ class Agent:
             logger.error(f"[request_chat] failed, caught {exception=}")
             raise exception
 
-    async def send_chat_update(self, msg: str, prepend: bool = False):
-        await self.send_progress(dict(response=msg))
+    async def send_chat_update(self, msg: Union[str, TextStream], prepend: bool = False):
+        if not isinstance(msg, TextStream):
+            await self.send_progress(dict(response=msg))
+        else:
+            all_deltas = []
+            async for delta in msg:
+                all_deltas.append(delta)
+                await self.send_progress(dict(response="".join(all_deltas)))
+            msg = "".join(all_deltas)
         if not prepend:
             self.state.messages += [openai.Message.assistant(msg)]
         else:

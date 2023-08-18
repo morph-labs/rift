@@ -1,0 +1,69 @@
+
+New document1:
+```
+int aa() {
+  return 0;
+}
+
+void foo(int **x) {
+  if (x != NULL) {
+    *x = 0;
+  }
+}
+
+int bb() {
+  return 0;
+}
+
+int main() {
+  int *x;
+  foo(&x);
+
+  if (x != NULL) {
+    *x = 1;
+  }
+
+  return 0;
+}
+```
+
+New document2:
+```
+int aa() {
+  return 0;
+}
+
+void foo(int **x) {
+  *x = (int*) malloc(sizeof(int));
+  **x = 0;
+}
+
+int bb() {
+  return 0;
+}
+
+int main() {
+  int *x;
+  foo(&x);
+  *x = 1;
+  free(x);
+  return 0;
+}
+```
+
+New document3:
+```
+def foo() -> None:
+    print("Hello world!")
+
+@cache
+def get_num_tokens(content: str) -> int:
+    return len(ENCODER.encode(content))
+
+@cache
+def get_num_tokens2(content: t1) -> t2:
+    return len(ENCODER.encode(content))
+
+def bar() -> None:
+    print("Hello world!")
+```

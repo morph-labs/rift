@@ -1,0 +1,206 @@
+=== Symbol Table for test.c ===
+Function: aa
+   language: c
+   range: ((0, 0), (2, 1))
+   substring: (0, 24)
+   return_type: int
+   body: (9, 24)
+Function: foo
+   language: c
+   range: ((4, 0), (6, 1))
+   substring: (52, 84)
+   parameters: [x:int**]
+   return_type: int*
+   docstring: /** This is a docstring */
+   body: (71, 84)
+Function: bb
+   language: c
+   range: ((8, 0), (10, 1))
+   substring: (86, 110)
+   return_type: int
+   body: (95, 110)
+Function: main
+   language: c
+   range: ((12, 0), (17, 1))
+   substring: (112, 169)
+   return_type: int
+   body: (123, 169)
+=== Symbol Table for test.js ===
+Function: f1
+   language: javascript
+   range: ((1, 0), (1, 27))
+   substring: (22, 49)
+   docstring: /** Some docstring */
+   body: (36, 49)
+   has_return: True
+Function: f2
+   language: javascript
+   range: ((3, 0), (3, 18))
+   substring: (93, 111)
+   docstring: /** Some docstring on an arrow function */
+=== Symbol Table for test.ts ===
+Type: a
+   language: typescript
+   range: ((0, 0), (0, 24))
+   substring: (0, 24)
+Function: ts
+   language: typescript
+   range: ((1, 0), (1, 56))
+   substring: (25, 81)
+   parameters: [x:number, opt?:string]
+   return_type: number
+   body: (69, 81)
+   has_return: True
+Function: ts2
+   language: typescript
+   range: ((2, 7), (2, 51))
+   substring: (89, 133)
+   return_type: array<number>
+   body: (120, 133)
+   has_return: True
+Function: constructor
+   language: typescript
+   range: ((4, 4), (4, 20))
+   substring: (155, 171)
+   scope: A.
+   body: (169, 171)
+Function: load
+   language: typescript
+   range: ((5, 4), (7, 5))
+   substring: (176, 222)
+   parameters: [v:number]
+   scope: A.
+   body: (198, 222)
+   has_return: True
+Class: A
+   language: typescript
+   range: ((3, 7), (8, 1))
+   substring: (141, 224)
+Interface: RunHelperSyncResult
+   language: typescript
+   range: ((9, 0), (12, 1))
+   substring: (225, 290)
+Type: HelperStatus
+   language: typescript
+   range: ((13, 0), (13, 74))
+   substring: (291, 365)
+=== Symbol Table for test.tsx ===
+Function: tsx
+   language: tsx
+   range: ((1, 0), (1, 27))
+   substring: (23, 50)
+   body: (38, 50)
+   has_return: True
+=== Symbol Table for test.py ===
+Function: py
+   language: python
+   range: ((6, 4), (8, 16))
+   substring: (75, 139)
+   parameters: [x, y]
+   scope: A.
+   docstring: """This is a docstring"""
+   body: (97, 139)
+   has_return: True
+Class: A(C,D)
+   language: python
+   range: ((0, 0), (8, 16))
+   substring: (0, 139)
+   docstring: """
+    This is a docstring
+    for class A
+    """
+Function: insert_code
+   language: python
+   range: ((11, 4), (14, 12))
+   substring: (173, 311)
+   parameters: [self, document:str, cursor_offset:int]
+   return_type: InsertCodeResult
+   scope: B.
+   body: (307, 311)
+Function: load
+   language: python
+   range: ((15, 4), (16, 12))
+   substring: (316, 353)
+   parameters: [self, v]
+   scope: B.
+   body: (349, 353)
+Function: nested
+   language: python
+   range: ((18, 8), (19, 16))
+   substring: (380, 410)
+   scope: B.Nested.
+   body: (406, 410)
+Class: Nested
+   language: python
+   range: ((17, 4), (19, 16))
+   substring: (358, 410)
+Class: B
+   language: python
+   range: ((9, 0), (19, 16))
+   substring: (140, 410)
+=== Symbol Table for test.cpp ===
+Function: add
+   language: cpp
+   range: ((2, 4), (2, 17))
+   substring: (32, 45)
+   return_type: void
+   scope: namespace_name::
+   body: (43, 45)
+Function: print
+   language: cpp
+   range: ((5, 12), (5, 25))
+   substring: (94, 107)
+   return_type: void
+   scope: namespace_name::student.
+Class: student
+   language: cpp
+   range: ((3, 4), (6, 5))
+   substring: (50, 113)
+Namespace: namespace_name
+   language: cpp
+   range: ((0, 0), (7, 1))
+   substring: (0, 116)
+
+=== Project Map ===
+File: test.c
+  int aa() 
+  int * foo(int **x) 
+  int bb() 
+  int main() 
+File: test.js
+  function f1() 
+  let f2 = x => x+1;
+File: test.ts
+  type a = readonly b[][];
+  function ts(x:number, opt?:string) : number 
+  function ts2() : array<number> 
+  class A 
+    constructor() 
+    async load(v: number) 
+  interface RunHelperSyncResult 
+  type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
+File: test.tsx
+  function tsx() 
+File: test.py
+  class A(C,D):
+    
+    def py(x, y):
+        
+  class B:
+    
+    async def insert_code(
+        self, document: str, cursor_offset: int, goal: Optional[str] = None
+    ) -> InsertCodeResult:
+        
+    async def load(self, v):
+        
+    class Nested:
+        
+      def nested():
+            
+File: test.cpp
+  namespace namespace_name 
+
+    void add() 
+    class student 
+      void print();
