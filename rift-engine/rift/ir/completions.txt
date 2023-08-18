@@ -1,0 +1,132 @@
+[
+    {
+        "name": "aa",
+        "scope": "",
+        "kind": "Function"
+    },
+    {
+        "name": "foo",
+        "scope": "",
+        "kind": "Function"
+    },
+    {
+        "name": "bb",
+        "scope": "",
+        "kind": "Function"
+    },
+    {
+        "name": "main",
+        "scope": "",
+        "kind": "Function"
+    },
+    {
+        "name": "f1",
+        "scope": "",
+        "kind": "Function"
+    },
+    {
+        "name": "f2",
+        "scope": "",
+        "kind": "Function"
+    },
+    {
+        "name": "a",
+        "scope": "",
+        "kind": "Type"
+    },
+    {
+        "name": "ts",
+        "scope": "",
+        "kind": "Function"
+    },
+    {
+        "name": "ts2",
+        "scope": "",
+        "kind": "Function"
+    },
+    {
+        "name": "constructor",
+        "scope": "A.",
+        "kind": "Function"
+    },
+    {
+        "name": "load",
+        "scope": "A.",
+        "kind": "Function"
+    },
+    {
+        "name": "A",
+        "scope": "A.",
+        "kind": "Class"
+    },
+    {
+        "name": "RunHelperSyncResult",
+        "scope": "",
+        "kind": "Interface"
+    },
+    {
+        "name": "HelperStatus",
+        "scope": "",
+        "kind": "Type"
+    },
+    {
+        "name": "tsx",
+        "scope": "",
+        "kind": "Function"
+    },
+    {
+        "name": "py",
+        "scope": "A.",
+        "kind": "Function"
+    },
+    {
+        "name": "A",
+        "scope": "A.",
+        "kind": "Class"
+    },
+    {
+        "name": "insert_code",
+        "scope": "B.",
+        "kind": "Function"
+    },
+    {
+        "name": "load",
+        "scope": "B.",
+        "kind": "Function"
+    },
+    {
+        "name": "nested",
+        "scope": "B.Nested.",
+        "kind": "Function"
+    },
+    {
+        "name": "Nested",
+        "scope": "B.Nested.",
+        "kind": "Class"
+    },
+    {
+        "name": "B",
+        "scope": "B.",
+        "kind": "Class"
+    },
+    {
+        "name": "add",
+        "scope": "namespace_name::",
+        "kind": "Function"
+    },
+    {
+        "name": "print",
+        "scope": "namespace_name::student.",
+        "kind": "Function"
+    },
+    {
+        "name": "student",
+        "scope": "namespace_name::student.",
+        "kind": "Class"
+    },
+    {
+        "name": "namespace_name",
+        "scope": "namespace_name::",
+        "kind": "Namespace"
+    }
+]
