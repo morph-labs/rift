@@ -226,27 +226,9 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
     async def code_edits_for_missing_files(
         self, document: IR.Code, language: IR.Language, missing_types: List[MissingType]
     ) -> List[IR.CodeEdit]:
-        loop = asyncio.get_event_loop()
         prompt = MissingTypePrompt.create_prompt_for_file(
             language=language, missing_types=missing_types
         )
-        # Partially apply parameters to ChatCompletion.create for later execution
-        func = functools.partial(
-            openai.ChatCompletion.create,
-            model=Config.model,
-            messages=prompt,
-            temperature=Config.temperature,
-            stream=True,
-        )
-        # Run OpenAI API call concurrently to avoid blocking event loop
-        # completion =  await loop.run_in_executor(None, func)
-
-        # completion = func()
-
-        futs = []
-
-        # def stream_handler(chunk):
-        #     futs.append(asyncio.run_coroutine_threadsafe(self.send_chat_update(chunk), loop))
         response_stream = TextStream()
         collected_messages = []
 
@@ -392,11 +374,12 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
         await self.send_progress()
         user_response = await user_response_task
         if user_response is None:
-            user_paths = []
+            user_uris = []
         else:
-            user_paths = re.findall(r"\[uri\]\((\S+)\)", user_response)
-        if user_paths == []:
-            user_paths = [urlparse(current_file_uri).path]
+            user_uris = re.findall(r"\[uri\]\((\S+)\)", user_response)
+        if user_uris == []:
+            user_uris = [current_file_uri]
+        user_paths = [urlparse(uri).path for uri in user_uris]
 
         file_processes: List[FileProcess] = []
         tot_num_missing = 0
