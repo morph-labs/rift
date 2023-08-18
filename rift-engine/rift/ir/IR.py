@@ -109,6 +109,9 @@ class SymbolInfo(ABC):
     def dump(self, lines: List[str]) -> None:
         raise NotImplementedError
 
+    @abstractmethod
+    def kind(self) -> str:
+        raise NotImplementedError
 
 @dataclass
 class FunctionDeclaration(SymbolInfo):
@@ -116,9 +119,12 @@ class FunctionDeclaration(SymbolInfo):
     parameters: List[Parameter]
     return_type: Optional[str] = None
 
+    def kind(self) -> str:
+        return "Function"
+
     def dump(self, lines: List[str]) -> None:
         lines.append(
-            f"Function: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+            f"{self.kind()}: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
         )
         if self.parameters != []:
             lines.append(f"   parameters: {self.parameters}")
@@ -139,13 +145,16 @@ class ClassDeclaration(SymbolInfo):
     body: List[Statement]
     superclasses: Optional[str]
 
+    def kind(self) -> str:
+        return "Class"
+
     def dump(self, lines: List[str]) -> None:
         if self.superclasses is not None:
             id = self.name + self.superclasses
         else:
             id = self.name
         lines.append(
-            f"Class: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+            f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
         )
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
@@ -154,10 +163,13 @@ class ClassDeclaration(SymbolInfo):
 class NamespaceDeclaration(SymbolInfo):
     body: List[Statement]
 
+    def kind(self) -> str:
+        return "Namespace"
+
     def dump(self, lines: List[str]) -> None:
         id = self.name
         lines.append(
-            f"Namespace: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+            f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
         )
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
@@ -167,10 +179,12 @@ class NamespaceDeclaration(SymbolInfo):
 class TypeDeclaration(SymbolInfo):
     is_interface: bool
 
+    def kind(self) -> str:
+        return "Interface" if self.is_interface else "Type"
+
     def dump(self, lines: List[str]) -> None:
-        kind = "Interface" if self.is_interface else "Type"
         lines.append(
-            f"{kind}: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+            f"{self.kind()}: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
         )
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
@@ -186,7 +200,7 @@ class File:
         return self._symbol_table.get(qid)
 
     def search_symbol(self, name: str) -> List[SymbolInfo]:
-        return [symbol for symbol in self._symbol_table.values() if symbol.name == name]
+        return [symbol for symbol in self._symbol_table.values() if name == "" or symbol.name == name]
 
     def add_symbol(self, symbol: SymbolInfo) -> None:
         self._symbol_table[symbol.get_qualified_id()] = symbol
@@ -246,7 +260,7 @@ class Project:
     def add_file(self, file: File):
         self._files.append(file)
 
-    def get_files(self):
+    def get_files(self) -> List[File]:
         return self._files
 
     def dump_map(self, indent: int = 0) -> str:
