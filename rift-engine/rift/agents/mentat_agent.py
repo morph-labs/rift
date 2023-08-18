@@ -1,34 +1,31 @@
-"""
-TODO
-"""
 import asyncio
 import logging
+import os
 import re
 import time
 from concurrent import futures
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional, Type
+from typing import ClassVar, List, Optional, Type
 
 logger = logging.getLogger(__name__)
 
 import mentat.app
-from mentat.app import get_user_feedback_on_changes, warn_user_wrong_files
+import rift.agents.abstract as agent
+import rift.llm.openai_types as openai
+import rift.lsp.types as lsp
+import rift.util.file_diff as file_diff
+from mentat.app import get_user_feedback_on_changes
 from mentat.code_file_manager import CodeFileManager
 from mentat.config_manager import ConfigManager
 from mentat.conversation import Conversation
 from mentat.llm_api import CostTracker
 from mentat.user_input_manager import UserInputManager
-
-import rift.agents.abstract as agent
-import rift.llm.openai_types as openai
-import rift.lsp.types as lsp
-import rift.util.file_diff as file_diff
 from rift.util.TextStream import TextStream
 
 
 @dataclass
 class MentatAgentParams(agent.AgentParams):
-    ...
+    paths: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -46,13 +43,14 @@ class MentatRunResult(agent.AgentRunResult):
 
 @agent.agent(agent_description="Request codebase-wide edits through chat", display_name="Mentat")
 @dataclass
-class Mentat(agent.Agent):
+class Mentat(agent.ThirdPartyAgent):
     agent_type: ClassVar[str] = "mentat"
     run_params: Type[MentatAgentParams] = MentatAgentParams
     state: Optional[MentatAgentState] = None
 
     @classmethod
     async def create(cls, params: MentatAgentParams, server):
+        logger.info(f"{params=}")
         state = MentatAgentState(
             params=params,
             messages=[],
@@ -75,10 +73,6 @@ class Mentat(agent.Agent):
         )
 
     async def _run_chat_thread(self, response_stream):
-        """
-        Run the chat thread.
-        :param response_stream: The stream of responses from the chat.
-        """
 
         before, after = response_stream.split_once("感")
         try:
@@ -98,20 +92,24 @@ class Mentat(agent.Agent):
 
         loop = asyncio.get_running_loop()
 
-        def send_chat_update_wrapper(prompt: str = "感", end="", eof=False, *args, **kwargs):
-            def _worker():
-                response_stream.feed_data(prompt)
+        def send_chat_update_wrapper(prompt: str = "感", *args, end="\n", **kwargs):
+            async def _worker():
+                response_stream.feed_data(prompt + end)
 
-            loop.call_soon_threadsafe(_worker)
+            asyncio.run_coroutine_threadsafe(_worker(), loop=loop)
 
-        def request_chat_wrapper(prompt: Optional[str] = None):
+        def request_chat_wrapper(prompt: Optional[str] = None, *args, **kwargs):
             async def request_chat():
                 response_stream.feed_data("感")
                 await asyncio.sleep(0.1)
                 await self.state.response_lock.acquire()
-                await self.send_progress(dict(response=self._response_buffer, done_streaming=True))
-                self.state.messages.append(openai.Message.assistant(content=self._response_buffer))
-                self._response_buffer = ""
+                await self.send_progress(
+                    dict(response=self.state._response_buffer, done_streaming=True)
+                )
+                self.state.messages.append(
+                    openai.Message.assistant(content=self.state._response_buffer)
+                )
+                self.state._response_buffer = ""
                 if prompt is not None:
                     self.state.messages.append(openai.Message.assistant(content=prompt))
 
@@ -138,65 +136,140 @@ class Mentat(agent.Agent):
             result = t.result()
             return result
 
-        ### PATCHES
+        import inspect
 
-        # in UserInputManager:
-        # def collect_user_input(self) -> str:
-        #     user_input = self.session.prompt().strip()
-        #     logging.debug(f"User input:\n{user_input}")
-        #     if user_input.lower() == "q":
-        #         raise KeyboardInterrupt("User used 'q' to quit")
-        #     return user_input
+        def collect_user_input(self) -> str:
+            user_input = request_chat_wrapper().strip()
+            if user_input.lower() == "q":
+                raise mentat.user_input_manager.UserQuitInterrupt()
+            return user_input
 
-        # def ask_yes_no(self, default_yes: bool) -> bool:
-        #     cprint("(Y/n)" if default_yes else "(y/N)")
-        #     while (user_input := self.collect_user_input().lower()) not in [
-        #         "y",
-        #         "n",
-        #         "",
-        #     ]:
-        #         cprint("(Y/n)" if default_yes else "(y/N)")
-        #     return user_input == "y" or (user_input != "n" and default_yes)
+        def colored(*args, **kwargs):
+            return args[0]
 
-        # in mentat.streaming_printer:
-        # patch print
+        def highlight(*args, **kwargs):
+            return args[0]
 
-        # everywhere: cprint (output streaming)
+        file_changes = []
 
-        mentat.app.cprint = send_chat_update_wrapper
+        from collections import defaultdict
 
-        # grab message history from mentat.conversation
+        from mentat.code_change import CodeChange, CodeChangeAction
 
-        # code_file_manager.write_changes_to_files
+        event = asyncio.Event()
+        event2 = asyncio.Event()
 
-        ###
+        async def set_event():
+            event.set()
 
-        # Initialize necessary objects and variables
-        config = ConfigManager()
-        cost_tracker = CostTracker()
-        conv = Conversation(config, cost_tracker)
-        user_input_manager = UserInputManager(config)
+        def write_changes_to_files(self, code_changes: list[CodeChange]) -> None:
+            files_to_write = dict()
+            file_changes_dict = defaultdict(list)
+            for code_change in code_changes:
+                rel_path = code_change.file
+                if code_change.action == CodeChangeAction.CreateFile:
+                    send_chat_update_wrapper(f"Creating new file {rel_path}")
+                    files_to_write[rel_path] = code_change.code_lines
+                elif code_change.action == CodeChangeAction.DeleteFile:
+                    self._handle_delete(code_change)
+                else:
+                    changes = file_changes_dict[rel_path]
+                    logging.getLogger().info(f"{changes=}")
+                    changes.append(code_change)
 
-        def compute_paths(resp):
-            pattern = f"\[uri\]\((\S+)\)"
-            replacement = r"`\1`"
-            matches = re.match(pattern, replacement, matches)
-            return matches
+            for file_path, changes in file_changes_dict.items():
+                new_code_lines = self._get_new_code_lines(changes)
+                if new_code_lines:
+                    files_to_write[file_path] = new_code_lines
 
-        paths = compute_paths()
-        code_file_manager = CodeFileManager(paths, user_input_manager, config)
+            for rel_path, code_lines in files_to_write.items():
+                file_path = os.path.join(self.git_root, rel_path)
+                if file_path not in self.file_paths:
+                    logging.info(f"Adding new file {file_path} to context")
+                    self.file_paths.append(file_path)
+                file_changes.append(file_diff.get_file_change(file_path, "\n".join(code_lines)))
+            asyncio.run_coroutine_threadsafe(set_event(), loop=loop)
+            while True:
+                if not event2.is_set():
+                    time.sleep(0.25)
+                    continue
+                break
 
-        need_user_request = True
-        while True:
-            if need_user_request:
-                user_response = user_input_manager.collect_user_input()
-                conv.add_user_message(user_response)
-            explanation, code_changes = conv.get_model_response(code_file_manager, config)
-            warn_user_wrong_files(code_file_manager, code_changes)
+        for n, m in inspect.getmembers(mentat, inspect.ismodule):
+            setattr(m, "cprint", send_chat_update_wrapper)
+            setattr(m, "print", send_chat_update_wrapper)
+            setattr(m, "colored", colored)
+            setattr(m, "highlight", highlight)
+            setattr(m, "change_delimiter", "```")
 
-            if code_changes:
-                need_user_request = get_user_feedback_on_changes(
-                    config, conv, user_input_manager, code_file_manager, code_changes
-                )
-            else:
-                need_user_request = True
+        mentat.user_input_manager.UserInputManager.collect_user_input = collect_user_input
+        mentat.code_file_manager.CodeFileManager.write_changes_to_files = write_changes_to_files
+        # mentat.parsing.change_delimiter = ("yeehaw" * 10)
+
+        def extract_path(uri: str):
+            if uri.startswith("file://"):
+                return uri[7:]
+            if uri.startswith("uri://"):
+                return uri[6:]
+
+        # TODO: revisit auto-context population at some point
+        # paths = (
+        #     [extract_path(x.textDocument.uri) for x in self.state.params.visibleEditorMetadata]
+        #     if self.state.params.visibleEditorMetadata
+        #     else []
+        # )
+
+        paths: List[str] = []
+
+        self.state.messages.append(openai.Message.assistant(content="Which files should be visible to me for this conversation? (You can @-mention as many files as you want.)"))
+
+        # Add a new task to request the user for the file names that should be visible
+        get_repo_context_t = self.add_task(
+            "get_repo_context",
+            self.request_chat,
+            [agent.RequestChatRequest(self.state.messages)]
+        )
+        
+        # Wait for the user's response
+        user_visible_files_response = await get_repo_context_t.run()
+        self.state.messages.append(openai.Message.user(content=user_visible_files_response))
+        await self.send_progress()
+        
+        # Return the response from the user
+        from rift.util.context import resolve_inline_uris
+        uris: List[str] = [extract_path(x.uri) for x in resolve_inline_uris(user_visible_files_response, server=self.server)]
+        logger.info(f"{uris=}")
+
+        paths += uris
+
+        finished = False
+
+        def done_cb(fut):
+            nonlocal finished
+            finished = True
+            event.set()
+        
+        async def mentat_loop():
+            nonlocal file_changes
+
+            fut = loop.run_in_executor(None, mentat.app.run, mentat.app.expand_paths(paths))
+            fut.add_done_callback(done_cb)
+            while True:
+                await event.wait()
+                if finished:
+                    break
+                if len(file_changes) > 0:
+                    await self.apply_file_changes(file_changes)
+                    file_changes = []
+                event2.set()
+                event.clear()
+            try:
+                await fut
+            except SystemExit as e:
+                logger.info(f"[mentat] caught {e}, exiting")
+            except Exception as e:
+                logger.error(f"[mentat] caught {e}, exiting")
+            finally:
+                await self.send_progress()
+
+        await self.add_task("Mentat main loop", mentat_loop).run()

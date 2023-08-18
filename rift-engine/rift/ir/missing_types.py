@@ -103,6 +103,5 @@ def files_missing_types_in_project(project: IR.Project) -> List[FileMissingTypes
             decl = missing_types[0].function_declaration
             language = decl.language
             code = decl.code
-            files_with_missing_types.append(
-                FileMissingTypes(code, file, language, missing_types))
+            files_with_missing_types.append(FileMissingTypes(code, file, language, missing_types))
     return files_with_missing_types

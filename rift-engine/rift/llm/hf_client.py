@@ -8,10 +8,9 @@ from typing import Any, Optional
 
 import torch
 from pydantic import BaseModel, BaseSettings
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
 from rift.llm.abstract import AbstractCodeCompletionProvider, InsertCodeResult
 from rift.util.TextStream import TextStream
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from .openai_types import Message
 

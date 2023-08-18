@@ -3,9 +3,9 @@ import os
 from textwrap import dedent
 
 import rift.ir.IR as IR
-from rift.ir.missing_types import functions_missing_types_in_file
 import rift.ir.parser as parser
 import rift.ir.response as response
+from rift.ir.missing_types import functions_missing_types_in_file
 
 
 class Test:
@@ -174,8 +174,7 @@ def test_response():
     file = IR.File("response3")
     parser.parse_code_block(file, IR.Code(Test.code3), language)
     missing_types = functions_missing_types_in_file(file)
-    filter_function_ids = [mt.function_declaration.get_qualified_id()
-                           for mt in missing_types]
+    filter_function_ids = [mt.function_declaration.get_qualified_id() for mt in missing_types]
     document3 = IR.Code(Test.code3)
     edits3 = response.replace_functions_from_code_blocks(
         code_blocks=code_blocks3,
@@ -189,8 +188,7 @@ def test_response():
 
     if new_test_output != old_test_output:
         diff = difflib.unified_diff(
-            old_test_output.splitlines(
-                keepends=True), new_test_output.splitlines(keepends=True)
+            old_test_output.splitlines(keepends=True), new_test_output.splitlines(keepends=True)
         )
         diff_output = "".join(diff)
 

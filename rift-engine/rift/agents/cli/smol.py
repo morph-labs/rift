@@ -8,15 +8,14 @@ import pickle as pkl
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterable, ClassVar, Dict, List, Literal, Optional, Type
 
-import tqdm.asyncio
-from rich.console import Console
-from rich.logging import RichHandler
-from rich.panel import Panel
-
 import rift.lsp.types as lsp
 import rift.server.core as core
 import rift.server.lsp as server
 import rift.util.file_diff as file_diff
+import tqdm.asyncio
+from rich.console import Console
+from rich.logging import RichHandler
+from rich.panel import Panel
 from rift.lsp.types import InitializeParams
 from rift.rpc.io_transport import AsyncStreamTransport
 from rift.rpc.jsonrpc import RpcServer, rpc_method, rpc_request

@@ -6,10 +6,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
-from pydantic import BaseModel
-
 import rift.llm.openai_types as openai
 import rift.lsp.types as lsp
+from pydantic import BaseModel
 from rift.agents.agenttask import AgentTask
 from rift.llm.openai_types import Message as ChatMessage
 from rift.lsp import LspServer as BaseLspServer
@@ -58,6 +57,7 @@ class AgentParams:
     selection: Optional[lsp.Selection]
     position: Optional[lsp.Position]
     workspaceFolderPath: Optional[str]
+    visibleEditorMetadata: Optional[List[lsp.EditorMetadata]]
 
 
 @dataclass
@@ -355,13 +355,21 @@ class ThirdPartyAgent(Agent):
 
             # run `self.run`
             result_t = asyncio.create_task(self.task.run())
+
+            async def cb():
+                # await self.send_update('yeehaw')
+                await self.send_update("finished")
+                # try:
+                #     logging.getLogger().error(self.task._error)
+                # except Exception as e:
+                #     logging.getLogger().info(f"caught {e=}")
+
             result_t.add_done_callback(
-                lambda fut: asyncio.run_coroutine_threadsafe(
-                    self.send_update("finished"), loop=asyncio.get_running_loop()
-                )
+                lambda fut: asyncio.run_coroutine_threadsafe(cb(), loop=asyncio.get_running_loop())
             )
             await self.send_progress()
 
+            logger.info("awaiting")
             result = await result_t
             # Send the progress of the task
             await self.send_progress()

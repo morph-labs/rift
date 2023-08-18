@@ -123,7 +123,6 @@ class Tests:
     )
 
 
-
 def get_test_project():
     project = IR.Project(root_path="dummy_path")
 
@@ -157,8 +156,7 @@ def test_parsing():
     symbol_table_str += "\n\n=== Project Map ===\n" + ir_map_str
     if symbol_table_str != old_symbol_table:
         diff = difflib.unified_diff(
-            old_symbol_table.splitlines(
-                keepends=True), symbol_table_str.splitlines(keepends=True)
+            old_symbol_table.splitlines(keepends=True), symbol_table_str.splitlines(keepends=True)
         )
         diff_output = "".join(diff)
 

@@ -66,8 +66,7 @@ def replace_functions_in_document(
     code_edits: List[IR.CodeEdit] = []
 
     for function_declaration in function_declarations_in_document:
-        function_in_blocks_ = ir_blocks.search_symbol(
-            function_declaration.name)
+        function_in_blocks_ = ir_blocks.search_symbol(function_declaration.name)
         if len(function_in_blocks_) == 1 and isinstance(
             function_in_blocks_[0], IR.FunctionDeclaration
         ):
@@ -86,8 +85,7 @@ def replace_functions_in_document(
                 new_function_text = function_in_blocks.get_substring_without_body()
                 old_function_text = function_declaration.get_substring_without_body()
                 # Get trailing newline and/or whitespace from old text
-                old_trailing_whitespace = re.search(
-                    rb"\s*$", old_function_text)
+                old_trailing_whitespace = re.search(rb"\s*$", old_function_text)
                 # Add it to new text
                 if old_trailing_whitespace is not None:
                     new_function_text = new_function_text.rstrip()

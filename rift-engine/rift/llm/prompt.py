@@ -2,9 +2,8 @@ from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 
-from tiktoken import get_encoding
-
 from rift.llm.openai_types import Message, MessageRole
+from tiktoken import get_encoding
 
 ENCODER = get_encoding("cl100k_base")
 

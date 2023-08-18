@@ -9,15 +9,14 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterable, ClassVar, Dict, List, Optional, Type
 
+import rift.lsp.types as lsp
+import rift.server.core as core
+import rift.server.lsp as server
 import smol_dev
 import tqdm.asyncio
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.panel import Panel
-
-import rift.lsp.types as lsp
-import rift.server.core as core
-import rift.server.lsp as server
 from rift.lsp.types import InitializeParams
 from rift.rpc.io_transport import AsyncStreamTransport
 from rift.rpc.jsonrpc import RpcServer, rpc_method, rpc_request

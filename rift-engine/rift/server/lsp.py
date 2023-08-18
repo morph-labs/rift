@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 import pydantic
-
 import rift.lsp.types as lsp
 from rift.agents import AGENT_REGISTRY, Agent, AgentParams, AgentRegistryResult
 from rift.llm.abstract import AbstractChatCompletionProvider, AbstractCodeCompletionProvider

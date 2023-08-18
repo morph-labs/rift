@@ -2,9 +2,8 @@ import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-from diff_match_patch import diff_match_patch
-
 import rift.lsp.types as lsp
+from diff_match_patch import diff_match_patch
 from rift.lsp import (
     CreateFile,
     Range,

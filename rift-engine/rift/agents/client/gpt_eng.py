@@ -21,6 +21,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from queue import Queue
 
+import rift.agents.cli_agent as agent
+import rift.lsp.types as lsp
+import rift.util.file_diff as file_diff
 import typer
 from gpt_engineer.ai import AI, fallback_model
 from gpt_engineer.collect import collect_learnings
@@ -28,10 +31,6 @@ from gpt_engineer.db import DB, DBs, archive
 from gpt_engineer.learning import collect_consent
 from gpt_engineer.steps import STEPS
 from gpt_engineer.steps import Config as StepsConfig
-
-import rift.agents.cli_agent as agent
-import rift.lsp.types as lsp
-import rift.util.file_diff as file_diff
 
 
 async def _main(

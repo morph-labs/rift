@@ -6,15 +6,14 @@ import pickle as pkl
 from dataclasses import dataclass
 from typing import Any, List
 
-import smol_dev
-from rich.console import Console
-from rich.logging import RichHandler
-from rich.panel import Panel
-
 import rift.lsp.types as lsp
 import rift.server.core as core
 import rift.server.lsp as server
 import rift.util.file_diff as file_diff
+import smol_dev
+from rich.console import Console
+from rich.logging import RichHandler
+from rich.panel import Panel
 from rift.agents.abstract import AgentRegistryResult
 from rift.lsp.types import InitializeParams
 from rift.rpc.io_transport import AsyncStreamTransport

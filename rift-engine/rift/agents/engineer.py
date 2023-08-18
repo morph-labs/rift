@@ -37,9 +37,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional
 
-import typer
-
 import rift.lsp.types as lsp
+import typer
 from rift.agents.abstract import AgentProgress  # AgentTask,
 from rift.agents.abstract import (
     Agent,
@@ -230,6 +229,8 @@ class EngineerAgent(ThirdPartyAgent):
 
         _colored = lambda x, y: x
         gpt_engineer.ai.print = send_chat_update_wrapper
+        gpt_engineer.ai.StreamingStdOutCallbackHandler.on_llm_new_token = lambda self, token, **kwargs: send_chat_update_wrapper(token)
+        gpt_engineer.ai.StreamingStdOutCallbackHandler.on_llm_end = lambda self, token, **kwargs: send_chat_update_wrapper()        
         gpt_engineer.steps.colored = _colored
         gpt_engineer.steps.print = functools.partial(send_chat_update_wrapper, sync=True)
         gpt_engineer.steps.input = functools.partial(request_chat_wrapper, loop=loop)
@@ -240,7 +241,7 @@ class EngineerAgent(ThirdPartyAgent):
         logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
         model = fallback_model(model)
         ai = AI(
-            model=model,
+            model_name=model,
             temperature=temperature,
         )
 
@@ -290,7 +291,7 @@ class EngineerAgent(ThirdPartyAgent):
                 await asyncio.sleep(0.1)
                 messages = await loop.run_in_executor(pool, step, ai, dbs)
                 await asyncio.sleep(0.1)
-                dbs.logs[step.__name__] = json.dumps(messages)
+                dbs.logs[step.__name__] = AI.serialize_messages(messages)
                 items = list(dbs.workspace.in_memory_dict.items())
                 updates = [x for x in items if x[0] not in SEEN]
                 if len(updates) > 0:

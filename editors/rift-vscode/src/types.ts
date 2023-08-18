@@ -91,6 +91,8 @@ export type OptionalTextDocument = {
   version: number;
 } | null;
 
+export type EditorMetadata = { selection: vscode.Selection | null, position: vscode.Position | null, textDocument: OptionalTextDocument };
+
 export interface AgentParams {
   agent_type: string;
   agent_id: string | null;
@@ -98,6 +100,7 @@ export interface AgentParams {
   selection: vscode.Selection | null;
   textDocument: OptionalTextDocument;
   workspaceFolderPath: string | null;
+  visibleEditorMetadata: EditorMetadata[];
 }
 
 export interface RunChatParams {
@@ -137,9 +140,9 @@ export interface RunAgentProgress {
 
 export type ChatAgentPayload =
   | {
-      response?: string;
-      done_streaming?: boolean;
-    }
+    response?: string;
+    done_streaming?: boolean;
+  }
   | undefined;
 
 export type CodeEditPayload = any;
@@ -159,10 +162,10 @@ export interface AgentIdParams {
 
 export type ChatMessage =
   | {
-      role: "assistant";
-      content: string;
-      name?: null | string | undefined;
-    }
+    role: "assistant";
+    content: string;
+    name?: null | string | undefined;
+  }
   | ChatMessageUser;
 
 export type ChatMessageUser = {

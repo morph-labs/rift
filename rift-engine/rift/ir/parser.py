@@ -1,9 +1,6 @@
 import os
 from typing import Callable, List, Optional, Tuple
 
-from tree_sitter import Node
-from tree_sitter_languages import get_parser
-
 from rift.ir.IR import (
     ClassDeclaration,
     Code,
@@ -20,6 +17,8 @@ from rift.ir.IR import (
     TypeDeclaration,
     language_from_file_extension,
 )
+from tree_sitter import Node
+from tree_sitter_languages import get_parser
 
 
 def get_type(code: Code, language: Language, node: Node) -> str:
@@ -30,8 +29,8 @@ def get_type(code: Code, language: Language, node: Node) -> str:
     ):
         # TS: first child should be ":" and second child should be type
         second_child = node.children[1]
-        return code.bytes[second_child.start_byte: second_child.end_byte].decode()
-    return code.bytes[node.start_byte: node.end_byte].decode()
+        return code.bytes[second_child.start_byte : second_child.end_byte].decode()
+    return code.bytes[node.start_byte : node.end_byte].decode()
 
 
 def add_c_cpp_declarators_to_type(type: str, declarators: List[str]) -> str:
@@ -63,11 +62,11 @@ def get_c_cpp_parameter(code: Code, node: Node) -> Parameter:
     type_node = node.child_by_field_name("type")
     if type_node is None:
         raise Exception(f"Could not find type node in {node}")
-    type = code.bytes[type_node.start_byte: type_node.end_byte].decode()
+    type = code.bytes[type_node.start_byte : type_node.end_byte].decode()
     type = add_c_cpp_declarators_to_type(type, declarators)
     name = ""
     if final_node.type == "identifier":
-        name = code.bytes[final_node.start_byte: final_node.end_byte].decode()
+        name = code.bytes[final_node.start_byte : final_node.end_byte].decode()
     return Parameter(name=name, type=type)
 
 
@@ -75,18 +74,16 @@ def get_parameters(code: Code, language: Language, node: Node) -> List[Parameter
     parameters: List[Parameter] = []
     for child in node.children:
         if child.type == "identifier":
-            name = code.bytes[child.start_byte: child.end_byte].decode()
+            name = code.bytes[child.start_byte : child.end_byte].decode()
             parameters.append(Parameter(name=name))
         elif child.type == "typed_parameter":
             name = ""
             type = ""
             for grandchild in child.children:
                 if grandchild.type == "identifier":
-                    name = code.bytes[grandchild.start_byte: grandchild.end_byte].decode(
-                    )
+                    name = code.bytes[grandchild.start_byte : grandchild.end_byte].decode()
                 elif grandchild.type == "type":
-                    type = code.bytes[grandchild.start_byte: grandchild.end_byte].decode(
-                    )
+                    type = code.bytes[grandchild.start_byte : grandchild.end_byte].decode()
             parameters.append(Parameter(name=name, type=type))
         elif child.type == "parameter_declaration":
             if language in ["c", "cpp"]:
@@ -95,23 +92,20 @@ def get_parameters(code: Code, language: Language, node: Node) -> List[Parameter
                 type = ""
                 type_node = child.child_by_field_name("type")
                 if type_node is not None:
-                    type = code.bytes[type_node.start_byte: type_node.end_byte].decode(
-                    )
-                name = code.bytes[child.start_byte: child.end_byte].decode()
+                    type = code.bytes[type_node.start_byte : type_node.end_byte].decode()
+                name = code.bytes[child.start_byte : child.end_byte].decode()
                 parameters.append(Parameter(name=name, type=type))
         elif child.type == "required_parameter" or child.type == "optional_parameter":
             name = ""
             pattern_node = child.child_by_field_name("pattern")
             if pattern_node is not None:
-                name = code.bytes[pattern_node.start_byte: pattern_node.end_byte].decode(
-                )
+                name = code.bytes[pattern_node.start_byte : pattern_node.end_byte].decode()
             type = None
             type_node = child.child_by_field_name("type")
             if type_node is not None:
                 type = get_type(code=code, language=language, node=type_node)
             parameters.append(
-                Parameter(name=name, type=type,
-                          optional=child.type == "optional_parameter")
+                Parameter(name=name, type=type, optional=child.type == "optional_parameter")
             )
     return parameters
 
@@ -172,7 +166,7 @@ def find_declaration(
             exported=exported,
             has_return=has_return,
             language=language,
-            name=code.bytes[id.start_byte: id.end_byte].decode(),
+            name=code.bytes[id.start_byte : id.end_byte].decode(),
             parameters=parameters,
             range=(node.start_point, node.end_point),
             return_type=return_type,
@@ -188,7 +182,7 @@ def find_declaration(
             docstring=docstring,
             exported=exported,
             language=language,
-            name=code.bytes[id.start_byte: id.end_byte].decode(),
+            name=code.bytes[id.start_byte : id.end_byte].decode(),
             range=(node.start_point, node.end_point),
             scope=scope,
             substring=(node.start_byte, node.end_byte),
@@ -203,7 +197,7 @@ def find_declaration(
             docstring=docstring,
             exported=exported,
             language=language,
-            name=code.bytes[id.start_byte: id.end_byte].decode(),
+            name=code.bytes[id.start_byte : id.end_byte].decode(),
             range=(node.start_point, node.end_point),
             scope=scope,
             substring=(node.start_byte, node.end_byte),
@@ -216,7 +210,7 @@ def find_declaration(
             docstring=docstring,
             exported=exported,
             language=language,
-            name=code.bytes[id.start_byte: id.end_byte].decode(),
+            name=code.bytes[id.start_byte : id.end_byte].decode(),
             range=(node.start_point, node.end_point),
             scope=scope,
             substring=(node.start_byte, node.end_byte),
@@ -225,8 +219,7 @@ def find_declaration(
 
     previous_node = node.prev_sibling
     if previous_node is not None and previous_node.type == "comment":
-        docstring_ = code.bytes[previous_node.start_byte: previous_node.end_byte].decode(
-        )
+        docstring_ = code.bytes[previous_node.start_byte : previous_node.end_byte].decode()
         if docstring_.startswith("/**"):
             docstring = docstring_
 
@@ -234,13 +227,18 @@ def find_declaration(
     if body_node is not None:
         body_sub = (body_node.start_byte, body_node.end_byte)
 
-    if node.type in ["class_definition", "class_declaration", "class_specifier", "namespace_definition"]:
+    if node.type in [
+        "class_definition",
+        "class_declaration",
+        "class_specifier",
+        "namespace_definition",
+    ]:
         is_namespace = node.type == "namespace_definition"
         superclasses_node = node.child_by_field_name("superclasses")
         superclasses = None
         if superclasses_node is not None:
             superclasses = code.bytes[
-                superclasses_node.start_byte: superclasses_node.end_byte
+                superclasses_node.start_byte : superclasses_node.end_byte
             ].decode()
         body_node = node.child_by_field_name("body")
         name = node.child_by_field_name("name")
@@ -249,8 +247,7 @@ def find_declaration(
                 separator = "::"
             else:
                 separator = "."
-            scope = scope + \
-                code.bytes[name.start_byte: name.end_byte].decode() + separator
+            scope = scope + code.bytes[name.start_byte : name.end_byte].decode() + separator
             body = process_body(
                 code=code, file=file, language=language, node=body_node, scope=scope
             )
@@ -261,13 +258,12 @@ def find_declaration(
                 if len(stmt.children) > 0 and stmt.children[0].type == "string":
                     docstring_node = stmt.children[0]
                     docstring = code.bytes[
-                        docstring_node.start_byte: docstring_node.end_byte
+                        docstring_node.start_byte : docstring_node.end_byte
                     ].decode()
             if is_namespace:
                 declaration = mk_namespace_decl(id=name, body=body)
             else:
-                declaration = mk_class_decl(
-                    id=name, body=body, superclasses=superclasses)
+                declaration = mk_class_decl(id=name, body=body, superclasses=superclasses)
             file.add_symbol(declaration)
             return declaration
 
@@ -292,12 +288,10 @@ def find_declaration(
             if child.type in ["field_identifier", "identifier"]:
                 id = child
             elif child.type == "parameter_list":
-                parameters = get_parameters(
-                    code=code, language=language, node=child)
+                parameters = get_parameters(code=code, language=language, node=child)
         if id is None:
             return None
-        declaration = mk_fun_decl(
-            id=id, parameters=parameters, return_type=type)
+        declaration = mk_fun_decl(id=id, parameters=parameters, return_type=type)
         file.add_symbol(declaration)
         return declaration
 
@@ -309,13 +303,11 @@ def find_declaration(
         parameters: List[Parameter] = []
         parameters_node = node.child_by_field_name("parameters")
         if parameters_node is not None:
-            parameters = get_parameters(
-                code=code, language=language, node=parameters_node)
+            parameters = get_parameters(code=code, language=language, node=parameters_node)
         return_type: Optional[str] = None
         return_type_node = node.child_by_field_name("return_type")
         if return_type_node is not None:
-            return_type = get_type(
-                code=code, language=language, node=return_type_node)
+            return_type = get_type(code=code, language=language, node=return_type_node)
         if (
             body_node is not None
             and len(body_node.children) > 0
@@ -324,13 +316,11 @@ def find_declaration(
             stmt = body_node.children[0]
             if len(stmt.children) > 0 and stmt.children[0].type == "string":
                 docstring_node = stmt.children[0]
-                docstring = code.bytes[docstring_node.start_byte: docstring_node.end_byte].decode(
-                )
+                docstring = code.bytes[docstring_node.start_byte : docstring_node.end_byte].decode()
         if body_node is not None:
             has_return = contains_direct_return(body_node)
         if id is not None:
-            declaration = mk_fun_decl(
-                id=id, parameters=parameters, return_type=return_type)
+            declaration = mk_fun_decl(id=id, parameters=parameters, return_type=return_type)
             file.add_symbol(declaration)
             return declaration
 
@@ -370,8 +360,7 @@ def find_declaration(
 def process_statement(
     code: Code, file: File, language: Language, node: Node, scope: Scope
 ) -> Statement:
-    declaration = find_declaration(
-        code=code, file=file, language=language, node=node, scope=scope)
+    declaration = find_declaration(code=code, file=file, language=language, node=node, scope=scope)
     if declaration is not None:
         return Declaration(type=node.type, symbol=declaration)
     else:
@@ -382,8 +371,7 @@ def process_body(
     code: Code, file: File, language: Language, node: Node, scope: Scope
 ) -> List[Statement]:
     return [
-        process_statement(code=code, file=file,
-                          language=language, node=child, scope=scope)
+        process_statement(code=code, file=file, language=language, node=child, scope=scope)
         for child in node.children
     ]
 
@@ -392,8 +380,7 @@ def parse_code_block(file: File, code: Code, language: Language) -> None:
     parser = get_parser(language)
     tree = parser.parse(code.bytes)
     for node in tree.root_node.children:
-        statement = process_statement(
-            code=code, file=file, language=language, node=node, scope="")
+        statement = process_statement(code=code, file=file, language=language, node=node, scope="")
         file.statements.append(statement)
 
 
@@ -416,8 +403,7 @@ def parse_files_in_project(
                     with open(os.path.join(root_path, full_path), "r", encoding="utf-8") as f:
                         code = Code(f.read().encode("utf-8"))
                     file_ir = File(path=path_from_root)
-                    parse_code_block(file=file_ir, code=code,
-                                     language=language)
+                    parse_code_block(file=file_ir, code=code, language=language)
                     project.add_file(file=file_ir)
     return project
 
@@ -453,7 +439,6 @@ def parse_files_in_paths(paths: List[str]) -> Project:
                         with open(os.path.join(root_path, full_path), "r", encoding="utf-8") as f:
                             code = Code(f.read().encode("utf-8"))
                         file_ir = File(path=path_from_root)
-                        parse_code_block(
-                            file=file_ir, code=code, language=language)
+                        parse_code_block(file=file_ir, code=code, language=language)
                         project.add_file(file=file_ir)
     return project

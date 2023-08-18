@@ -28,13 +28,12 @@ from dataclasses import dataclass, field
 from pathlib import PurePath
 from typing import Any, ClassVar, List, Optional
 
-from rich.text import Text
-
 import rift.agents.abstract as agent
 import rift.agents.registry as registry
 import rift.llm.openai_types as openai
 import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
+from rich.text import Text
 from rift.util.TextStream import TextStream
 
 logger = logging.getLogger(__name__)

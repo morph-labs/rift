@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from typing import Any, ClassVar, Optional
 
 import aiohttp
-
 import rift.agents.registry as registry
 import rift.llm.openai_types as openai
 from rift.agents.abstract import Agent, AgentParams, AgentState, RequestChatRequest

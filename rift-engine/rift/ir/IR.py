@@ -159,6 +159,7 @@ class ClassDeclaration(SymbolInfo):
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
 
+
 @dataclass
 class NamespaceDeclaration(SymbolInfo):
     body: List[Statement]

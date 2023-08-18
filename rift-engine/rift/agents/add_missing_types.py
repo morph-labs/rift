@@ -9,7 +9,6 @@ from typing import ClassVar, Dict, List, Optional, cast
 from urllib.parse import urlparse
 
 import openai
-
 import rift.agents.abstract as agent
 import rift.agents.registry as registry
 import rift.ir.IR as IR
@@ -137,8 +136,7 @@ class MissingTypePrompt:
             dict(role="system", content=system_msg),
             dict(
                 role="user",
-                content=MissingTypePrompt.mk_user_msg(
-                    missing_types=missing_types, code=code),
+                content=MissingTypePrompt.mk_user_msg(missing_types=missing_types, code=code),
             ),
         ]
 
@@ -212,8 +210,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
         code_blocks = extract_blocks_from_response(response)
         if self.debug:
             logger.info(f"code_blocks:\n{code_blocks}\n")
-        filter_function_ids = [
-            mt.function_declaration.get_qualified_id() for mt in missing_types]
+        filter_function_ids = [mt.function_declaration.get_qualified_id() for mt in missing_types]
         edits = replace_functions_from_code_blocks(
             code_blocks=code_blocks,
             document=document,
@@ -239,11 +236,9 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
             for chunk in completion:
                 await asyncio.sleep(0.0001)
                 chunk_message_dict = chunk["choices"][0]  # type: ignore
-                chunk_message = chunk_message_dict["delta"].get(
-                    "content")  # extract the message
+                chunk_message = chunk_message_dict["delta"].get("content")  # extract the message
                 if chunk_message_dict["finish_reason"] is None and chunk_message:
-                    collected_messages.append(
-                        chunk_message)  # save the message
+                    collected_messages.append(chunk_message)  # save the message
                     response_stream.feed_data(chunk_message)
             response_stream.feed_eof()
 
@@ -289,15 +284,13 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
         fmt = file_process.file_missing_types
         language = fmt.language
         document = fmt.code
-        groups_of_missing_types = self.split_missing_types_in_groups(
-            fmt.missing_types)
+        groups_of_missing_types = self.split_missing_types_in_groups(fmt.missing_types)
 
         for missing_types in groups_of_missing_types:
             new_edits = await self.code_edits_for_missing_files(document, language, missing_types)
             file_process.edits += new_edits
         new_document = fmt.code.apply_edits(file_process.edits)
-        old_num_missing = count_missing(
-            file_process.file_missing_types.missing_types)
+        old_num_missing = count_missing(file_process.file_missing_types.missing_types)
         new_num_missing = get_num_missing_in_code(new_document, fmt.language)
         await self.send_chat_update(
             f"Received types for `{fmt.file.path}` ({new_num_missing}/{old_num_missing} missing)"
@@ -305,8 +298,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
         if self.debug:
             logger.info(f"new_document:\n{new_document}\n")
         path = os.path.join(project.root_path, fmt.file.path)
-        file_change = file_diff.get_file_change(
-            path=path, new_content=str(new_document))
+        file_change = file_diff.get_file_change(path=path, new_content=str(new_document))
         if self.debug:
             logger.info(f"file_change:\n{file_change}\n")
         file_process.file_change = file_change
@@ -367,8 +359,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
             "Reply with 'c' to start adding missing types to the current file, or specify files and directories by typing @ and following autocomplete."
         )
 
-        get_user_response_task = AgentTask(
-            "Get user response", get_user_response)
+        get_user_response_task = AgentTask("Get user response", get_user_response)
         self.set_tasks([get_user_response_task])
         user_response_task = asyncio.create_task(get_user_response_task.run())
         await self.send_progress()
@@ -400,8 +391,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
         await self.send_chat_update(f"Missing {tot_num_missing} types in {files_missing_str}")
 
         tasks: List[asyncio.Task] = [
-            asyncio.create_task(self.process_file(
-                file_process=file_processes[i], project=project))
+            asyncio.create_task(self.process_file(file_process=file_processes[i], project=project))
             for i in range(len(files_missing_types))
         ]
         await asyncio.gather(*tasks)
@@ -414,8 +404,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
             if fp.new_num_missing is not None:
                 tot_new_missing += fp.new_num_missing
             else:
-                tot_new_missing += count_missing(
-                    fp.file_missing_types.missing_types)
+                tot_new_missing += count_missing(fp.file_missing_types.missing_types)
         await self.apply_file_changes(file_changes)
         await self.send_chat_update(
             f"Missing types after responses: {tot_new_missing}/{tot_num_missing} ({tot_new_missing/tot_num_missing*100:.2f}%)"

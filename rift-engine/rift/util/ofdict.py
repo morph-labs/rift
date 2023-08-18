@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any, ClassVar, Literal, Optional, Type, TypeVar, Union, get_args, get_origin
 
 from pydantic import ValidationError
-
 from rift.util.misc import map_ctx
 
 from .dispatch import classdispatch

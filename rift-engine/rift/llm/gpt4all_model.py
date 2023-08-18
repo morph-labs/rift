@@ -16,7 +16,6 @@ from gpt4all.pyllmodel import (
     llmodel,
 )
 from pydantic import BaseSettings
-
 from rift.llm.abstract import (
     AbstractChatCompletionProvider,
     AbstractCodeCompletionProvider,

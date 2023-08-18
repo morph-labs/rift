@@ -5,7 +5,6 @@ import weakref
 from typing import Literal, Optional, Tuple
 
 from pydantic import BaseModel, SecretStr
-
 from rift.llm.abstract import AbstractChatCompletionProvider, AbstractCodeCompletionProvider
 
 
