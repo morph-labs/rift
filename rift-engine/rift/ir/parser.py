@@ -7,6 +7,7 @@ from rift.ir.IR import (
     ContainerDeclaration,
     ContainerKind,
     Declaration,
+    DefKind,
     File,
     FunctionKind,
     InterfaceKind,
@@ -16,15 +17,19 @@ from rift.ir.IR import (
     Parameter,
     Project,
     Scope,
+    SectionKind,
     Statement,
+    StructureKind,
     SymbolInfo,
+    TheoremKind,
     TypeKind,
     ValueDeclaration,
     ValueKind,
     language_from_file_extension,
 )
-from tree_sitter import Node
-from tree_sitter_languages import get_parser
+import rift.ir.lean_parser as lean_parser
+from tree_sitter import Node, Parser
+from tree_sitter_languages import get_parser as get_tree_sitter_parser
 
 def get_type(code: Code, language: Language, node: Node) -> str:
     if (
@@ -185,6 +190,18 @@ def find_declaration(
         value_kind = FunctionKind(has_return=has_return, parameters=parameters, return_type=return_type)
         return mk_value_decl(id=id, value_kind=value_kind)
     
+    def mk_def_decl(id: Node):
+        value_kind = DefKind()
+        return mk_value_decl(id=id, value_kind=value_kind)
+
+    def mk_structure_decl(id: Node):
+        value_kind = StructureKind()
+        return mk_value_decl(id=id, value_kind=value_kind)
+
+    def mk_theorem_decl(id: Node):
+        value_kind = TheoremKind()
+        return mk_value_decl(id=id, value_kind=value_kind)
+
     def mk_type_decl(id: Node):
         value_kind = TypeKind()
         return mk_value_decl(id=id, value_kind=value_kind)
@@ -218,6 +235,10 @@ def find_declaration(
 
     def mk_module_decl(id: Node, body: List[Statement]):
         container_kind = ModuleKind()
+        return mk_container_decl(id=id, body=body, container_kind=container_kind)
+
+    def mk_section_decl(id: Node, body: List[Statement]):
+        container_kind = SectionKind()
         return mk_container_decl(id=id, body=body, container_kind=container_kind)
 
     previous_node = node.prev_sibling
@@ -453,7 +474,49 @@ def find_declaration(
                     declaration = mk_module_decl(id=name, body=body)
                     file.add_symbol(declaration)
                     return declaration
-
+    
+    elif language == "lean":
+        if node.type == "declaration" and len(node.children) >= 1:
+            node0 = node.children[-1]
+            body_node = node0.child_by_field_name("body")
+            if body_node is not None:
+                body_sub = (body_node.start_byte, body_node.end_byte)
+            name_node = node0.child_by_field_name("name")
+            if name_node is not None:
+                declaration = None
+                if node0.type == "def":
+                    declaration = mk_def_decl(id=name_node)
+                elif node0.type == "structure":
+                    # a structure/class does not have a body
+                    node_after_name = name_node.next_sibling
+                    if node_after_name is not None:
+                        body_sub = (node_after_name.start_byte, node.end_byte)
+                    declaration = mk_structure_decl(id=name_node)
+                elif node0.type == "theorem":
+                    declaration = mk_theorem_decl(id=name_node)
+                else:
+                    print(f"Lean: Unknown node0 type: {node0.type}")
+                if declaration is not None:
+                    file.add_symbol(declaration)
+                    return declaration
+        elif node.type == "comment":
+          pass
+        elif node.type in ["namespace", "section"] and node.child_count >= 3:
+            # section, id, ..., id
+            name = node.children[1]
+            scope = scope + code.bytes[name.start_byte : name.end_byte].decode() + "."
+            body = [process_statement(code=code, file=file, language=language, node=child, scope=scope) for child in node.children[2:-1]]
+            body_sub = (name.end_byte, node.end_byte)
+            if node.type == "namespace":
+                declaration = mk_namespace_decl(id=name, body=body)
+            else:
+                declaration = mk_section_decl(id=name, body=body)
+            file.add_symbol(declaration)
+            return declaration
+        elif node.type == "end":
+            pass
+        else:
+            print(f"Lean: Unknown node type: {node.type}")
 
 def process_statement(
     code: Code, file: File, language: Language, node: Node, scope: Scope
@@ -473,6 +536,11 @@ def process_body(
         for child in node.children
     ]
 
+def get_parser(language: Language) -> Parser:
+    if language == "lean":
+        return lean_parser.parser
+    else:
+        return get_tree_sitter_parser(language)
 
 def parse_code_block(file: File, code: Code, language: Language) -> None:
     parser = get_parser(language)

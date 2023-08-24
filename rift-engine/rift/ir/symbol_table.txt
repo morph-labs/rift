@@ -203,6 +203,32 @@ Module: N
    language: ocaml
    range: ((6, 0), (8, 3))
    substring: (160, 263)
+=== Symbol Table for test.lean ===
+Def: getGreeting
+   language: lean
+   range: ((1, 0), (1, 71))
+   substring: (65, 136)
+   body: (97, 99)
+Def: main
+   language: lean
+   range: ((5, 0), (14, 27))
+   substring: (277, 552)
+   body: (296, 298)
+Structure: Algebra
+   language: lean
+   range: ((27, 0), (31, 22))
+   substring: (999, 1239)
+   scope: Prio.
+   body: (1013, 1239)
+Section: Prio
+   language: lean
+   range: ((16, 0), (33, 8))
+   substring: (554, 1249)
+Theorem: constAlgHom_eq_algebra_ofId
+   language: lean
+   range: ((35, 0), (38, 71))
+   substring: (1251, 1422)
+   body: (1342, 1344)
 
 === Project Map ===
 File: test.c
@@ -247,3 +273,10 @@ File: test.ml
     let hline ~x:x1 ~x:x2 ~y
   module N
     let with_named_args ~(named_arg1 : int) ?named_arg2
+File: test.lean
+  def getGreeting (name : String)
+  def main : IO Unit
+  section Prio
+    class Algebra
+  @[simp]
+  theorem constAlgHom_eq_algebra_ofId : constAlgHom R A R = Algebra.ofId R (A → R)

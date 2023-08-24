@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, Tuple
 
-Language = Literal["c", "cpp", "ocaml", "javascript", "python", "typescript", "tsx"]
+Language = Literal["c", "cpp", "javascript", "lean", "ocaml", "python", "typescript", "tsx"]
 # e.g. ("A", "B", "foo") for function foo inside class B inside class A
 QualifiedId = str
 Pos = Tuple[int, int]  # (line, column)
@@ -105,6 +105,24 @@ class FunctionKind(ValueKind):
 
 
 @dataclass
+class DefKind(ValueKind):
+    def name(self) -> str:
+        return "Def"
+
+
+@dataclass
+class StructureKind(ValueKind):
+    def name(self) -> str:
+        return "Structure"
+
+
+@dataclass
+class TheoremKind(ValueKind):
+    def name(self) -> str:
+        return "Theorem"
+
+
+@dataclass
 class TypeKind(ValueKind):
     def name(self) -> str:
         return "Type"
@@ -149,6 +167,12 @@ class NamespaceKind(ContainerKind):
 class ModuleKind(ContainerKind):
     def name(self) -> str:
         return "Module"
+
+
+@dataclass
+class SectionKind(ContainerKind):
+    def name(self) -> str:
+        return "Section"
 
 
 @dataclass
@@ -331,6 +355,8 @@ def language_from_file_extension(file_path: str) -> Optional[Language]:
         return "cpp"
     elif file_path.endswith(".js"):
         return "javascript"
+    elif file_path.endswith(".lean"):
+        return "lean"
     elif file_path.endswith(".ml"):
         return "ocaml"
     elif file_path.endswith(".py"):

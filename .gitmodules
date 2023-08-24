@@ -1,0 +1,3 @@
+[submodule "rift-engine/vendor/tree-sitter-lean"]
+	path = rift-engine/vendor/tree-sitter-lean
+	url = https://github.com/Julian/tree-sitter-lean
