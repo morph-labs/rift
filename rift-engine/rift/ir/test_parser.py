@@ -121,6 +121,23 @@ class Tests:
         .lstrip()
         .encode("utf-8")
     )
+    code_ocaml = (
+        dedent(
+            """
+        let divide (x:int) y = x / y
+        let callback () : unit = ()
+        module M = struct
+            let bump ?(step = 1) x = x + step
+            let hline ~x:x1 ~x:x2 ~y = (x1, x2, y)
+        end
+        module N = struct
+            let with_named_args ~(named_arg1 : int) ?named_arg2 = named_arg1 + named_arg2
+        end
+    """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
 
 
 def get_test_project():
@@ -137,6 +154,7 @@ def get_test_project():
     new_file(IR.Code(Tests.code_tsx), "test.tsx", "tsx")
     new_file(IR.Code(Tests.code_py), "test.py", "python")
     new_file(IR.Code(Tests.code_cpp), "test.cpp", "cpp")
+    new_file(IR.Code(Tests.code_ocaml), "test.ml", "ocaml")
     return project
 
 

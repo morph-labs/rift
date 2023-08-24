@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, Tuple
 
-Language = Literal["c", "cpp", "javascript", "python", "typescript", "tsx"]
+Language = Literal["c", "cpp", "ocaml", "javascript", "python", "typescript", "tsx"]
 # e.g. ("A", "B", "foo") for function foo inside class B inside class A
 QualifiedId = str
 Pos = Tuple[int, int]  # (line, column)
@@ -113,6 +113,7 @@ class SymbolInfo(ABC):
     def kind(self) -> str:
         raise NotImplementedError
 
+
 @dataclass
 class FunctionDeclaration(SymbolInfo):
     has_return: bool
@@ -177,6 +178,22 @@ class NamespaceDeclaration(SymbolInfo):
 
 
 @dataclass
+class ModuleDeclaration(SymbolInfo):
+    body: List[Statement]
+
+    def kind(self) -> str:
+        return "Module"
+
+    def dump(self, lines: List[str]) -> None:
+        id = self.name
+        lines.append(
+            f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+        )
+        if self.docstring != "":
+            lines.append(f"   docstring: {self.docstring}")
+
+
+@dataclass
 class TypeDeclaration(SymbolInfo):
     is_interface: bool
 
@@ -222,7 +239,8 @@ class File:
         def dump_symbol(symbol: SymbolInfo, indent: int) -> None:
             decl_without_body = symbol.get_substring_without_body().decode()
             lines.append(f"{' ' * indent}{decl_without_body}")
-            if isinstance(symbol, ClassDeclaration) or isinstance(symbol, NamespaceDeclaration):
+            # check if symbol has a body attribute
+            if hasattr(symbol, "body"):
                 for statement in symbol.body:
                     dump_statement(statement, indent + 2)
 
@@ -290,6 +308,8 @@ def language_from_file_extension(file_path: str) -> Optional[Language]:
         return "cpp"
     elif file_path.endswith(".js"):
         return "javascript"
+    elif file_path.endswith(".ml"):
+        return "ocaml"
     elif file_path.endswith(".py"):
         return "python"
     elif file_path.endswith(".ts"):

@@ -113,8 +113,16 @@ class MissingTypePrompt:
                 }
             ```
         """
+        example_ocaml = """
+            ```ocaml
+                let foo (a: t1) (b : t2) : t3 =
+                    ...
+            ```
+        """
         if language in ["javascript", "typescript", "tsx"]:
             example = example_ts
+        elif language == "ocaml":
+            example = example_ocaml
         else:
             example = example_py
 

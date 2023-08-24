@@ -8,6 +8,7 @@ from rift.ir.IR import (
     File,
     FunctionDeclaration,
     Language,
+    ModuleDeclaration,
     NamespaceDeclaration,
     Parameter,
     Project,
@@ -19,7 +20,6 @@ from rift.ir.IR import (
 )
 from tree_sitter import Node
 from tree_sitter_languages import get_parser
-
 
 def get_type(code: Code, language: Language, node: Node) -> str:
     if (
@@ -158,6 +158,10 @@ def find_declaration(
     exported = False
     has_return = False
 
+    def dump_node(node: Node) -> str:
+        """ Dump a node for debugging purposes. """
+        return f"  type:{node.type} children:{node.child_count}\n  code:{code.bytes[node.start_byte: node.end_byte].decode()}\n  sexp:{node.sexp()}"
+
     def mk_fun_decl(id: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
         return FunctionDeclaration(
             body_sub=body_sub,
@@ -203,6 +207,20 @@ def find_declaration(
             substring=(node.start_byte, node.end_byte),
         )
 
+    def mk_module_decl(id: Node, body: List[Statement]):
+        return ModuleDeclaration(
+            body=body,
+            body_sub=body_sub,
+            code=code,
+            docstring=docstring,
+            exported=exported,
+            language=language,
+            name=code.bytes[id.start_byte : id.end_byte].decode(),
+            range=(node.start_point, node.end_point),
+            scope=scope,
+            substring=(node.start_byte, node.end_byte),
+        )
+
     def mk_type_decl(id: Node, is_interface: bool):
         return TypeDeclaration(
             body_sub=body_sub,
@@ -226,6 +244,17 @@ def find_declaration(
     body_node = node.child_by_field_name("body")
     if body_node is not None:
         body_sub = (body_node.start_byte, body_node.end_byte)
+    def process_ocaml_body(n: Node) -> None:
+        nonlocal body_node, body_sub
+        body_node = n.child_by_field_name("body")
+        if body_node is not None:
+            node_before = body_node.prev_sibling
+            if node_before is not None and node_before.type == "=":
+                # consider "=" part of the body
+                body_sub = (node_before.start_byte, body_node.end_byte)
+            else:
+                body_sub = (body_node.start_byte, body_node.end_byte)
+
 
     if node.type in [
         "class_definition",
@@ -355,6 +384,85 @@ def find_declaration(
             declaration = mk_type_decl(id=id, is_interface=is_interface)
             file.add_symbol(declaration)
             return declaration
+
+    elif node.type == "value_definition" and language == "ocaml":
+        parameters = []
+        def extract_type(node: None) -> str:
+            return code.bytes[node.start_byte: node.end_byte].decode()
+        def parse_inner_parameter(inner: Node) -> Optional[Parameter]:
+            if inner.type in ["label_name", "value_pattern"]:
+                name = code.bytes[inner.start_byte: inner.end_byte].decode()
+                return Parameter(name=name)
+            elif inner.type == "typed_pattern" and inner.child_count == 5 and inner.children[2].type == ":":
+                # "(", par, ":", typ, ")"
+                id = inner.children[1]
+                tp = inner.children[3]
+                if id.type == "value_pattern":
+                    name = code.bytes[id.start_byte: id.end_byte].decode()
+                    type = extract_type(tp)
+                    return Parameter(name=name, type=type)
+            elif inner.type == "unit":
+                name = "()"
+                type = "unit"
+                return Parameter(name=name, type=type)
+        def parse_parameter(parameter: Node) -> None:
+            if parameter.child_count == 1:
+                inner_parameter = parse_inner_parameter(parameter.children[0])
+                if inner_parameter is not None:
+                    parameters.append(inner_parameter)
+            elif parameter.child_count == 2 and parameter.children[0].type in ["~", "?"]:
+                inner_parameter = parse_inner_parameter(parameter.children[1])
+                if inner_parameter is not None:
+                    inner_parameter.name = parameter.children[0].type + inner_parameter.name
+                    parameters.append(inner_parameter)
+            elif parameter.child_count == 4 and parameter.children[0].type in ["~", "?"] and parameter.children[2].type == ":":
+                # "~", par, ":", name
+                inner_parameter = parse_inner_parameter(parameter.children[1])
+                if inner_parameter is not None:
+                    inner_parameter.name = parameter.children[0].type + inner_parameter.name
+                    parameters.append(inner_parameter)
+            elif parameter.child_count == 6 and parameter.children[0].type in ["~", "?"] and parameter.children[3].type == ":":
+                # "~", "(", par, ":", typ, ")"
+                inner_parameter = parse_inner_parameter(parameter.children[2])
+                if inner_parameter is not None:
+                    inner_parameter.name = parameter.children[0].type + inner_parameter.name
+                    type = extract_type(parameter.children[4])
+                    inner_parameter.type = type
+                    parameters.append(inner_parameter)
+            elif parameter.child_count == 6 and parameter.children[0].type == "?" and parameter.children[3].type == "=":
+                # "?", "(", par, "=", val, ")"
+                inner_parameter = parse_inner_parameter(parameter.children[2])
+                if inner_parameter is not None:
+                    inner_parameter.name = parameter.children[0].type + inner_parameter.name
+                    type = "type of " + extract_type(parameter.children[4])
+                    inner_parameter.type = type
+                    parameters.append(inner_parameter)
+        for child in node.children:
+            if child.type == "let_binding":
+                process_ocaml_body(child)
+                pattern_node = child.child_by_field_name("pattern")
+                return_type = None
+                if pattern_node is not None and pattern_node.type == "value_name":
+                    for grandchild in child.children:
+                        if grandchild.type == "parameter":
+                            parse_parameter(grandchild)
+                    if parameters != []:
+                        declaration = mk_fun_decl(
+                            id=pattern_node, parameters=parameters, return_type=return_type)
+                        file.add_symbol(declaration)
+                        return declaration
+
+    elif node.type == "module_definition" and language == "ocaml":
+        for child in node.children:
+            if child.type == "module_binding":
+                process_ocaml_body(child)
+                name = child.child_by_field_name("name")
+                if name is not None:
+                    scope = scope + code.bytes[name.start_byte : name.end_byte].decode() + "."
+                    body = process_body(code=code, file=file, language=language, node=body_node, scope=scope)
+                    declaration = mk_module_decl(id=name, body=body)
+                    file.add_symbol(declaration)
+                    return declaration
 
 
 def process_statement(

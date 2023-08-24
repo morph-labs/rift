@@ -160,6 +160,48 @@ Namespace: namespace_name
    language: cpp
    range: ((0, 0), (7, 1))
    substring: (0, 116)
+=== Symbol Table for test.ml ===
+Function: divide
+   language: ocaml
+   range: ((0, 0), (0, 28))
+   substring: (0, 28)
+   parameters: [x:int, y]
+   body: (21, 28)
+Function: callback
+   language: ocaml
+   range: ((1, 0), (1, 27))
+   substring: (29, 56)
+   parameters: [():unit]
+   body: (52, 56)
+Function: bump
+   language: ocaml
+   range: ((3, 4), (3, 37))
+   substring: (79, 112)
+   parameters: [?step:type of 1, x]
+   scope: M.
+   body: (102, 112)
+Function: hline
+   language: ocaml
+   range: ((4, 4), (4, 42))
+   substring: (117, 155)
+   parameters: [~x, ~x, ~y]
+   scope: M.
+   body: (142, 155)
+Module: M
+   language: ocaml
+   range: ((2, 0), (5, 3))
+   substring: (57, 159)
+Function: with_named_args
+   language: ocaml
+   range: ((7, 4), (7, 81))
+   substring: (182, 259)
+   parameters: [~named_arg1:int, ?named_arg2]
+   scope: N.
+   body: (234, 259)
+Module: N
+   language: ocaml
+   range: ((6, 0), (8, 3))
+   substring: (160, 263)
 
 === Project Map ===
 File: test.c
@@ -204,3 +246,11 @@ File: test.cpp
     void add() 
     class student 
       void print();
+File: test.ml
+  let divide (x:int) y 
+  let callback () : unit 
+  module M 
+    let bump ?(step = 1) x 
+    let hline ~x:x1 ~x:x2 ~y 
+  module N 
+    let with_named_args ~(named_arg1 : int) ?named_arg2 
