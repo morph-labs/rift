@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, Tuple
 
-Language = Literal["c", "cpp", "ocaml", "javascript", "python", "typescript", "tsx"]
+Language = Literal["c", "cpp", "javascript", "ocaml", "python", "rescript", "typescript", "tsx"]
 # e.g. ("A", "B", "foo") for function foo inside class B inside class A
 QualifiedId = str
 Pos = Tuple[int, int]  # (line, column)
@@ -54,23 +54,25 @@ class Statement:
 
 @dataclass
 class Declaration(Statement):
-    symbol: "SymbolInfo"
+    symbols: List["SymbolInfo"]
 
 
 @dataclass
 class Parameter:
     name: str
+    default_value: Optional[str] = None
     type: Optional[str] = None
     optional: bool = False
 
     def __str__(self) -> str:
-        name = self.name
+        res = self.name
         if self.optional:
-            name += "?"
-        if self.type is None:
-            return name
-        else:
-            return f"{name}:{self.type}"
+            res += "?"
+        if self.type is not None:
+            res = res + f":{self.type}"
+        if self.default_value is not None:
+            res = res + f"={self.default_value}"
+        return res
 
     __repr__ = __str__
 
@@ -102,6 +104,17 @@ class FunctionKind(ValueKind):
             lines.append(f"   return_type: {self.return_type}")
         if self.has_return:
             lines.append(f"   has_return: {self.has_return}")
+
+@dataclass
+class ValKind(ValueKind):
+    type: Optional[str] = None
+
+    def name(self) -> str:
+        return "Value"
+    
+    def dump(self, lines: List[str]) -> None:
+        if self.type is not None:
+            lines.append(f"   type: {self.type}")
 
 
 @dataclass
@@ -269,7 +282,8 @@ class File:
 
         def dump_statement(statement: Statement, indent: int) -> None:
             if isinstance(statement, Declaration):
-                dump_symbol(statement.symbol, indent)
+                for symbol in statement.symbols:
+                   dump_symbol(symbol, indent)
             else:
                 pass
 
@@ -286,7 +300,8 @@ class File:
 
         def dump_statement(statement: Statement) -> None:
             if isinstance(statement, Declaration):
-                dump_symbol(statement.symbol)
+                for symbol in statement.symbols:
+                    dump_symbol(symbol)
             else:
                 pass
 
@@ -335,6 +350,8 @@ def language_from_file_extension(file_path: str) -> Optional[Language]:
         return "ocaml"
     elif file_path.endswith(".py"):
         return "python"
+    elif file_path.endswith(".res"):
+        return "rescript"
     elif file_path.endswith(".ts"):
         return "typescript"
     elif file_path.endswith(".tsx"):

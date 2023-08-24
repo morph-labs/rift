@@ -9,3 +9,5 @@ Function `callback` is missing type annotations in return type
 Function `bump` is missing type annotations in parameter 'x' and in return type
 Function `hline` is missing type annotations in parameters ['~x', '~x', '~y'] and in return type
 Function `with_named_args` is missing type annotations in parameter '?named_arg2' and in return type
+Function `mulWithDefault` is missing type annotations in parameters ['x', 'y']
+Function `paramsWithDefault` is missing type annotations in parameters ['~y', '~w', '()']
