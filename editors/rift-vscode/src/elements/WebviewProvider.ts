@@ -6,6 +6,7 @@ import { getNonce } from "../getNonce";
 import PubSub from "../lib/PubSub";
 import type { MorphLanguageClient } from "../client";
 import { ChatMessage, WebviewState } from "../types";
+import { fetchContextForSelection } from "../util/fetchContextForSelection";
 
 // Provides a webview view that allows users to chat and interact with the extension.
 export class WebviewProvider implements vscode.WebviewViewProvider {
@@ -177,6 +178,30 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             "Sending publish message",
             `${message.agent_type}_${message.agent_id}_chat_request`
           );
+
+          if (message.agent_type === "code_edit") {
+            const agent = this.morph_language_client.agents[message.agent_id];
+            const mostRecentMessage = message.messages.at(-1);
+            if (
+              agent &&
+              agent.textDocument?.uri &&
+              agent.selection &&
+              mostRecentMessage?.role === "user"
+            ) {
+              const context = await fetchContextForSelection(
+                vscode.Uri.parse(agent.textDocument.uri),
+                agent.selection
+              );
+              mostRecentMessage.content +=
+                "\nThe following context may be helpful: " +
+                "\ndiagnostics: " +
+                context.diagnostics +
+                "\nhovers: " +
+                context.hovers +
+                "\nterminal: " +
+                context.terminalResponse;
+            }
+          }
 
           this.morph_language_client.sendChatHistoryChange(
             message.agent_id,
