@@ -3,28 +3,28 @@ Function: aa
    language: c
    range: ((0, 0), (2, 1))
    substring: (0, 24)
-   return_type: int
    body: (9, 24)
+   return_type: int
 Function: foo
    language: c
    range: ((4, 0), (6, 1))
    substring: (52, 84)
-   parameters: [x:int**]
-   return_type: int*
    docstring: /** This is a docstring */
    body: (71, 84)
+   parameters: [x:int**]
+   return_type: int*
 Function: bb
    language: c
    range: ((8, 0), (10, 1))
    substring: (86, 110)
-   return_type: int
    body: (95, 110)
+   return_type: int
 Function: main
    language: c
    range: ((12, 0), (17, 1))
    substring: (112, 169)
-   return_type: int
    body: (123, 169)
+   return_type: int
 === Symbol Table for test.js ===
 Function: f1
    language: javascript
@@ -47,16 +47,16 @@ Function: ts
    language: typescript
    range: ((1, 0), (1, 56))
    substring: (25, 81)
+   body: (69, 81)
    parameters: [x:number, opt?:string]
    return_type: number
-   body: (69, 81)
    has_return: True
 Function: ts2
    language: typescript
    range: ((2, 7), (2, 51))
    substring: (89, 133)
-   return_type: array<number>
    body: (120, 133)
+   return_type: array<number>
    has_return: True
 Function: constructor
    language: typescript
@@ -68,9 +68,9 @@ Function: load
    language: typescript
    range: ((5, 4), (7, 5))
    substring: (176, 222)
-   parameters: [v:number]
    scope: A.
    body: (198, 222)
+   parameters: [v:number]
    has_return: True
 Class: A
    language: typescript
@@ -80,6 +80,7 @@ Interface: RunHelperSyncResult
    language: typescript
    range: ((9, 0), (12, 1))
    substring: (225, 290)
+   body: (255, 290)
 Type: HelperStatus
    language: typescript
    range: ((13, 0), (13, 74))
@@ -96,10 +97,10 @@ Function: py
    language: python
    range: ((6, 4), (8, 16))
    substring: (75, 139)
-   parameters: [x, y]
    scope: A.
    docstring: """This is a docstring"""
    body: (97, 139)
+   parameters: [x, y]
    has_return: True
 Class: A(C,D)
    language: python
@@ -113,17 +114,17 @@ Function: insert_code
    language: python
    range: ((11, 4), (14, 12))
    substring: (173, 311)
-   parameters: [self, document:str, cursor_offset:int]
-   return_type: InsertCodeResult
    scope: B.
    body: (307, 311)
+   parameters: [self, document:str, cursor_offset:int]
+   return_type: InsertCodeResult
 Function: load
    language: python
    range: ((15, 4), (16, 12))
    substring: (316, 353)
-   parameters: [self, v]
    scope: B.
    body: (349, 353)
+   parameters: [self, v]
 Function: nested
    language: python
    range: ((18, 8), (19, 16))
@@ -143,15 +144,15 @@ Function: add
    language: cpp
    range: ((2, 4), (2, 17))
    substring: (32, 45)
-   return_type: void
    scope: namespace_name::
    body: (43, 45)
+   return_type: void
 Function: print
    language: cpp
    range: ((5, 12), (5, 25))
    substring: (94, 107)
-   return_type: void
    scope: namespace_name::student.
+   return_type: void
 Class: student
    language: cpp
    range: ((3, 4), (6, 5))
@@ -165,28 +166,28 @@ Function: divide
    language: ocaml
    range: ((0, 0), (0, 28))
    substring: (0, 28)
-   parameters: [x:int, y]
    body: (21, 28)
+   parameters: [x:int, y]
 Function: callback
    language: ocaml
    range: ((1, 0), (1, 27))
    substring: (29, 56)
-   parameters: [():unit]
    body: (52, 56)
+   parameters: [():unit]
 Function: bump
    language: ocaml
    range: ((3, 4), (3, 37))
    substring: (79, 112)
-   parameters: [?step:type of 1, x]
    scope: M.
    body: (102, 112)
+   parameters: [?step:type of 1, x]
 Function: hline
    language: ocaml
    range: ((4, 4), (4, 42))
    substring: (117, 155)
-   parameters: [~x, ~x, ~y]
    scope: M.
    body: (142, 155)
+   parameters: [~x, ~x, ~y]
 Module: M
    language: ocaml
    range: ((2, 0), (5, 3))
@@ -195,9 +196,9 @@ Function: with_named_args
    language: ocaml
    range: ((7, 4), (7, 81))
    substring: (182, 259)
-   parameters: [~named_arg1:int, ?named_arg2]
    scope: N.
    body: (234, 259)
+   parameters: [~named_arg1:int, ?named_arg2]
 Module: N
    language: ocaml
    range: ((6, 0), (8, 3))

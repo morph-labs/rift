@@ -8,7 +8,8 @@ from rift.ir.IR import (
     ContainerKind,
     Declaration,
     File,
-    FunctionDeclaration,
+    FunctionKind,
+    InterfaceKind,
     Language,
     ModuleKind,
     NamespaceKind,
@@ -17,7 +18,9 @@ from rift.ir.IR import (
     Scope,
     Statement,
     SymbolInfo,
-    TypeDeclaration,
+    TypeKind,
+    ValueDeclaration,
+    ValueKind,
     language_from_file_extension,
 )
 from tree_sitter import Node
@@ -164,22 +167,32 @@ def find_declaration(
         """ Dump a node for debugging purposes. """
         return f"  type:{node.type} children:{node.child_count}\n  code:{code.bytes[node.start_byte: node.end_byte].decode()}\n  sexp:{node.sexp()}"
 
-    def mk_fun_decl(id: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
-        return FunctionDeclaration(
+    def mk_value_decl(id: Node, value_kind: ValueKind):
+        return ValueDeclaration(
             body_sub=body_sub,
             code=code,
             docstring=docstring,
             exported=exported,
-            has_return=has_return,
             language=language,
             name=code.bytes[id.start_byte : id.end_byte].decode(),
-            parameters=parameters,
             range=(node.start_point, node.end_point),
-            return_type=return_type,
             scope=scope,
             substring=(node.start_byte, node.end_byte),
+            value_kind=value_kind,
         )
+
+    def mk_fun_decl(id: Node, parameters: List[Parameter] = [], return_type: Optional[str] = None):
+        value_kind = FunctionKind(has_return=has_return, parameters=parameters, return_type=return_type)
+        return mk_value_decl(id=id, value_kind=value_kind)
     
+    def mk_type_decl(id: Node):
+        value_kind = TypeKind()
+        return mk_value_decl(id=id, value_kind=value_kind)
+
+    def mk_interface_decl(id: Node):
+        value_kind = InterfaceKind()
+        return mk_value_decl(id=id, value_kind=value_kind)
+
     def mk_container_decl(id: Node, body: List[Statement], container_kind: ContainerKind):
         return ContainerDeclaration(
             container_kind=container_kind,
@@ -206,20 +219,6 @@ def find_declaration(
     def mk_module_decl(id: Node, body: List[Statement]):
         container_kind = ModuleKind()
         return mk_container_decl(id=id, body=body, container_kind=container_kind)
-
-    def mk_type_decl(id: Node, is_interface: bool):
-        return TypeDeclaration(
-            body_sub=body_sub,
-            code=code,
-            docstring=docstring,
-            exported=exported,
-            language=language,
-            name=code.bytes[id.start_byte : id.end_byte].decode(),
-            range=(node.start_point, node.end_point),
-            scope=scope,
-            substring=(node.start_byte, node.end_byte),
-            is_interface=is_interface,
-        )
 
     previous_node = node.prev_sibling
     if previous_node is not None and previous_node.type == "comment":
@@ -366,8 +365,10 @@ def find_declaration(
     elif node.type in ["interface_declaration", "type_alias_declaration"]:
         id: Optional[Node] = node.child_by_field_name("name")
         if id is not None:
-            is_interface = node.type == "interface_declaration"
-            declaration = mk_type_decl(id=id, is_interface=is_interface)
+            if node.type == "interface_declaration":
+                declaration = mk_interface_decl(id=id)
+            else:
+                declaration = mk_type_decl(id=id)
             file.add_symbol(declaration)
             return declaration
 

@@ -60,19 +60,18 @@ def replace_functions_in_document(
     Replaces functions in the document with corresponding functions from parsed blocks.
     """
     function_declarations_in_document: List[
-        IR.FunctionDeclaration
+        IR.ValueDeclaration
     ] = ir_doc.get_function_declarations()
 
     code_edits: List[IR.CodeEdit] = []
 
     for function_declaration in function_declarations_in_document:
         function_in_blocks_ = ir_blocks.search_symbol(function_declaration.name)
-        if len(function_in_blocks_) == 1 and isinstance(
-            function_in_blocks_[0], IR.FunctionDeclaration
-        ):
-            function_in_blocks = function_in_blocks_[0]
-        else:
-            function_in_blocks = None
+        function_in_blocks = None
+        if len(function_in_blocks_) == 1:
+            f0 = function_in_blocks_[0]
+            if isinstance(f0, IR.ValueDeclaration) and isinstance(f0.value_kind, IR.FunctionKind):
+                function_in_blocks = f0
         if filter_function_ids is None:
             filter = True
         else:

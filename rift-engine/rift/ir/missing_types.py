@@ -9,7 +9,7 @@ import rift.ir.parser as parser
 
 @dataclass
 class MissingType:
-    function_declaration: IR.FunctionDeclaration
+    function_declaration: IR.ValueDeclaration
     parameters: List[str] = field(default_factory=list)
     return_type: bool = False
 
@@ -38,9 +38,12 @@ def functions_missing_types_in_file(file: IR.File) -> List[MissingType]:
     functions_missing_types: List[MissingType] = []
     function_declarations = file.get_function_declarations()
     for d in function_declarations:
+        function_kind = d.value_kind
+        if not isinstance(function_kind, IR.FunctionKind):
+            raise Exception(f"Expected function kind, got {function_kind}")
         missing_parameters = []
         missing_return = False
-        parameters = d.parameters
+        parameters = function_kind.parameters
         if parameters != []:
             if (
                 (parameters[0].name == "self" or parameters[0].name == "cls")
@@ -51,10 +54,11 @@ def functions_missing_types_in_file(file: IR.File) -> List[MissingType]:
             for p in parameters:
                 if p.type is None:
                     missing_parameters.append(p.name)
-        if d.return_type is None:
-            if not d.has_return and d.language in ["javascript", "typescript", "tsx"]:
-                pass
-            else:
+        if function_kind.return_type is None:
+            if d.language in ["javascript", "typescript", "tsx"]:
+                if function_kind.has_return:
+                    missing_return = True
+            elif d.language in ["ocaml", "python"]:
                 missing_return = True
         if missing_parameters != [] or missing_return:
             functions_missing_types.append(

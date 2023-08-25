@@ -76,6 +76,82 @@ class Parameter:
 
 
 @dataclass
+class ValueKind(ABC):
+    """Abstract class for value kinds."""
+    @abstractmethod
+    def name(self) -> str:
+        raise NotImplementedError
+
+    def dump(self, lines: List[str]) -> None:
+        pass
+
+
+@dataclass
+class FunctionKind(ValueKind):
+    has_return: bool
+    parameters: List[Parameter]
+    return_type: Optional[str] = None
+
+    def name(self) -> str:
+        return "Function"
+    
+    def dump(self, lines: List[str]) -> None:
+        if self.parameters != []:
+            lines.append(f"   parameters: {self.parameters}")
+        if self.return_type is not None:
+            lines.append(f"   return_type: {self.return_type}")
+        if self.has_return:
+            lines.append(f"   has_return: {self.has_return}")
+
+
+@dataclass
+class TypeKind(ValueKind):
+    def name(self) -> str:
+        return "Type"
+
+
+@dataclass
+class InterfaceKind(ValueKind):
+    def name(self) -> str:
+        return "Interface"
+
+
+@dataclass
+class ContainerKind(ABC):
+    """Abstract class for container kinds."""
+    @abstractmethod
+    def name(self) -> str:
+        raise NotImplementedError
+
+    def signature(self) -> Optional[str]:
+        return None
+
+
+@dataclass
+class ClassKind(ContainerKind):
+    superclasses: Optional[str]
+
+    def name(self) -> str:
+        return "Class"
+
+    def signature(self) -> Optional[str]:
+        if self.superclasses is not None:
+            return self.superclasses
+
+
+@dataclass
+class NamespaceKind(ContainerKind):
+    def name(self) -> str:
+        return "Namespace"
+
+
+@dataclass
+class ModuleKind(ContainerKind):
+    def name(self) -> str:
+        return "Module"
+
+
+@dataclass
 class SymbolInfo(ABC):
     """Abstract class for symbol information."""
 
@@ -115,62 +191,24 @@ class SymbolInfo(ABC):
 
 
 @dataclass
-class FunctionDeclaration(SymbolInfo):
-    has_return: bool
-    parameters: List[Parameter]
-    return_type: Optional[str] = None
+class ValueDeclaration(SymbolInfo):
+    value_kind: ValueKind
 
     def kind(self) -> str:
-        return "Function"
+        return self.value_kind.name()
 
     def dump(self, lines: List[str]) -> None:
         lines.append(
             f"{self.kind()}: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
         )
-        if self.parameters != []:
-            lines.append(f"   parameters: {self.parameters}")
-        if self.return_type is not None:
-            lines.append(f"   return_type: {self.return_type}")
         if self.scope != "":
             lines.append(f"   scope: {self.scope}")
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
         if self.body_sub is not None:
             lines.append(f"   body: {self.body_sub}")
-        if self.has_return:
-            lines.append(f"   has_return: {self.has_return}")
-
-@dataclass
-class ContainerKind(ABC):
-    """Abstract class for container kinds."""
-    @abstractmethod
-    def name(self) -> str:
-        raise NotImplementedError
-
-    def signature(self) -> Optional[str]:
-        return None
-
-@dataclass
-class ClassKind(ContainerKind):
-    superclasses: Optional[str]
-
-    def name(self) -> str:
-        return "Class"
-
-    def signature(self) -> Optional[str]:
-        if self.superclasses is not None:
-            return self.superclasses
-
-@dataclass
-class NamespaceKind(ContainerKind):
-    def name(self) -> str:
-        return "Namespace"
-
-@dataclass
-class ModuleKind(ContainerKind):
-    def name(self) -> str:
-        return "Module"
-
+        self.value_kind.dump(lines)
+            
 
 @dataclass
 class ContainerDeclaration(SymbolInfo):
@@ -192,22 +230,6 @@ class ContainerDeclaration(SymbolInfo):
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
 
-
-@dataclass
-class TypeDeclaration(SymbolInfo):
-    is_interface: bool
-
-    def kind(self) -> str:
-        return "Interface" if self.is_interface else "Type"
-
-    def dump(self, lines: List[str]) -> None:
-        lines.append(
-            f"{self.kind()}: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
-        )
-        if self.docstring != "":
-            lines.append(f"   docstring: {self.docstring}")
-
-
 @dataclass
 class File:
     path: str  # path of the file relative to the root directory
@@ -223,11 +245,11 @@ class File:
     def add_symbol(self, symbol: SymbolInfo) -> None:
         self._symbol_table[symbol.get_qualified_id()] = symbol
 
-    def get_function_declarations(self) -> List[FunctionDeclaration]:
+    def get_function_declarations(self) -> List[ValueDeclaration]:
         return [
             symbol
             for symbol in self._symbol_table.values()
-            if isinstance(symbol, FunctionDeclaration)
+            if isinstance(symbol, ValueDeclaration) and isinstance(symbol.value_kind, FunctionKind)
         ]
 
     def dump_symbol_table(self, lines: List[str]) -> None:
