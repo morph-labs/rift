@@ -486,12 +486,13 @@ export class MorphLanguageClient
     };
 
   async create(agent_type: string) {
-    if (!this.client) throw new Error();
+      if (!this.client) {vscode.window.showErrorMessage("Rift: no active client"); throw new Error("Rift: no active client")};
 
     const editor: TextEditor | undefined = vscode.window.activeTextEditor;
 
     const folders = vscode.workspace.workspaceFolders;
-    if (!folders) throw new Error("no current workspace");
+      if (!folders) {vscode.window.showErrorMessage("Rift: no current workspace"); throw new Error("Rift: no current workspace")};
+      
     const workspaceFolderPath = folders[0].uri.fsPath;
     let document = editor?.document;
     let textDocument: OptionalTextDocument = null;
