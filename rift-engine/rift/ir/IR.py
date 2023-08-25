@@ -140,52 +140,52 @@ class FunctionDeclaration(SymbolInfo):
         if self.has_return:
             lines.append(f"   has_return: {self.has_return}")
 
+@dataclass
+class ContainerKind(ABC):
+    """Abstract class for container kinds."""
+    @abstractmethod
+    def name(self) -> str:
+        raise NotImplementedError
+
+    def signature(self) -> Optional[str]:
+        return None
 
 @dataclass
-class ClassDeclaration(SymbolInfo):
-    body: List[Statement]
+class ClassKind(ContainerKind):
     superclasses: Optional[str]
 
-    def kind(self) -> str:
+    def name(self) -> str:
         return "Class"
 
-    def dump(self, lines: List[str]) -> None:
+    def signature(self) -> Optional[str]:
         if self.superclasses is not None:
-            id = self.name + self.superclasses
-        else:
-            id = self.name
-        lines.append(
-            f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
-        )
-        if self.docstring != "":
-            lines.append(f"   docstring: {self.docstring}")
-
+            return self.superclasses
 
 @dataclass
-class NamespaceDeclaration(SymbolInfo):
-    body: List[Statement]
-
-    def kind(self) -> str:
+class NamespaceKind(ContainerKind):
+    def name(self) -> str:
         return "Namespace"
 
-    def dump(self, lines: List[str]) -> None:
-        id = self.name
-        lines.append(
-            f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
-        )
-        if self.docstring != "":
-            lines.append(f"   docstring: {self.docstring}")
+@dataclass
+class ModuleKind(ContainerKind):
+    def name(self) -> str:
+        return "Module"
 
 
 @dataclass
-class ModuleDeclaration(SymbolInfo):
+class ContainerDeclaration(SymbolInfo):
     body: List[Statement]
+    container_kind: ContainerKind
 
     def kind(self) -> str:
-        return "Module"
+        return self.container_kind.name()
 
     def dump(self, lines: List[str]) -> None:
-        id = self.name
+        signature = self.container_kind.signature()
+        if signature is not None:
+            id = self.name + signature
+        else:
+            id = self.name
         lines.append(
             f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
         )
@@ -239,8 +239,7 @@ class File:
         def dump_symbol(symbol: SymbolInfo, indent: int) -> None:
             decl_without_body = symbol.get_substring_without_body().decode()
             lines.append(f"{' ' * indent}{decl_without_body}")
-            # check if symbol has a body attribute
-            if hasattr(symbol, "body"):
+            if isinstance(symbol, ContainerDeclaration):
                 for statement in symbol.body:
                     dump_statement(statement, indent + 2)
 
@@ -257,7 +256,7 @@ class File:
         def dump_symbol(symbol: SymbolInfo) -> None:
             decl_without_body = symbol.get_substring_without_body().decode()
             elements.append(decl_without_body)
-            if isinstance(symbol, ClassDeclaration):
+            if isinstance(symbol, ContainerDeclaration):
                 for statement in symbol.body:
                     dump_statement(statement)
 

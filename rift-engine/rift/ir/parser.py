@@ -2,14 +2,16 @@ import os
 from typing import Callable, List, Optional, Tuple
 
 from rift.ir.IR import (
-    ClassDeclaration,
+    ClassKind,
     Code,
+    ContainerDeclaration,
+    ContainerKind,
     Declaration,
     File,
     FunctionDeclaration,
     Language,
-    ModuleDeclaration,
-    NamespaceDeclaration,
+    ModuleKind,
+    NamespaceKind,
     Parameter,
     Project,
     Scope,
@@ -177,49 +179,33 @@ def find_declaration(
             scope=scope,
             substring=(node.start_byte, node.end_byte),
         )
+    
+    def mk_container_decl(id: Node, body: List[Statement], container_kind: ContainerKind):
+        return ContainerDeclaration(
+            container_kind=container_kind,
+            body=body,
+            body_sub=body_sub,
+            code=code,
+            docstring=docstring,
+            exported=exported,
+            language=language,
+            name=code.bytes[id.start_byte : id.end_byte].decode(),
+            range=(node.start_point, node.end_point),
+            scope=scope,
+            substring=(node.start_byte, node.end_byte),
+        )
 
     def mk_class_decl(id: Node, body: List[Statement], superclasses: Optional[str]):
-        return ClassDeclaration(
-            body=body,
-            body_sub=body_sub,
-            code=code,
-            docstring=docstring,
-            exported=exported,
-            language=language,
-            name=code.bytes[id.start_byte : id.end_byte].decode(),
-            range=(node.start_point, node.end_point),
-            scope=scope,
-            substring=(node.start_byte, node.end_byte),
-            superclasses=superclasses,
-        )
+        container_kind = ClassKind(superclasses=superclasses)
+        return mk_container_decl(id=id, body=body, container_kind=container_kind)
 
     def mk_namespace_decl(id: Node, body: List[Statement]):
-        return NamespaceDeclaration(
-            body=body,
-            body_sub=body_sub,
-            code=code,
-            docstring=docstring,
-            exported=exported,
-            language=language,
-            name=code.bytes[id.start_byte : id.end_byte].decode(),
-            range=(node.start_point, node.end_point),
-            scope=scope,
-            substring=(node.start_byte, node.end_byte),
-        )
+        container_kind = NamespaceKind()
+        return mk_container_decl(id=id, body=body, container_kind=container_kind)
 
     def mk_module_decl(id: Node, body: List[Statement]):
-        return ModuleDeclaration(
-            body=body,
-            body_sub=body_sub,
-            code=code,
-            docstring=docstring,
-            exported=exported,
-            language=language,
-            name=code.bytes[id.start_byte : id.end_byte].decode(),
-            range=(node.start_point, node.end_point),
-            scope=scope,
-            substring=(node.start_byte, node.end_byte),
-        )
+        container_kind = ModuleKind()
+        return mk_container_decl(id=id, body=body, container_kind=container_kind)
 
     def mk_type_decl(id: Node, is_interface: bool):
         return TypeDeclaration(
@@ -387,7 +373,7 @@ def find_declaration(
 
     elif node.type == "value_definition" and language == "ocaml":
         parameters = []
-        def extract_type(node: None) -> str:
+        def extract_type(node: Node) -> str:
             return code.bytes[node.start_byte: node.end_byte].decode()
         def parse_inner_parameter(inner: Node) -> Optional[Parameter]:
             if inner.type in ["label_name", "value_pattern"]:
@@ -459,7 +445,10 @@ def find_declaration(
                 name = child.child_by_field_name("name")
                 if name is not None:
                     scope = scope + code.bytes[name.start_byte : name.end_byte].decode() + "."
-                    body = process_body(code=code, file=file, language=language, node=body_node, scope=scope)
+                    if body_node is not None:
+                        body = process_body(code=code, file=file, language=language, node=body_node, scope=scope)
+                    else:
+                        body = []
                     declaration = mk_module_decl(id=name, body=body)
                     file.add_symbol(declaration)
                     return declaration
