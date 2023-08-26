@@ -4,13 +4,15 @@ import json
 import logging
 import re
 import time
-from typing import Any, Optional
+from typing import Any, Optional, List, Dict, Callable
+import rift.lsp.types as lsp
+
 
 import torch
 from pydantic import BaseModel, BaseSettings
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from rift.llm.abstract import AbstractCodeCompletionProvider, InsertCodeResult
+from rift.llm.abstract import AbstractCodeCompletionProvider, EditCodeResult, ChatResult
 from rift.util.TextStream import TextStream
 
 from .openai_types import Message
@@ -102,12 +104,6 @@ class HuggingFaceClient(AbstractCodeCompletionProvider):
                     yield line + "\n"
             generated += new_word
 
-    async def insert_code(self, document: str, cursor_offset: int, goal=None):
-        if goal is not None:
-            logger.warn("goal parameter is not supported yet for huggingface models. Ignoring.")
-        code = TextStream.from_aiter(self._insert_code_core(document, cursor_offset))
-        return InsertCodeResult(code=code)
-
     async def edit_code(
         self,
         document: str,
@@ -118,15 +114,4 @@ class HuggingFaceClient(AbstractCodeCompletionProvider):
         documents: Optional[List[lsp.Document]] = None,
         current_file_weight: float = 0.5,
     ) -> EditCodeResult:
-        # Extract the region to be edited
-        region_to_edit = document[cursor_offset_start:cursor_offset_end]
-
-        # Generate new code to replace the region
-        # This is a placeholder, replace with actual code generation logic
-        new_code = "new code"
-
-        # Replace the region with the new code
-        updated_document = document[:cursor_offset_start] + new_code + document[cursor_offset_end:]
-
-        # Return the updated document
-        return EditCodeResult(code=updated_document)
+        ... # TODO
