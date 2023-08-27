@@ -259,7 +259,9 @@ class File:
 
     def dump_map(self, indent: int, lines: List[str]) -> None:
         def dump_symbol(symbol: SymbolInfo, indent: int) -> None:
-            decl_without_body = symbol.get_substring_without_body().decode()
+            decl_without_body = symbol.get_substring_without_body().decode().strip()
+            # indent the declaration
+            decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
             lines.append(f"{' ' * indent}{decl_without_body}")
             if isinstance(symbol, ContainerDeclaration):
                 for statement in symbol.body:

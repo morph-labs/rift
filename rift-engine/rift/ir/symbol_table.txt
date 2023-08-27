@@ -206,52 +206,44 @@ Module: N
 
 === Project Map ===
 File: test.c
-  int aa() 
-  int * foo(int **x) 
-  int bb() 
-  int main() 
+  int aa()
+  int * foo(int **x)
+  int bb()
+  int main()
 File: test.js
-  function f1() 
+  function f1()
   let f2 = x => x+1;
 File: test.ts
   type a = readonly b[][];
-  function ts(x:number, opt?:string) : number 
-  function ts2() : array<number> 
-  class A 
-    constructor() 
-    async load(v: number) 
-  interface RunHelperSyncResult 
+  function ts(x:number, opt?:string) : number
+  function ts2() : array<number>
+  class A
+    constructor()
+    async load(v: number)
+  interface RunHelperSyncResult
   type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
 File: test.tsx
-  function tsx() 
+  function tsx()
 File: test.py
   class A(C,D):
-    
     def py(x, y):
-        
   class B:
-    
     async def insert_code(
-        self, document: str, cursor_offset: int, goal: Optional[str] = None
-    ) -> InsertCodeResult:
-        
+            self, document: str, cursor_offset: int, goal: Optional[str] = None
+        ) -> InsertCodeResult:
     async def load(self, v):
-        
     class Nested:
-        
       def nested():
-            
 File: test.cpp
-  namespace namespace_name 
-
-    void add() 
-    class student 
+  namespace namespace_name
+    void add()
+    class student
       void print();
 File: test.ml
-  let divide (x:int) y 
-  let callback () : unit 
-  module M 
-    let bump ?(step = 1) x 
-    let hline ~x:x1 ~x:x2 ~y 
-  module N 
-    let with_named_args ~(named_arg1 : int) ?named_arg2 
+  let divide (x:int) y
+  let callback () : unit
+  module M
+    let bump ?(step = 1) x
+    let hline ~x:x1 ~x:x2 ~y
+  module N
+    let with_named_args ~(named_arg1 : int) ?named_arg2
