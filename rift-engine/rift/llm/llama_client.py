@@ -42,15 +42,19 @@ from rift.llm.openai_types import (
 from rift.util.TextStream import TextStream
 
 from llama_cpp import Llama
+from llama_cpp.llama_types import CompletionChunk
 
 logger = logging.getLogger(__name__)
+
+from rift.util.logging import configure_logger
+
 
 I = TypeVar("I", bound=BaseModel)
 O = TypeVar("O", bound=BaseModel)
 
-from tiktoken import get_encoding
+import transformers
 
-ENCODER = get_encoding("cl100k_base")
+ENCODER = transformers.AutoTokenizer.from_pretrained("TheBloke/CodeLlama-7B-Instruct-fp16")
 ENCODER_LOCK = Lock()
 
 class MissingKeyError(Exception):
@@ -325,20 +329,26 @@ def truncate_messages(
         tail_messages.insert(0, msg)
     return [messages[0]] + tail_messages
 
-
-class LlamaClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCompletionProvider):
+import os
+class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider):
+    name: str
     model_path: Optional[str] = None
-
     class Config:
         env_prefix = "LLAMA_"
         env_file = ".env"
-        keep_untouched = (cached_property,)
+        keep_untouched = (cached_property,)    
+
+    def __init__(self, name: str, model_path: Optional[str] = None):
+        if model_path is None:
+            raise Exception("Must specify path to GGUF model weights on filesystem in Rift settings. Try downloading e.g. `https://huggingface.co/TheBloke/CodeLlama-7B-GGUF/resolve/main/codellama-7b.Q5_K_M.gguf`")
+        self.name = name
+        self.model_path = model_path
 
     def __str__(self):
         return f"{self.__class__.__name__} {self.model_path}"
 
     @cached_property
-    def model(self) -> Any:
+    def model(self) -> Llama:
         return Llama(
             model_path=self.model_path,
             n_ctx=MAX_CONTEXT_SIZE,
@@ -438,40 +448,29 @@ class LlamaClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatComp
     ) -> Coroutine[Any, Any, ChatCompletionResponse]:
         ...
 
+    def completion(self, prompt: str, stream: bool = True, **kwargs):
+        async def worker():
+            for chunk in self.model.create_completion(
+                prompt=prompt,
+                temperature=0.3,
+                max_tokens=MAX_LEN_SAMPLED_COMPLETION,
+                stream=True,
+            ):
+                yield chunk
+        return worker()
+
     def chat_completions(self, messages: List[Message], *, stream: bool = False, **kwargs) -> Any:
-        # # logger.info(f"{messages=}")
-        # endpoint = "/chat/completions"
-        # input_type = ChatCompletionRequest
-        # # TODO: don't hardcode
-        # logit_bias = {99750: -100}  # forbid repetition of the cursor sentinel
-        # params = ChatCompletionRequest(
-        #     messages=messages,
-        #     stream=stream,
-        #     logit_bias=logit_bias,
-        #     max_tokens=MAX_LEN_SAMPLED_COMPLETION,
-        #     **kwargs,
-        # )
-        # if self.default_model:
-        #     params.model = self.default_model
-        # output_type = ChatCompletionResponse
-
-        # if stream:
-        #     return self._post_streaming(
-        #         endpoint,
-        #         params=params,
-        #         input_type=input_type,
-        #         stream_data_type=ChatCompletionChunk,
-        #     )
-        # else:
-        #     return self._post_endpoint(
-        #         endpoint, params=params, input_type=input_type, output_type=output_type
-        #     )
-
-        return self.model.create_chat_completion(
-            messages=messages,
-            stream=stream,
-            max_tokens=MAX_LEN_SAMPLED_COMPLETION
-        )
+        from rift.util.ofdict import todict, ofdict
+        messages = [todict(msg) for msg in messages]
+        from llama_cpp.llama_types import ChatCompletionChunk
+        async def wrapper():
+            for chunk in self.model.create_chat_completion(
+                messages=messages,
+                stream=stream,
+                max_tokens=MAX_LEN_SAMPLED_COMPLETION
+            ):
+                yield chunk
+        return wrapper()
 
     async def run_chat(
         self,
@@ -507,8 +506,20 @@ class LlamaClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatComp
             f"Truncated {num_old_messages - len(messages)} non-system messages due to context length overflow."
         )
 
+        def postprocess(chunk):
+            if chunk["choices"]:
+                choice = chunk["choices"][0]
+                if choice["finish_reason"]:
+                    return ""
+                if "content" in choice["delta"]:
+                    return choice["delta"]["content"]
+                else:
+                    return ""
+            return ""
+
+
         stream = TextStream.from_aiter(
-            asg.map(lambda c: c.choices[0].delta.content, self.chat_completions(messages, stream=True))
+            asg.map(postprocess, self.chat_completions(messages, stream=True))
         )
 
         event = asyncio.Event()
@@ -545,68 +556,7 @@ class LlamaClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatComp
             Generate code to replace the given `region`. Write a partial code snippet without imports if needed.
             """
 
-        def create_messages(
-            before_cursor: str,
-            region: str,
-            after_cursor: str,
-            documents: Optional[List[lsp.Document]] = None,
-        ) -> List[Message]:
-            user_message = (
-                f"Please generate code completing the task which will replace the below region: {goal}\n"
-                "==== PREFIX ====\n"
-                f"{before_cursor}"
-                "==== REGION ====\n"
-                f"{latest_region or region}\n"
-                "==== SUFFIX ====\n"
-                f"{after_cursor}\n"
-            )
-            user_message = format_visible_files(documents) + user_message
-
-            return [
-                Message.system(
-                    "You are a brilliant coder and an expert software engineer and world-class systems architect with deep technical and design knowledge. You value:\n"
-                    "- Conciseness\n"
-                    "- DRY principle\n"
-                    "- Self-documenting code with plenty of comments\n"
-                    "- Modularity\n"
-                    "- Deduplicated code\n"
-                    "- Readable code\n"
-                    "- Abstracting things away to functions for reusability\n"
-                    "- Logical thinking\n"
-                    "\n\n"
-                    "You will be presented with a *task* and a source code file split into three parts: a *prefix*, *region*, and *suffix*. "
-                    "The task will specify a change or new code that will replace the given region.\n You will receive the source code in the following format:\n"
-                    "==== PREFIX ====\n"
-                    "${source code file before the region}\n"
-                    "==== REGION ====\n"
-                    "${region}\n"
-                    "==== SUFFIX ====\n"
-                    "{source code file after the region}\n\n"
-                    "When presented with a task, you will:\n(1) write a detailed and elegant plan to solve this task,\n(2) write your solution for it surrounded by triple backticks, and\n(3) write a 1-2 sentence summary of your solution.\n"
-                    f"Your solution will be added verbatim to replace the given region. Do *not* repeat the prefix or suffix in any way.\n"
-                    "The solution should directly replaces the given region. If the region is empty, just write something that will replace the empty string. *Do not repeat the prefix or suffix in any way*. If the region is in the middle of a function definition or class declaration, do not repeat the function signature or class declaration. Write a partial code snippet without imports if needed. Preserve indentation.\n"
-                    f"For example, if the source code looks like this:\n"
-                    "==== PREFIX ====\n"
-                    "def hello_world():\n    \n"
-                    "==== REGION ====\n"
-                    "\n"
-                    "==== SUFFIX ====\n"
-                    "if __name__ == '__main__':\n    hello_world()\n\n"
-                    "And the task is 'implement this function and return 0', then a good response would be\n"
-                    "We will implement hello world by first using the Python `print` statement and then returning the integer literal 0.\n"
-                    "```\n"
-                    "# print hello world\n"
-                    "    print('hello world!')\n"
-                    "    # return the integer 0\n"
-                    "    return 0\n"
-                    "```\n"
-                    "I added an implementation of the rest of the `hello_world` function which uses the Python `print` statement to print 'hello_world' before returning the integer literal 0.\n"
-                ),
-                Message.assistant("Hello! How can I help you today?"),
-                Message.user(user_message),
-            ]
-
-        messages_skeleton = create_messages("", "", "")
+        messages_skeleton = create_messages("", "", "", goal=goal, latest_region=latest_region)
         max_size = MAX_CONTEXT_SIZE - MAX_LEN_SAMPLED_COMPLETION - messages_size(messages_skeleton)
 
         # rescale `max_size_document` if we need to make room for the other documents
@@ -652,6 +602,7 @@ class LlamaClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatComp
             region=region,
             after_cursor=after_cursor,
             documents=truncated_documents,
+            goal=goal
         )
         # logger.info(f"{messages=}")
 
@@ -659,68 +610,210 @@ class LlamaClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatComp
         def error_callback(e):
             event.set()
 
+        def postprocess(chunk):
+            if chunk["choices"]:
+                choice = chunk["choices"][0]
+                if choice["finish_reason"]:
+                    return ""
+                if "content" in choice["delta"]:
+                    return choice["delta"]["content"]
+                else:
+                    return ""
+            return ""
+
+
         stream = TextStream.from_aiter(
-            asg.map(lambda c: c.text, self.chat_completions(messages, stream=True), error_callback=error_callback)
+            asg.map(postprocess, self.chat_completions(messages, stream=True))
         )
+        # async def postprocess2(completion_chunk: CompletionChunk) -> str:
+        #     if completion_chunk["choices"]:
+        #         choice = completion_chunk["choices"][0]
+        #         if "text" in choice and choice["text"]:
+        #             return choice["text"]
+        #         if choice["finish_reason"]:
+        #             return ""
+        #     return ""
+
+
+        # commented_region = '# ' + '\n# '.join(region.split('\n'))
+        # prompt = f"<PRE> {before_cursor}\n{commented_region}\n{f'# better version which accomplishes {goal}'} <SUF> {after_cursor} <MID>"
+        # # prompt = ""
+        # logger.info(f"{prompt=}")
+        # stream = TextStream.from_aiter(
+        #     asg.map(postprocess2, self.completion(prompt, stream=True))
+        # )
 
         logger.info("constructed stream")
         # logger.info(f"{stream=}")
-        thoughtstream = TextStream()
-        codestream = TextStream()
-        planstream = TextStream()
+        # thoughtstream = TextStream()
+        # codestream = TextStream()
+        # planstream = TextStream()
 
+        # async def worker():
+        #     logger.info("[edit_code:worker]")
+        #     try:
+        #         prelude, stream2 = stream.split_once("```")
+        #         # logger.info(f"{prelude=}")
+        #         async for delta in prelude:
+        #             # logger.info(f"plan {delta=}")
+        #             planstream.feed_data(delta)
+        #         planstream.feed_eof()
+        #         lang_tag = await stream2.readuntil("\n")
+        #         before, after = stream2.split_once("\n```")
+        #         # logger.info(f"{before=}")
+        #         logger.info("reading codestream")
+        #         async for delta in before:
+        #             # logger.info(f"code {delta=}")
+        #             codestream.feed_data(delta)
+        #         codestream.feed_eof()
+        #         # thoughtstream.feed_data("\n")
+        #         logger.info("reading thoughtstream")
+        #         async for delta in after:
+        #             thoughtstream.feed_data(delta)
+        #         thoughtstream.feed_eof()
+        #     except Exception as e:
+        #         event.set()
+        #         raise e
+        #     finally:
+        #         planstream.feed_eof()
+        #         thoughtstream.feed_eof()
+        #         codestream.feed_eof()
+        #         # logger.info("FED EOF TO ALL")
+
+        # # t = asyncio.create_task(worker())
+        # # thoughtstream._feed_task = t
+        # # codestream._feed_task = t
+        # # planstream._feed_task = t
+        # # logger.info("[edit_code] about to return")
+
+
+        codestream = TextStream()
         async def worker():
-            logger.info("[edit_code:worker]")
             try:
-                prelude, stream2 = stream.split_once("```")
-                # logger.info(f"{prelude=}")
-                async for delta in prelude:
-                    # logger.info(f"plan {delta=}")
-                    planstream.feed_data(delta)
-                planstream.feed_eof()
-                lang_tag = await stream2.readuntil("\n")
-                before, after = stream2.split_once("\n```")
-                # logger.info(f"{before=}")
-                logger.info("reading codestream")
-                async for delta in before:
-                    # logger.info(f"code {delta=}")
+                async for delta in stream:
+                    logger.info(f"[worker] {delta=}")
                     codestream.feed_data(delta)
                 codestream.feed_eof()
-                # thoughtstream.feed_data("\n")
-                logger.info("reading thoughtstream")
-                async for delta in after:
-                    thoughtstream.feed_data(delta)
-                thoughtstream.feed_eof()
-            except Exception as e:
+            except MissingKeyError as e:
                 event.set()
                 raise e
             finally:
-                planstream.feed_eof()
-                thoughtstream.feed_eof()
                 codestream.feed_eof()
-                # logger.info("FED EOF TO ALL")
 
         t = asyncio.create_task(worker())
-        thoughtstream._feed_task = t
         codestream._feed_task = t
-        planstream._feed_task = t
-        # logger.info("[edit_code] about to return")
-        return EditCodeResult(thoughts=thoughtstream, code=codestream, plan=planstream, event=event)
+        return EditCodeResult(thoughts=None, code=codestream, plan=None, event=event)
 
     async def insert_code(self, document: str, cursor_offset: int, goal=None) -> InsertCodeResult:
         raise Exception("unreachable code")
 
 
-async def _main():
-    client = LlamaClient()  # type: ignore
-    print(client)
-    messages = [
-        Message.system("you are a friendly and witty chatbot."),
-        Message.user("please tell me a joke involving a lemon and a rubiks cube."),
-        Message.assistant("i won't unless if you ask nicely"),
+def create_messages(
+    before_cursor: str,
+    region: str,
+    after_cursor: str,
+    documents: Optional[List[lsp.Document]] = None,
+    goal: Optional[str] = None,
+    latest_region: Optional[str] = None
+) -> List[Message]:
+    user_message = (
+        f"Please generate code completing the task to replace the below region: {goal or ''}\n"
+        "==== PREFIX ====\n"
+        f"{before_cursor}"
+        "==== REGION ====\n"
+        f"{latest_region or region}\n"
+        "==== SUFFIX ====\n"
+        f"{after_cursor}\n"
+    )
+    user_message = format_visible_files(documents) + user_message
+
+    return [
+        # Message.system(
+        #     "You are a brilliant coder and an expert software engineer and world-class systems architect with deep technical and design knowledge. You value:\n"
+        #     "- Conciseness\n"
+        #     "- DRY principle\n"
+        #     "- Self-documenting code with plenty of comments\n"
+        #     "- Modularity\n"
+        #     "- Deduplicated code\n"
+        #     "- Readable code\n"
+        #     "- Abstracting things away to functions for reusability\n"
+        #     "- Logical thinking\n"
+        #     "\n\n"
+        #     "You will be presented with a *task* and a source code file split into three parts: a *prefix*, *region*, and *suffix*. "
+        #     "The task will specify a change or new code that will replace the given region.\n You will receive the source code in the following format:\n"
+        #     "==== PREFIX ====\n"
+        #     "${source code file before the region}\n"
+        #     "==== REGION ====\n"
+        #     "${region}\n"
+        #     "==== SUFFIX ====\n"
+        #     "{source code file after the region}\n\n"
+        #     "When presented with a task, you will:\n(1) write a detailed and elegant plan to solve this task,\n(2) write your solution for it surrounded by triple backticks, and\n(3) write a 1-2 sentence summary of your solution.\n"
+        #     f"Your solution will be added verbatim to replace the given region. Do *not* repeat the prefix or suffix in any way.\n"
+        #     "The solution should directly replaces the given region. If the region is empty, just write something that will replace the empty string. *Do not repeat the prefix or suffix in any way*. If the region is in the middle of a function definition or class declaration, do not repeat the function signature or class declaration. Write a partial code snippet without imports if needed. Preserve indentation.\n"
+        #     f"For example, if the source code looks like this:\n"
+        #     "==== PREFIX ====\n"
+        #     "def hello_world():\n    \n"
+        #     "==== REGION ====\n"
+        #     "\n"
+        #     "==== SUFFIX ====\n"
+        #     "if __name__ == '__main__':\n    hello_world()\n\n"
+        #     "And the task is 'implement this function and return 0', then a good response would be\n"
+        #     "We will implement hello world by first using the Python `print` statement and then returning the integer literal 0.\n"
+        #     "```\n"
+        #     "    # print hello world\n"
+        #     "    print('hello world!')\n"
+        #     "    # return the integer 0\n"
+        #     "    return 0\n"
+        #     "```\n"
+        #     "I added an implementation of the rest of the `hello_world` function which uses the Python `print` statement to print 'hello_world' before returning the integer literal 0.\n"
+        # ),
+        # Message.assistant("Hello! How can I help you today?"),
+
+        Message.system(
+            "You will be presented with a *task* and a source code file split into three parts: a *prefix*, *region*, and *suffix*. "
+            "The task will specify a change or new code that will replace the given region.\n You will receive the source code in the following format:\n"
+            "==== PREFIX ====\n"
+            "${source code file before the region}\n"
+            "==== REGION ====\n"
+            "${region}\n"
+            "==== SUFFIX ====\n"
+            "{source code file after the region}\n\n"
+            "When presented with a task, you will:\n(1) write a detailed and elegant plan to solve this task,\n(2) write your solution for it surrounded by triple backticks, and\n(3) write a 1-2 sentence summary of your solution.\n"
+            f"Your solution will be added verbatim to replace the given region. Do *not* repeat the prefix or suffix in any way.\n"
+            "The solution should directly replaces the given region. If the region is empty, just write something that will replace the empty string. *Do not repeat the prefix or suffix in any way*. If the region is in the middle of a function definition or class declaration, do not repeat the function signature or class declaration. Write a partial code snippet without imports if needed. Preserve indentation.\n"
+        ),
+        Message.assistant("Hello! How can I help you today?"),        
+        Message.user(
+            "==== PREFIX ====\n"
+            "def hello_world():\n    \n"
+            "==== REGION ====\n"
+            "# TODO\n"
+            "==== SUFFIX ====\n"
+            "if __name__ == '__main__':\n    hello_world()\n\n"            
+        ),
+        Message.assistant(
+             "    # print hello world\n"
+             "    print('hello world!')\n"
+             "    # return the integer 0\n"
+             "    return 0\n"
+        ),
+        Message.user(user_message),
     ]
 
-    stream = await client.run_chat("fee fi fo fum", messages=messages, message="pretty please?")
+
+async def _main():
+
+    client = LlamaClient(name="codellama", model_path="/Users/pv/Downloads/CodeLlama-7B-Instruct-GGUF/codellama-7b-instruct.Q5_K_M.gguf")  # type: ignore
+    print(client)
+    messages = [
+        # Message.system("you are a friendly and witty chatbot."),
+        # Message.user("please tell me a joke involving a lemon and a rubiks cube."),
+        # Message.assistant("i won't unless if you ask nicely"),
+    ]
+
+    messages = create_messages("def merge_sort(xs: List[int]):\n", "    # TODO", "\nif __name__ == '__main__':\nprint(merge_sort([5,4,3,2,1]))", goal="implement the missing code", latest_region=None)
+
+    stream = await client.run_chat("fee fi fo fum", messages=messages[:-1], message=messages[-1].content)
     async for delta in stream.text:
         print(delta)
     # print("\n\n")
@@ -732,4 +825,5 @@ async def _main():
 
 
 if __name__ == "__main__":
+    configure_logger()
     asyncio.run(_main())

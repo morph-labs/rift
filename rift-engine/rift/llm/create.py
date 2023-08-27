@@ -116,6 +116,8 @@ def create_client_core(
             kwargs["model_path"] = path
         settings = Gpt4AllSettings.parse_obj(kwargs)
         return Gpt4AllModel(settings)
-
+    elif type == "llama": # llama-cpp-python
+        from rift.llm.llama_client import LlamaClient
+        return LlamaClient(name=name, model_path=path if path else None)
     else:
         raise ValueError(f"Unknown model: {config}")

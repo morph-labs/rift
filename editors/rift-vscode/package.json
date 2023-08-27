@@ -63,11 +63,12 @@
         },        
         "rift.codeEditModel": {
           "type": "string",
-          "default": "openai:gpt-3.5-turbo",
+          "default": "openai:gpt-4",
           "enum": [
             "openai:gpt-3.5-turbo",
             "openai:gpt-4",
-            "hf:bigcode/starcoderbase-3b"
+            "hf:bigcode/starcoderbase-3b",
+            "llama:codellama-7b-instruct @ /Users/pv/Downloads/CodeLlama-7B-Instruct-GGUF/codellama-7b-instruct.Q5_K_M.gguf"
           ],
           "markdownDescription": "Model to use for code edits. (remember to set the OpenAI API key if using an openai:* model). You can also set your own (use the JSON settings editor), the format is `{type}:{name} [@ {path}]` where `type` is one of `gpt4all`, `openai`, or `hf` (for huggingface models), `name` is the name of the model, and `path` is an optional path to the downloaded model weights."
         },

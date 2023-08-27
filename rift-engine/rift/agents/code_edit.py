@@ -182,6 +182,7 @@ class CodeEditAgent(Agent):
                     diff_queue = asyncio.Queue()
 
                     async def send_diff(new_text: str):
+                        # logger.info(f"{new_text=} {self.selection_text=}")
                         max_fuel = 10
                         fuel = max_fuel
                         while True:
@@ -300,17 +301,18 @@ class CodeEditAgent(Agent):
 
                         diff_queue_task = asyncio.create_task(_watch_queue())                        
                         while True:
-                            logger.info("looping")
+                            # logger.info("looping")
                             if after.at_eof():
+                                # logger.info("at eof")
                                 break
-                            logger.info("past the break")
+                            # logger.info("past the break")
                             flag = False
                             before, after = after.split_once("\n")
                             # logger.info("yeehaw")
                             if line_flag:
                                 all_deltas.append("\n")
                             async for delta in before:
-                                logger.info(f"[code_edit] {delta=}")
+                                # logger.info(f"[code_edit] {delta=}")
                                 if not flag:
                                     flag = True
                                 all_deltas.append(delta)
