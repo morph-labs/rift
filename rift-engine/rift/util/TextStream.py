@@ -117,6 +117,7 @@ class TextStream:
     async def __anext__(self):
         """Note this is different to StreamReader which yields lines.
         We just yield everything that is available in the buffer."""
+        logger.info("anext")
         while len(self._buffer) == 0:
             if self._eof:
                 raise StopAsyncIteration

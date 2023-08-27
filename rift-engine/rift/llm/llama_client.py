@@ -41,6 +41,8 @@ from rift.llm.openai_types import (
 )
 from rift.util.TextStream import TextStream
 
+from llama_cpp import Llama
+
 logger = logging.getLogger(__name__)
 
 I = TypeVar("I", bound=BaseModel)
@@ -56,7 +58,7 @@ class MissingKeyError(Exception):
 
 
 @dataclass
-class OpenAIError(Exception):
+class LlamaError(Exception):
     """Error raised by calling the OpenAI API"""
 
     message: str
@@ -324,84 +326,58 @@ def truncate_messages(
     return [messages[0]] + tail_messages
 
 
-class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCompletionProvider):
-    api_key: Optional[SecretStr] = None
-    api_url: str = "https://api.openai.com/v1"
-    default_model: Optional[str] = None
+class LlamaClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCompletionProvider):
+    model_path: Optional[str] = None
 
     class Config:
-        env_prefix = "OPENAI_"
+        env_prefix = "LLAMA_"
         env_file = ".env"
         keep_untouched = (cached_property,)
 
     def __str__(self):
-        k = self.api_key.get_secret_value()
-        k = f"{k[:3]}...{k[-4:]}"
-        return f"{self.__class__.__name__} {self.api_url} {k}"
-
-    @property
-    def base_url(self) -> str:
-        return urlparse(self.api_url)._replace(path="", query="", params="", fragment="").geturl()
-
-    @property
-    def url_path(self) -> str:
-        return urlparse(self.api_url).path
-
-    @property
-    def url_query(self) -> dict:
-        q = urlparse(self.api_url).query
-        return parse_qs(q)
-
-    @property
-    def headers(self):
-        return {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key.get_secret_value()}",
-            "User-Agent": __name__,
-        }
+        return f"{self.__class__.__name__} {self.model_path}"
 
     @cached_property
-    def session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(
-            base_url=self.base_url,
-            headers=self.headers,
+    def model(self) -> Any:
+        return Llama(
+            model_path=self.model_path,
+            n_ctx=MAX_CONTEXT_SIZE,
         )
 
     async def handle_error(self, resp: aiohttp.ClientResponse):
-        status_code = resp.status
-        message = await self.get_error_message(resp)
-        message = f"{status_code} error from {self.base_url}: {message}"
-        logger.error(message)
-        if status_code == 404 and self.default_model == "gpt-4":
-            logger.error(
-                "Please double check you have access to GPT-4 API: https://openai.com/waitlist/gpt-4-api"
-            )
-        raise OpenAIError(message=message, status=status_code)
+        # status_code = resp.status
+        # message = await self.get_error_message(resp)
+        # message = f"{status_code} error from {self.base_url}: {message}"
+        # logger.error(message)
+        # if status_code == 404 and self.default_model == "gpt-4":
+        #     logger.error(
+        #         "Please double check you have access to GPT-4 API: https://openai.com/waitlist/gpt-4-api"
+        #     )
+        # raise LlamaError(message=message, status=status_code)
+        pass # TODO
 
     async def get_error_message(self, resp):
-        if resp.content_type == "application/json":
-            j = await resp.json()
-        else:
-            t = await resp.text()
-            try:
-                j = json.loads(t)
-            except json.JSONDecodeError:
-                return t
-        if isinstance(j, str):
-            return j
-        for k in ["error", "message", "detail"]:
-            if k in j:
-                e = j[k]
-                if isinstance(e, str):
-                    return e
-                if "message" in e:
-                    m = e["message"]
-                    if isinstance(m, str):
-                        return m
-        raise ValueError(f"Could not parse error message from {j}")
-
-    def _make_path(self, endpoint: str) -> str:
-        return self.url_path + endpoint
+        # if resp.content_type == "application/json":
+        #     j = await resp.json()
+        # else:
+        #     t = await resp.text()
+        #     try:
+        #         j = json.loads(t)
+        #     except json.JSONDecodeError:
+        #         return t
+        # if isinstance(j, str):
+        #     return j
+        # for k in ["error", "message", "detail"]:
+        #     if k in j:
+        #         e = j[k]
+        #         if isinstance(e, str):
+        #             return e
+        #         if "message" in e:
+        #             m = e["message"]
+        #             if isinstance(m, str):
+        #                 return m
+        # raise ValueError(f"Could not parse error message from {j}")
+        raise NotImplementedError("TODO")
 
     async def _post_streaming(
         self,
@@ -448,22 +424,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         input_type: Type[I],
         output_type: Type[O],
     ) -> O:
-        if not self.api_key:
-            logger.error("Missing API key")
-            raise Exception("[OpenAIClient] missing API key")
-        if not isinstance(params, input_type):
-            raise TypeError(f"expected {input_type}, got {type(params)}")
-        if getattr(params, "stream", False):
-            raise ValueError("To use streaming please use the _post_streaming method")
-        payload = params.dict(exclude_none=True)
-        path = self._make_path(endpoint)
-        async with self.session.post(path, params=self.url_query, json=payload) as resp:
-            if not resp.ok:
-                await self.handle_error(resp)
-            assert resp.content_type == "application/json"
-            j = await resp.json()
-        r = output_type.parse_obj(j)  # type: ignore
-        return r  # type: ignore
+        raise Exception("unreachable")
 
     @overload
     def chat_completions(
@@ -478,33 +439,39 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         ...
 
     def chat_completions(self, messages: List[Message], *, stream: bool = False, **kwargs) -> Any:
-        # logger.info(f"{messages=}")
-        endpoint = "/chat/completions"
-        input_type = ChatCompletionRequest
-        # TODO: don't hardcode
-        logit_bias = {99750: -100}  # forbid repetition of the cursor sentinel
-        params = ChatCompletionRequest(
+        # # logger.info(f"{messages=}")
+        # endpoint = "/chat/completions"
+        # input_type = ChatCompletionRequest
+        # # TODO: don't hardcode
+        # logit_bias = {99750: -100}  # forbid repetition of the cursor sentinel
+        # params = ChatCompletionRequest(
+        #     messages=messages,
+        #     stream=stream,
+        #     logit_bias=logit_bias,
+        #     max_tokens=MAX_LEN_SAMPLED_COMPLETION,
+        #     **kwargs,
+        # )
+        # if self.default_model:
+        #     params.model = self.default_model
+        # output_type = ChatCompletionResponse
+
+        # if stream:
+        #     return self._post_streaming(
+        #         endpoint,
+        #         params=params,
+        #         input_type=input_type,
+        #         stream_data_type=ChatCompletionChunk,
+        #     )
+        # else:
+        #     return self._post_endpoint(
+        #         endpoint, params=params, input_type=input_type, output_type=output_type
+        #     )
+
+        return self.model.create_chat_completion(
             messages=messages,
             stream=stream,
-            logit_bias=logit_bias,
-            max_tokens=MAX_LEN_SAMPLED_COMPLETION,
-            **kwargs,
+            max_tokens=MAX_LEN_SAMPLED_COMPLETION
         )
-        if self.default_model:
-            params.model = self.default_model
-        output_type = ChatCompletionResponse
-
-        if stream:
-            return self._post_streaming(
-                endpoint,
-                params=params,
-                input_type=input_type,
-                stream_data_type=ChatCompletionChunk,
-            )
-        else:
-            return self._post_endpoint(
-                endpoint, params=params, input_type=input_type, output_type=output_type
-            )
 
     async def run_chat(
         self,
@@ -541,7 +508,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         )
 
         stream = TextStream.from_aiter(
-            asg.map(lambda c: c.text, self.chat_completions(messages, stream=True))
+            asg.map(lambda c: c.choices[0].delta.content, self.chat_completions(messages, stream=True))
         )
 
         event = asyncio.Event()
@@ -688,7 +655,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         )
         # logger.info(f"{messages=}")
 
-        event = asyncio.Event()        
+        event = asyncio.Event()
         def error_callback(e):
             event.set()
 
@@ -745,7 +712,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
 
 
 async def _main():
-    client = OpenAIClient()  # type: ignore
+    client = LlamaClient()  # type: ignore
     print(client)
     messages = [
         Message.system("you are a friendly and witty chatbot."),

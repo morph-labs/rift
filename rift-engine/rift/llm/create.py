@@ -9,6 +9,8 @@ from pydantic import BaseModel, SecretStr
 from rift.llm.abstract import AbstractChatCompletionProvider, AbstractCodeCompletionProvider
 
 
+logger = logging.getLogger(__name__)
+
 class ModelConfig(BaseModel):
     chatModel: str
     codeEditModel: str
@@ -25,7 +27,7 @@ class ModelConfig(BaseModel):
         assert isinstance(c, AbstractChatCompletionProvider)
         return c
 
-    def create_completions(self) -> AbstractCodeCompletionProvider:
+    def create_code_edit(self) -> AbstractCodeCompletionProvider:
         return create_client(self.codeEditModel, self.openaiKey)
 
     @classmethod
@@ -83,10 +85,12 @@ def create_client_core(
     If the `type` is none of the above, it raises a `ValueError` with a message indicating that the model is unknown.
     """
     type, name, path = parse_type_name_path(config)
+    logger.info(f"{type=} {name=} {path=}")
     if type == "hf":
         from rift.llm.hf_client import HuggingFaceClient
 
-        return HuggingFaceClient(name)
+        logger.info("creating HFClient")
+        return HuggingFaceClient(model_name=name)
     elif type == "openai":
         from rift.llm.openai_client import OpenAIClient
 

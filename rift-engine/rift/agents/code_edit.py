@@ -160,8 +160,9 @@ class CodeEditAgent(Agent):
                     generate_response_t = asyncio.create_task(generate_response())
 
                     async def gather_thoughts():
-                        async for delta in edit_code_result.thoughts:
-                            response_stream.feed_data(delta)                        
+                        if edit_code_result.thoughts:
+                            async for delta in edit_code_result.thoughts:
+                                response_stream.feed_data(delta)
 
                     async def cleanup():
                         response_stream.feed_eof()
@@ -284,7 +285,9 @@ class CodeEditAgent(Agent):
                         # asyncio.create_task(watch_event())
                         nonlocal all_deltas
                         # async for substream in edit_code_result.code.asplit("\n"):
+                        logger.info("before")
                         after = edit_code_result.code
+                        logger.info("after")
                         line_flag = False
 
                         async def _watch_queue():
@@ -297,14 +300,17 @@ class CodeEditAgent(Agent):
 
                         diff_queue_task = asyncio.create_task(_watch_queue())                        
                         while True:
+                            logger.info("looping")
                             if after.at_eof():
                                 break
+                            logger.info("past the break")
                             flag = False
                             before, after = after.split_once("\n")
                             # logger.info("yeehaw")
                             if line_flag:
                                 all_deltas.append("\n")
                             async for delta in before:
+                                logger.info(f"[code_edit] {delta=}")
                                 if not flag:
                                     flag = True
                                 all_deltas.append(delta)
