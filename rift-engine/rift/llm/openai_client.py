@@ -585,7 +585,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
             documents: Optional[List[lsp.Document]] = None,
         ) -> List[Message]:
             user_message = (
-                f"Please generate code completing the task which will replace the below region: {goal}\n"
+                f"Please generate code completing the task which will replace the below region. Task: {goal}\n\n"
                 "==== PREFIX ====\n"
                 f"{before_cursor}"
                 "==== REGION ====\n"

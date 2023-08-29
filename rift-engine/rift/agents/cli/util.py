@@ -1,3 +1,4 @@
+import sys
 import asyncio
 import dataclasses
 import inspect
@@ -58,19 +59,19 @@ def _PrintResult(component_trace, verbose=False, serialize=None):
             print(fire.core._OneLineResult(i))
     elif inspect.isgeneratorfunction(result):
         raise NotImplementedError
-    elif isinstance(result, dict) and value_types.IsSimpleGroup(result):
+    elif isinstance(result, dict) and fire.value_types.IsSimpleGroup(result):
         print(fire.core._DictAsString(result, verbose))
     elif isinstance(result, tuple):
         print(fire.core._OneLineResult(result))
     elif dataclasses._is_dataclass_instance(result):
         print(fire.core._OneLineResult(result))
-    elif isinstance(result, value_types.VALUE_TYPES):
+    elif isinstance(result, fire.value_types.VALUE_TYPES):
         if result is not None:
             print(result)
     else:
         help_text = fire.helptext.HelpText(result, trace=component_trace, verbose=verbose)
         output = [help_text]
-        Display(output, out=sys.stdout)
+        fire.core.Display(output, out=sys.stdout)
 
 
 fire.core._PrintResult = _PrintResult
