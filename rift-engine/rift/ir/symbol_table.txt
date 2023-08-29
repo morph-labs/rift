@@ -203,6 +203,78 @@ Module: N
    language: ocaml
    range: ((6, 0), (8, 3))
    substring: (160, 263)
+=== Symbol Table for test.res ===
+Value: z0
+   language: rescript
+   range: ((0, 0), (0, 12))
+   substring: (0, 12)
+   body: (9, 12)
+Value: z1
+   language: rescript
+   range: ((1, 0), (1, 14))
+   substring: (13, 27)
+   body: (24, 27)
+   type: int
+Value: z2
+   language: rescript
+   range: ((2, 0), (2, 16))
+   substring: (28, 44)
+   body: (41, 44)
+   type: int
+Value: z
+   language: rescript
+   range: ((3, 0), (3, 15))
+   substring: (45, 60)
+   body: (57, 60)
+Value: zz
+   language: rescript
+   range: ((4, 0), (4, 22))
+   substring: (61, 83)
+   body: (80, 83)
+Value: zzz
+   language: rescript
+   range: ((5, 0), (5, 25))
+   substring: (84, 109)
+   body: (106, 109)
+Function: mulWithDefault
+   language: rescript
+   range: ((7, 0), (12, 1))
+   substring: (111, 211)
+   body: (150, 211)
+   parameters: [~def:int, x, y]
+Function: annot
+   language: rescript
+   range: ((15, 2), (15, 34))
+   substring: (239, 271)
+   scope: SomeRSModule.
+   body: (265, 271)
+   parameters: [x:int]
+   return_type: int
+Function: paramsWithDefault
+   language: rescript
+   range: ((16, 2), (16, 79))
+   substring: (274, 351)
+   scope: SomeRSModule.
+   body: (347, 351)
+   parameters: [~x:int=3, ~y=4.0, ~z:option<int>=?, ~w=?, ()]
+Module: SomeRSModule
+   language: rescript
+   range: ((14, 0), (17, 1))
+   substring: (213, 353)
+Function: multiple
+   language: rescript
+   range: ((19, 0), (19, 56))
+   substring: (355, 411)
+   body: (395, 411)
+   parameters: [x:int, y:int]
+   return_type: int
+Function: bindings
+   language: rescript
+   range: ((20, 0), (20, 40))
+   substring: (412, 452)
+   body: (435, 452)
+   parameters: [z:int]
+   return_type: int
 
 === Project Map ===
 File: test.c
@@ -247,3 +319,16 @@ File: test.ml
     let hline ~x:x1 ~x:x2 ~y
   module N
     let with_named_args ~(named_arg1 : int) ?named_arg2
+File: test.res
+  let (z0)
+  let z1:int
+  let (z2:int)
+  let z3 as z
+  let (z4:int) as zz
+  let ((z5:int) as zzz)
+  let mulWithDefault = (~def: int, x, y)
+  module SomeRSModule
+    let annot = (x:int) : int
+    let paramsWithDefault = (~x: int=3, ~y=4.0, ~z: option<int>=?, ~w=?, ())
+  let rec multiple = (x:int, y:int) : int
+  and bindings = (z:int)

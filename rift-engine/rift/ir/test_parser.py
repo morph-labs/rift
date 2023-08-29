@@ -138,6 +138,37 @@ class Tests:
         .lstrip()
         .encode("utf-8")
     )
+    code_rescript = (
+        dedent(
+            """
+        let (z0) = 0
+        let z1:int = 0
+        let (z2:int) = 0
+        let z3 as z = 0
+        let (z4:int) as zz = 0
+        let ((z5:int) as zzz) = 0
+
+        let mulWithDefault = (~def: int, x, y) => {
+            switch (x * y) {
+            | 0 => def
+            | z => z
+            }
+        }
+        
+        module SomeRSModule = {
+          let annot = (x:int) : int => x+1
+          let paramsWithDefault = (~x: int=3, ~y=4.0, ~z: option<int>=?, ~w=?, ()) => 5
+        }
+
+        let rec multiple = (x:int, y:int) : int => bindings(x+y)
+        and bindings = (z:int) => multiple(z, z)
+
+        let _  = "not in the symbol table"
+    """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
 
 
 def get_test_project():
@@ -155,6 +186,8 @@ def get_test_project():
     new_file(IR.Code(Tests.code_py), "test.py", "python")
     new_file(IR.Code(Tests.code_cpp), "test.cpp", "cpp")
     new_file(IR.Code(Tests.code_ocaml), "test.ml", "ocaml")
+    new_file(IR.Code(Tests.code_rescript), "test.res", "rescript")
+
     return project
 
 
