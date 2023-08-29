@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 Language = Literal["c", "cpp", "javascript", "ocaml", "python", "rescript", "typescript", "tsx"]
 # e.g. ("A", "B", "foo") for function foo inside class B inside class A
@@ -252,8 +252,12 @@ class File:
     def lookup_symbol(self, qid: QualifiedId) -> Optional[SymbolInfo]:
         return self._symbol_table.get(qid)
 
-    def search_symbol(self, name: str) -> List[SymbolInfo]:
-        return [symbol for symbol in self._symbol_table.values() if name == "" or symbol.name == name]
+    def search_symbol(self, name: Union[str, Callable[[str], bool]]) -> List[SymbolInfo]:
+        if callable(name):
+            name_filter = name
+            return [symbol for symbol in self._symbol_table.values() if name_filter(symbol.name)]
+        else:
+            return [symbol for symbol in self._symbol_table.values() if symbol.name == name]
 
     def add_symbol(self, symbol: SymbolInfo) -> None:
         self._symbol_table[symbol.get_qualified_id()] = symbol

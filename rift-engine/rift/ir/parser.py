@@ -47,7 +47,7 @@ def parse_files_in_project(
     return project
 
 
-def parse_files_in_paths(paths: List[str]) -> IR.Project:
+def parse_files_in_paths(paths: List[str], filter_file: Optional[Callable[[str], bool]]) -> IR.Project:
     """
     Parses all files with known extensions in the provided list of paths.
     """
@@ -59,7 +59,7 @@ def parse_files_in_paths(paths: List[str]) -> IR.Project:
         root_path = os.path.commonpath(paths)
     project = IR.Project(root_path=root_path)
     for path in paths:
-        if os.path.isfile(path):
+        if os.path.isfile(path) and (filter_file is None or filter_file(path)):
             language = IR.language_from_file_extension(path)
             if language is not None:
                 path_from_root = os.path.relpath(path, root_path)
