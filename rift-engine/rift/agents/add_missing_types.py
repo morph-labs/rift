@@ -288,7 +288,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
             groups_of_missing_types.append(group)
         return groups_of_missing_types
 
-    async def process_file(self, file_process: FileProcess, project: parser.Project) -> None:
+    async def process_file(self, file_process: FileProcess, project: IR.Project) -> None:
         fmt = file_process.file_missing_types
         language = fmt.language
         document = fmt.code

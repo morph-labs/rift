@@ -47,7 +47,7 @@ def parse_files_in_project(
     return project
 
 
-def parse_files_in_paths(paths: List[str], filter_file: Optional[Callable[[str], bool]]) -> IR.Project:
+def parse_files_in_paths(paths: List[str], filter_file: Optional[Callable[[str], bool]] = None) -> IR.Project:
     """
     Parses all files with known extensions in the provided list of paths.
     """
