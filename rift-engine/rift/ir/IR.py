@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+import os
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
+from urllib.parse import urlparse
 
 Language = Literal["c", "cpp", "javascript", "ocaml", "python", "rescript", "typescript", "tsx"]
 # e.g. ("A", "B", "foo") for function foo inside class B inside class A
@@ -314,12 +316,62 @@ class File:
 
 
 @dataclass
+class Reference:
+    """
+    A reference to a file, and optionally a symbol inside that file.
+    
+    The file path is the path given to the os for reading. A reference can be converted
+    to a URI, which is a string that can be used to uniquely identify a reference.
+    
+    Examples:
+    - file_path: "home/user/project/src/main.py", qualified_id: None
+    - file_path: "home/user/project/src/main.py", qualified_id: "MyClass"
+    - file_path: "home/user/project/src/main.py", qualified_id: "MyClass.my_function"
+    
+    The URI is of the form "file://<file_path>#<qualified_id>" or "file://<file_path>" 
+    if qualified_id is None.
+    """
+    file_path: str
+    qualified_id: Optional[QualifiedId] = None
+
+    def to_uri(self) -> str:
+        return self.file_path + (f"#{self.qualified_id}" if self.qualified_id is not None else "")
+
+    @staticmethod
+    def from_uri(uri: str) -> "Reference":
+        parsed = urlparse(uri)
+        qualified_id = parsed.fragment if parsed.fragment != "" else None
+        return Reference(file_path=parsed.path, qualified_id=qualified_id)
+
+
+@dataclass
+class ResolvedReference:
+    file: File
+    symbol: Optional[SymbolInfo] = None
+
+
+@dataclass
 class Project:
     root_path: str
     _files: List[File] = field(default_factory=list)
 
     def add_file(self, file: File):
         self._files.append(file)
+
+    def lookup_file(self, path: str) -> Optional[File]:
+        for file in self._files:
+            if os.path.join(self.root_path, file.path) == path:
+                return file
+        return None
+
+    def lookup_reference(self, reference: Reference) -> Optional[ResolvedReference]:
+        file = self.lookup_file(reference.file_path)
+        if file:
+            if reference.qualified_id is None:
+                symbol = None
+            else:
+                symbol = file.lookup_symbol(reference.qualified_id)
+            return ResolvedReference(file=file, symbol=symbol)
 
     def get_files(self) -> List[File]:
         return self._files

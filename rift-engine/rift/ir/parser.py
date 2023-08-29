@@ -46,6 +46,18 @@ def parse_files_in_project(
                     project.add_file(file=file_ir)
     return project
 
+def parse_path(path: str, project: IR.Project, filter_file: Optional[Callable[[str], bool]] = None) -> None:
+    """
+    Parses a single file and adds it to the provided Project instance.
+    """
+    language = IR.language_from_file_extension(path)
+    if language is not None and (filter_file is None or filter_file(path)):
+        path_from_root = os.path.relpath(path, project.root_path)
+        with open(path, "r", encoding="utf-8") as f:
+            code = IR.Code(f.read().encode("utf-8"))
+        file_ir = IR.File(path=path_from_root)
+        parse_code_block(file=file_ir, code=code, language=language)
+        project.add_file(file=file_ir)
 
 def parse_files_in_paths(paths: List[str], filter_file: Optional[Callable[[str], bool]] = None) -> IR.Project:
     """
@@ -59,25 +71,11 @@ def parse_files_in_paths(paths: List[str], filter_file: Optional[Callable[[str],
         root_path = os.path.commonpath(paths)
     project = IR.Project(root_path=root_path)
     for path in paths:
-        if os.path.isfile(path) and (filter_file is None or filter_file(path)):
-            language = IR.language_from_file_extension(path)
-            if language is not None:
-                path_from_root = os.path.relpath(path, root_path)
-                with open(path, "r", encoding="utf-8") as f:
-                    code = IR.Code(f.read().encode("utf-8"))
-                file_ir = IR.File(path=path_from_root)
-                parse_code_block(file=file_ir, code=code, language=language)
-                project.add_file(file=file_ir)
+        if os.path.isfile(path):
+            parse_path(path, project, filter_file)
         else:
             for root, dirs, files in os.walk(path):
                 for file in files:
-                    language = IR.language_from_file_extension(file)
-                    if language is not None:
-                        full_path = os.path.join(root, file)
-                        path_from_root = os.path.relpath(full_path, root_path)
-                        with open(os.path.join(root_path, full_path), "r", encoding="utf-8") as f:
-                            code = IR.Code(f.read().encode("utf-8"))
-                        file_ir = IR.File(path=path_from_root)
-                        parse_code_block(file=file_ir, code=code, language=language)
-                        project.add_file(file=file_ir)
+                    full_path = os.path.join(root, file)
+                    parse_path(full_path, project, filter_file)
     return project
