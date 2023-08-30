@@ -448,16 +448,36 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
     ) -> Coroutine[Any, Any, ChatCompletionResponse]:
         ...
 
-    def completion(self, prompt: str, stream: bool = True, **kwargs):
-        async def worker():
+    def completion(self, prompt: str, stream: bool = True, loop=None, **kwargs):
+        """
+        Runs `Llama.create_completion` and streams results back
+        """
+        loop = loop or asyncio.get_event_loop()
+        import threading
+        completion_stream = TextStream()
+
+        def _send_chunk(chunk_str: str):
+            async def feed_data(chunk_str: str):
+                completion_stream.feed_data(chunk_str)
+
+            asyncio.run_coroutine_threadsafe(feed_data(chunk_str), loop=loop)
+
+        def worker():
             for chunk in self.model.create_completion(
                 prompt=prompt,
                 temperature=0.3,
                 max_tokens=MAX_LEN_SAMPLED_COMPLETION,
-                stream=True,
+                stream=True
             ):
-                yield chunk
-        return worker()
+                _send_chunk(chunk["choices"][0]["text"])
+            completion_stream.feed_eof()
+
+        fut = asyncio.get_event_loop().run_in_executor(None, worker)
+        completion_stream._feed_task = fut
+        async def real_worker():
+            async for delta in completion_stream:
+                yield delta
+        return real_worker()
 
     def chat_completions(self, messages: List[Message], *, stream: bool = False, **kwargs) -> Any:
         from rift.util.ofdict import todict, ofdict
@@ -622,8 +642,48 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
             return ""
 
 
+        # stream = TextStream.from_aiter(
+            # asg.map(postprocess, self.chat_completions(messages, stream=True))
+        # )
+
+        @dataclass
+        class PythonFileWithRegion:
+            before_region: str
+            region: str
+            after_region: str
+            instruction: Optional[str] = None
+            completion: Optional[str] = None
+
+            def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
+                formatted = (
+                    f"==== {before_cursor} ====\n"
+                    f"{self.before_region}\n"
+                    f"==== REGION ====\n"
+                    f"{latest_region or self.region}\n"
+                    f"==== {after_cursor} ====\n"
+                    f"{self.after_region}\n"
+                )
+                return formatted
+
+            def get_prompt(self):
+                assert self.instruction, "instruction not set"
+                result = f"Please generate code completing the task which will replace the below region. Task: {self.instruction}\n\n" +\
+                    self.format()
+                result = f"### INSTRUCTION\n\n{self.instruction or ''}" + self.format() + f"\n### RESPONSE\n\n"
+                return result
+
+        def postprocess2(chunk: CompletionChunk) -> str:
+            return chunk["choices"][0]["text"]
+        
+        pre_prompt: PythonFileWithRegion = PythonFileWithRegion(
+            region=region,
+            before_region=before_cursor,
+            after_region=after_cursor,
+            instruction=goal
+        )
+
         stream = TextStream.from_aiter(
-            asg.map(postprocess, self.chat_completions(messages, stream=True))
+            self.completion(pre_prompt.get_prompt(), stream=True)
         )
         # async def postprocess2(completion_chunk: CompletionChunk) -> str:
         #     if completion_chunk["choices"]:
