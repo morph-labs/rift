@@ -174,6 +174,7 @@ Function: callback
    substring: (29, 56)
    body: (52, 56)
    parameters: [():unit]
+   return_type: unit
 Function: bump
    language: ocaml
    range: ((3, 4), (3, 37))
@@ -199,10 +200,39 @@ Function: with_named_args
    scope: N.
    body: (234, 259)
    parameters: [~named_arg1:int, ?named_arg2]
+Function: f1
+   language: ocaml
+   range: ((9, 4), (9, 34))
+   substring: (265, 295)
+   scope: N.
+   body: (290, 295)
+   parameters: [x:int, x:int]
+   return_type: int
+Function: f2
+   language: ocaml
+   range: ((10, 4), (10, 30))
+   substring: (300, 326)
+   scope: N.
+   body: (321, 326)
+   parameters: [x:int, x:int]
+   return_type: int
+Value: v1
+   language: ocaml
+   range: ((12, 4), (12, 14))
+   substring: (332, 342)
+   scope: N.
+   body: (339, 342)
+Value: v2
+   language: ocaml
+   range: ((13, 4), (13, 18))
+   substring: (347, 361)
+   scope: N.
+   body: (358, 361)
+   type: int
 Module: N
    language: ocaml
-   range: ((6, 0), (8, 3))
-   substring: (160, 263)
+   range: ((6, 0), (14, 3))
+   substring: (160, 365)
 === Symbol Table for test.res ===
 Value: z0
    language: rescript
@@ -319,6 +349,10 @@ File: test.ml
     let hline ~x:x1 ~x:x2 ~y
   module N
     let with_named_args ~(named_arg1 : int) ?named_arg2
+    let rec f1 (x:int) : int
+    and f2 (x:int) : int
+    let v1
+    let v2:int
 File: test.res
   let (z0)
   let z1:int

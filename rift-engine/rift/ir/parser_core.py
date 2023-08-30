@@ -230,7 +230,7 @@ def find_declarations(
     body_node = node.child_by_field_name("body")
     if body_node is not None:
         body_sub = (body_node.start_byte, body_node.end_byte)
-    def process_ocaml_body(n: Node) -> None:
+    def process_ocaml_body(n: Node) -> Optional[str]:
         nonlocal body_node, body_sub
         body_node = n.child_by_field_name("body")
         if body_node is not None:
@@ -238,6 +238,11 @@ def find_declarations(
             if node_before is not None and node_before.type == "=":
                 # consider "=" part of the body
                 body_sub = (node_before.start_byte, body_node.end_byte)
+                n2 = node_before.prev_sibling
+                if n2:
+                    n3 = n2.prev_sibling
+                    if n3 and n3.type == ":":
+                        return n2.text.decode()
             else:
                 body_sub = (body_node.start_byte, body_node.end_byte)
 
@@ -421,21 +426,27 @@ def find_declarations(
                     type = "type of " + extract_type(parameter.children[4])
                     inner_parameter.type = type
                     parameters.append(inner_parameter)
+        declarations: List[SymbolInfo] = []
         for child in node.children:
             if child.type == "let_binding":
-                process_ocaml_body(child)
+                return_type = process_ocaml_body(child)
                 pattern_node = child.child_by_field_name("pattern")
-                return_type = None
                 if pattern_node is not None and pattern_node.type == "value_name":
                     for grandchild in child.children:
                         if grandchild.type == "parameter":
                             parse_ocaml_parameter(grandchild)
+                    parents = [n for n in (child.prev_sibling, child) if n]
+                    # let rec: add node of type "let" if present before the first parent
+                    if len(parents) > 0 and parents[0].prev_sibling is not None and parents[0].prev_sibling.type == "let":
+                        parents = [parents[0].prev_sibling] + parents
                     if parameters != []:
-                        parents = [n for n in (child.prev_sibling, child) if n]
                         declaration = mk_fun_decl(
                             id=pattern_node, parents=parents, parameters=parameters, return_type=return_type)
-                        file.add_symbol(declaration)
-                        return [declaration]
+                    else:
+                        declaration = mk_val_decl(id=pattern_node, parents=parents, type=return_type)
+                    file.add_symbol(declaration)
+                    declarations.append(declaration)
+        return declarations
 
     elif node.type == "module_definition" and language == "ocaml":
         for child in node.children:

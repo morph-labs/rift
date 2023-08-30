@@ -132,6 +132,12 @@ class Tests:
         end
         module N = struct
             let with_named_args ~(named_arg1 : int) ?named_arg2 = named_arg1 + named_arg2
+
+            let rec f1 (x:int) : int = x+1
+            and f2 (x:int) : int = x+2
+
+            let v1 = 1
+            let v2:int = 2
         end
     """
         )

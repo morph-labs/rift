@@ -5,7 +5,6 @@ Function `py` is missing type annotations in parameters ['x', 'y'] and in return
 Function `load` is missing type annotations in parameter 'v' and in return type
 Function `nested` is missing type annotations in return type
 Function `divide` is missing type annotations in parameter 'y' and in return type
-Function `callback` is missing type annotations in return type
 Function `bump` is missing type annotations in parameter 'x' and in return type
 Function `hline` is missing type annotations in parameters ['~x', '~x', '~y'] and in return type
 Function `with_named_args` is missing type annotations in parameter '?named_arg2' and in return type
