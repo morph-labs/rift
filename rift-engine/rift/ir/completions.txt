@@ -1,0 +1,717 @@
+[
+    {
+        "path": "test.c",
+        "symbols": [
+            {
+                "name": "aa",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        0,
+                        0
+                    ],
+                    [
+                        2,
+                        1
+                    ]
+                ]
+            },
+            {
+                "name": "foo",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        4,
+                        0
+                    ],
+                    [
+                        6,
+                        1
+                    ]
+                ]
+            },
+            {
+                "name": "bb",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        8,
+                        0
+                    ],
+                    [
+                        10,
+                        1
+                    ]
+                ]
+            },
+            {
+                "name": "main",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        12,
+                        0
+                    ],
+                    [
+                        17,
+                        1
+                    ]
+                ]
+            }
+        ]
+    },
+    {
+        "path": "test.js",
+        "symbols": [
+            {
+                "name": "f1",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        1,
+                        0
+                    ],
+                    [
+                        1,
+                        27
+                    ]
+                ]
+            },
+            {
+                "name": "f2",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        3,
+                        0
+                    ],
+                    [
+                        3,
+                        18
+                    ]
+                ]
+            }
+        ]
+    },
+    {
+        "path": "test.ts",
+        "symbols": [
+            {
+                "name": "a",
+                "scope": "",
+                "kind": "Type",
+                "range": [
+                    [
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        24
+                    ]
+                ]
+            },
+            {
+                "name": "ts",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        1,
+                        0
+                    ],
+                    [
+                        1,
+                        56
+                    ]
+                ]
+            },
+            {
+                "name": "ts2",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        2,
+                        7
+                    ],
+                    [
+                        2,
+                        51
+                    ]
+                ]
+            },
+            {
+                "name": "constructor",
+                "scope": "A.",
+                "kind": "Function",
+                "range": [
+                    [
+                        4,
+                        4
+                    ],
+                    [
+                        4,
+                        20
+                    ]
+                ]
+            },
+            {
+                "name": "load",
+                "scope": "A.",
+                "kind": "Function",
+                "range": [
+                    [
+                        5,
+                        4
+                    ],
+                    [
+                        7,
+                        5
+                    ]
+                ]
+            },
+            {
+                "name": "A",
+                "scope": "A.",
+                "kind": "Class",
+                "range": [
+                    [
+                        3,
+                        7
+                    ],
+                    [
+                        8,
+                        1
+                    ]
+                ]
+            },
+            {
+                "name": "RunHelperSyncResult",
+                "scope": "",
+                "kind": "Interface",
+                "range": [
+                    [
+                        9,
+                        0
+                    ],
+                    [
+                        12,
+                        1
+                    ]
+                ]
+            },
+            {
+                "name": "HelperStatus",
+                "scope": "",
+                "kind": "Type",
+                "range": [
+                    [
+                        13,
+                        0
+                    ],
+                    [
+                        13,
+                        74
+                    ]
+                ]
+            }
+        ]
+    },
+    {
+        "path": "test.tsx",
+        "symbols": [
+            {
+                "name": "tsx",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        1,
+                        0
+                    ],
+                    [
+                        1,
+                        27
+                    ]
+                ]
+            }
+        ]
+    },
+    {
+        "path": "test.py",
+        "symbols": [
+            {
+                "name": "py",
+                "scope": "A.",
+                "kind": "Function",
+                "range": [
+                    [
+                        6,
+                        4
+                    ],
+                    [
+                        8,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "A",
+                "scope": "A.",
+                "kind": "Class",
+                "range": [
+                    [
+                        0,
+                        0
+                    ],
+                    [
+                        8,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "insert_code",
+                "scope": "B.",
+                "kind": "Function",
+                "range": [
+                    [
+                        11,
+                        4
+                    ],
+                    [
+                        14,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "load",
+                "scope": "B.",
+                "kind": "Function",
+                "range": [
+                    [
+                        15,
+                        4
+                    ],
+                    [
+                        16,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "nested",
+                "scope": "B.Nested.",
+                "kind": "Function",
+                "range": [
+                    [
+                        18,
+                        8
+                    ],
+                    [
+                        19,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "Nested",
+                "scope": "B.Nested.",
+                "kind": "Class",
+                "range": [
+                    [
+                        17,
+                        4
+                    ],
+                    [
+                        19,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "B",
+                "scope": "B.",
+                "kind": "Class",
+                "range": [
+                    [
+                        9,
+                        0
+                    ],
+                    [
+                        19,
+                        16
+                    ]
+                ]
+            }
+        ]
+    },
+    {
+        "path": "test.cpp",
+        "symbols": [
+            {
+                "name": "add",
+                "scope": "namespace_name::",
+                "kind": "Function",
+                "range": [
+                    [
+                        2,
+                        4
+                    ],
+                    [
+                        2,
+                        17
+                    ]
+                ]
+            },
+            {
+                "name": "print",
+                "scope": "namespace_name::student.",
+                "kind": "Function",
+                "range": [
+                    [
+                        5,
+                        12
+                    ],
+                    [
+                        5,
+                        25
+                    ]
+                ]
+            },
+            {
+                "name": "student",
+                "scope": "namespace_name::student.",
+                "kind": "Class",
+                "range": [
+                    [
+                        3,
+                        4
+                    ],
+                    [
+                        6,
+                        5
+                    ]
+                ]
+            },
+            {
+                "name": "namespace_name",
+                "scope": "namespace_name::",
+                "kind": "Namespace",
+                "range": [
+                    [
+                        0,
+                        0
+                    ],
+                    [
+                        7,
+                        1
+                    ]
+                ]
+            }
+        ]
+    },
+    {
+        "path": "test.ml",
+        "symbols": [
+            {
+                "name": "divide",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        28
+                    ]
+                ]
+            },
+            {
+                "name": "callback",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        1,
+                        0
+                    ],
+                    [
+                        1,
+                        27
+                    ]
+                ]
+            },
+            {
+                "name": "bump",
+                "scope": "M.",
+                "kind": "Function",
+                "range": [
+                    [
+                        3,
+                        4
+                    ],
+                    [
+                        3,
+                        37
+                    ]
+                ]
+            },
+            {
+                "name": "hline",
+                "scope": "M.",
+                "kind": "Function",
+                "range": [
+                    [
+                        4,
+                        4
+                    ],
+                    [
+                        4,
+                        42
+                    ]
+                ]
+            },
+            {
+                "name": "M",
+                "scope": "M.",
+                "kind": "Module",
+                "range": [
+                    [
+                        2,
+                        0
+                    ],
+                    [
+                        5,
+                        3
+                    ]
+                ]
+            },
+            {
+                "name": "with_named_args",
+                "scope": "N.",
+                "kind": "Function",
+                "range": [
+                    [
+                        7,
+                        4
+                    ],
+                    [
+                        7,
+                        81
+                    ]
+                ]
+            },
+            {
+                "name": "N",
+                "scope": "N.",
+                "kind": "Module",
+                "range": [
+                    [
+                        6,
+                        0
+                    ],
+                    [
+                        8,
+                        3
+                    ]
+                ]
+            }
+        ]
+    },
+    {
+        "path": "test.res",
+        "symbols": [
+            {
+                "name": "z0",
+                "scope": "",
+                "kind": "Value",
+                "range": [
+                    [
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "z1",
+                "scope": "",
+                "kind": "Value",
+                "range": [
+                    [
+                        1,
+                        0
+                    ],
+                    [
+                        1,
+                        14
+                    ]
+                ]
+            },
+            {
+                "name": "z2",
+                "scope": "",
+                "kind": "Value",
+                "range": [
+                    [
+                        2,
+                        0
+                    ],
+                    [
+                        2,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "z",
+                "scope": "",
+                "kind": "Value",
+                "range": [
+                    [
+                        3,
+                        0
+                    ],
+                    [
+                        3,
+                        15
+                    ]
+                ]
+            },
+            {
+                "name": "zz",
+                "scope": "",
+                "kind": "Value",
+                "range": [
+                    [
+                        4,
+                        0
+                    ],
+                    [
+                        4,
+                        22
+                    ]
+                ]
+            },
+            {
+                "name": "zzz",
+                "scope": "",
+                "kind": "Value",
+                "range": [
+                    [
+                        5,
+                        0
+                    ],
+                    [
+                        5,
+                        25
+                    ]
+                ]
+            },
+            {
+                "name": "mulWithDefault",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        7,
+                        0
+                    ],
+                    [
+                        12,
+                        1
+                    ]
+                ]
+            },
+            {
+                "name": "annot",
+                "scope": "SomeRSModule.",
+                "kind": "Function",
+                "range": [
+                    [
+                        15,
+                        2
+                    ],
+                    [
+                        15,
+                        34
+                    ]
+                ]
+            },
+            {
+                "name": "paramsWithDefault",
+                "scope": "SomeRSModule.",
+                "kind": "Function",
+                "range": [
+                    [
+                        16,
+                        2
+                    ],
+                    [
+                        16,
+                        79
+                    ]
+                ]
+            },
+            {
+                "name": "SomeRSModule",
+                "scope": "SomeRSModule.",
+                "kind": "Module",
+                "range": [
+                    [
+                        14,
+                        0
+                    ],
+                    [
+                        17,
+                        1
+                    ]
+                ]
+            },
+            {
+                "name": "multiple",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        19,
+                        0
+                    ],
+                    [
+                        19,
+                        56
+                    ]
+                ]
+            },
+            {
+                "name": "bindings",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        20,
+                        0
+                    ],
+                    [
+                        20,
+                        40
+                    ]
+                ]
+            }
+        ]
+    }
+]
