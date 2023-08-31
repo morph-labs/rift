@@ -1,3 +1,5 @@
+import time
+from tenacity import retry, wait_exponential
 import asyncio
 import json
 import logging
@@ -54,7 +56,6 @@ ENCODER_LOCK = Lock()
 class MissingKeyError(Exception):
     ...
 
-
 @dataclass
 class OpenAIError(Exception):
     """Error raised by calling the OpenAI API"""
@@ -63,7 +64,51 @@ class OpenAIError(Exception):
     status: int
 
     def __str__(self):
-        return self.message
+        return self.message    
+
+def retry_with_exponential_backoff_async(
+    func,
+    initial_delay: float = 1,
+    exponential_base: float = 1.6,
+    jitter: bool = True,
+    max_retries: int = 5,
+    errors: tuple = (Exception),
+):
+    """Retry a function with exponential backoff."""
+
+    async def wrapper(*args, **kwargs):
+        # Initialize variables
+        num_retries = 0
+        delay = initial_delay
+
+        # Loop until a successful response or max_retries is hit or an exception is raised
+        while True:
+            try:
+                print("trying...")
+                return await func(*args, **kwargs)
+
+            # Retry on specified errors
+            except errors as e:
+                # Increment retries
+                num_retries += 1
+
+                # Check if max retries has been reached
+                if num_retries > max_retries:
+                    raise Exception(f"Maximum number of retries ({max_retries}) exceeded.")
+                # Increment the delay
+                delay *= exponential_base * (1 + jitter * random.random())
+                print(
+                    f"[retry_with_exponential_backoff] retrying, num_retries={num_retries} max_retries={max_retries}, sleeping for delay={delay:.2f}"
+                )
+
+                # Sleep for the delay
+                time.sleep(delay)
+
+            # Raise exceptions for any errors not specified
+            except Exception as e:
+                raise e
+
+    return wrapper
 
 
 @cache
@@ -377,6 +422,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
                 "Please double check you have access to GPT-4 API: https://openai.com/waitlist/gpt-4-api"
             )
         raise OpenAIError(message=message, status=status_code)
+        # raise Exception(message)
 
     async def get_error_message(self, resp):
         if resp.content_type == "application/json":
@@ -403,6 +449,8 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
     def _make_path(self, endpoint: str) -> str:
         return self.url_path + endpoint
 
+
+    @retry_with_exponential_backoff_async
     async def _post_streaming(
         self,
         endpoint: str,
@@ -441,6 +489,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
                 else:
                     raise ValueError(f"unrecognised stream line: {line}")
 
+    @retry_with_exponential_backoff_async
     async def _post_endpoint(
         self,
         endpoint: str,
