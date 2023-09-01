@@ -412,6 +412,9 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
             headers=self.headers,
         )
 
+    def __del__(self):
+        self.session.__exit__(None, None, None)
+
     async def handle_error(self, resp: aiohttp.ClientResponse):
         status_code = resp.status
         message = await self.get_error_message(resp)
