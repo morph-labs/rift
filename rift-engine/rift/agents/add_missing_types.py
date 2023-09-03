@@ -238,6 +238,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
         collected_messages = []
 
         async def feed_task():
+            openai.api_key = os.environ.get('OPENAI_API_KEY')
             completion = openai.ChatCompletion.create(
                 model=Config.model, messages=prompt, temperature=Config.temperature, stream=True
             )
