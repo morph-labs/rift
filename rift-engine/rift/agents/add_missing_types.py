@@ -119,10 +119,18 @@ class MissingTypePrompt:
                     ...
             ```
         """
+        example_ruby = """
+            ```ruby
+                def foo(a, b)
+                    ...
+            ```
+        """
         if language in ["javascript", "typescript", "tsx"]:
             example = example_ts
         elif language == "ocaml":
             example = example_ocaml
+        elif language == "ruby":
+            example = example_ruby
         else:
             example = example_py
 

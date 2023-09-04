@@ -182,6 +182,20 @@ class Tests:
         .lstrip()
         .encode("utf-8")
     )
+    code_ruby = (
+        dedent(
+            """
+        class Sample
+            # This is a docstring
+            def hello
+                puts 'Hello Ruby!'
+            end
+        end
+    """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
 
 
 def get_test_project():
@@ -200,6 +214,7 @@ def get_test_project():
     new_file(IR.Code(Tests.code_cpp), "test.cpp", "cpp")
     new_file(IR.Code(Tests.code_ocaml), "test.ml", "ocaml")
     new_file(IR.Code(Tests.code_rescript), "test.res", "rescript")
+    new_file(IR.Code(Tests.code_ruby), "test.rb", "ruby")
 
     return project
 
