@@ -189,6 +189,16 @@ class Tests:
         def sum(a, b)
             a + b
         end
+
+        def output
+            puts 'hello'
+        end
+
+        def greetings(a)
+			return 'ciao' if a == 1
+            
+            'hello'
+        end
     """
         )
         .lstrip()

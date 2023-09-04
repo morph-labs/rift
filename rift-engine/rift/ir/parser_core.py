@@ -585,7 +585,7 @@ def find_declarations(
             else:
                 raise Exception(f"Unexpected node type in module_declaration: {m1.type}")
     elif language == "ruby":
-        print(f"TODO: ruby\n{dump_node(node)}")
+        print(f"TODO: {language}\n{dump_node(node)}")
     # if not returned earlier
     return []
 
