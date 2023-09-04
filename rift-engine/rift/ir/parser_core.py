@@ -8,6 +8,7 @@ from rift.ir.IR import (
     Declaration,
     File,
     FunctionKind,
+    Import,
     InterfaceKind,
     Language,
     ModuleKind,
@@ -595,11 +596,26 @@ def process_body(
         for child in node.children
     ]
 
+def find_import(node: Node) -> Optional[Import]:
+    if node.type == "import_statement":
+        names = [n.text.decode() for n in node.children_by_field_name("name")]
+        return Import(names=names)
+    elif node.type == "import_from_statement":
+        names = [n.text.decode() for n in node.children_by_field_name("name")]
+        module_name_node = node.child_by_field_name("module_name")
+        if module_name_node is not None:
+            module_name = module_name_node.text.decode()
+        else:
+            module_name = None
+        return Import(names=names, module_name=module_name)
+
 def process_statement(
     code: Code, file: File, language: Language, node: Node, scope: Scope
 ) -> Statement:
     declarations = find_declarations(code=code, file=file, language=language, node=node, scope=scope)
     if declarations != []:
         return Declaration(type=node.type, symbols=declarations)
-    else:
-        return Statement(type=node.type)
+    import_ = find_import(node)
+    if import_ is not None:
+        file.add_import(import_)
+    return Statement(type=node.type)

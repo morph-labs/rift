@@ -1,6 +1,7 @@
 import difflib
 import os
 from textwrap import dedent
+from typing import List
 
 import rift.ir.IR as IR
 import rift.ir.parser as parser
@@ -100,6 +101,12 @@ class Tests:
             class Nested:
                 def nested():
                     pass
+        
+        import foo, bar
+        import foo.bar.baz
+        import foo.bar.baz as fbb
+        from foo.bar import baz
+        from typing import Iterable, Union
     """
         )
         .lstrip()
@@ -204,7 +211,7 @@ def test_parsing():
         old_symbol_table = f.read()
     project = get_test_project()
 
-    lines = []
+    lines: List[str] = []
     for file in project.get_files():
         lines.append(f"=== Symbol Table for {file.path} ===")
         file.dump_symbol_table(lines=lines)

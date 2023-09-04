@@ -32,7 +32,7 @@ def parse_files_in_project(
     If a filter function is provided, it is used to decide which files should be included in the Project.
     """
     project = IR.Project(root_path=root_path)
-    for root, dirs, files in os.walk(root_path):
+    for root, _dirs, files in os.walk(root_path):
         for file in files:
             language = IR.language_from_file_extension(file)
             if language is not None:
@@ -74,7 +74,7 @@ def parse_files_in_paths(paths: List[str], filter_file: Optional[Callable[[str],
         if os.path.isfile(path):
             parse_path(path, project, filter_file)
         else:
-            for root, dirs, files in os.walk(path):
+            for root, _dirs, files in os.walk(path):
                 for file in files:
                     full_path = os.path.join(root, file)
                     parse_path(full_path, project, filter_file)

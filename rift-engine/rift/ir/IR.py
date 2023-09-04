@@ -58,6 +58,10 @@ class Statement:
 class Declaration(Statement):
     symbols: List["SymbolInfo"]
 
+@dataclass
+class Import:
+    names: List[str] # import foo, bar, baz
+    module_name: Optional[str] = None # from module_name import ...
 
 @dataclass
 class Parameter:
@@ -192,8 +196,8 @@ class SymbolInfo(ABC):
         if self.body_sub is None:
             return self.get_substring()
         else:
-            start, end = self.substring
-            body_start, body_end = self.body_sub
+            start, _end = self.substring
+            body_start, _body_end = self.body_sub
             return self.code.bytes[start:body_start]
 
     @abstractmethod
@@ -249,6 +253,7 @@ class ContainerDeclaration(SymbolInfo):
 class File:
     path: str  # path of the file relative to the root directory
     statements: List[Statement] = field(default_factory=list)
+    _imports: List[Import] = field(default_factory=list)
     _symbol_table: Dict[QualifiedId, SymbolInfo] = field(default_factory=dict)
 
     def lookup_symbol(self, qid: QualifiedId) -> Optional[SymbolInfo]:
@@ -263,6 +268,9 @@ class File:
 
     def add_symbol(self, symbol: SymbolInfo) -> None:
         self._symbol_table[symbol.get_qualified_id()] = symbol
+
+    def add_import(self, import_: Import) -> None:
+        self._imports.append(import_)
 
     def get_function_declarations(self) -> List[ValueDeclaration]:
         return [
@@ -377,7 +385,7 @@ class Project:
         return self._files
 
     def dump_map(self, indent: int = 0) -> str:
-        lines = []
+        lines: List[str] = []
         for file in self.get_files():
             lines.append(f"{' ' * indent}File: {file.path}")
             file.dump_map(indent + 2, lines)
