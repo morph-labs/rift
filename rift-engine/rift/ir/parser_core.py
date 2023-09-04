@@ -312,7 +312,7 @@ def find_declarations(
         file.add_symbol(declaration)
         return [declaration]
 
-    elif node.type in ["function_definition", "function_declaration", "method_definition"]:
+    elif node.type in ["function_definition", "function_declaration", "method_definition", "method"]:
         id: Optional[Node] = None
         for child in node.children:
             if child.type in ["identifier", "property_identifier"]:
