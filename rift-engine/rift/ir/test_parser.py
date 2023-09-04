@@ -185,11 +185,9 @@ class Tests:
     code_ruby = (
         dedent(
             """
-        class Sample
-            # This is a docstring
-            def hello
-                puts 'Hello Ruby!'
-            end
+        # This is a docstring
+        def sum(a, b)
+            a + b
         end
     """
         )

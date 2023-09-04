@@ -305,6 +305,7 @@ Function: bindings
    body: (435, 452)
    parameters: [z:int]
    return_type: int
+=== Symbol Table for test.rb ===
 
 === Project Map ===
 File: test.c
@@ -366,3 +367,4 @@ File: test.res
     let paramsWithDefault = (~x: int=3, ~y=4.0, ~z: option<int>=?, ~w=?, ())
   let rec multiple = (x:int, y:int) : int
   and bindings = (z:int)
+File: test.rb
