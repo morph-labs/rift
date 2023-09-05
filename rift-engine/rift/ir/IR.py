@@ -67,6 +67,8 @@ class Import:
 @dataclass
 class Type:
     _str: str
+    name: Optional[str] = None
+    arguments: List["Type"] = field(default_factory=list)
 
     def create_pointer(self) -> "Type":
         return Type(f"{self._str}*")
@@ -133,6 +135,7 @@ class FunctionKind(ValueKind):
             lines.append(f"   return_type: {self.return_type}")
         if self.has_return:
             lines.append(f"   has_return: {self.has_return}")
+
 
 @dataclass
 class ValKind(ValueKind):

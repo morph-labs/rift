@@ -34,6 +34,17 @@ def parse_type(language: Language, node: Node) -> Type:
         # TS: first child should be ":" and second child should be type
         second_child = node.children[1]
         return Type(second_child.text.decode())
+    elif language == "python":
+        if node.type == "subscript":
+            node_value = node.child_by_field_name("value")
+            if node_value is not None:
+                subscripts = node_value.children_by_field_name("subscript")
+                arguments = [parse_type(language, n) for n in subscripts]
+                name = node_value.text.decode()
+                return Type(node_value.text.decode(), name=name, arguments=arguments)
+        elif node.type == "identifier":
+            name = node.text.decode()
+            return Type(name, name=name)
     return Type(node.text.decode())
 
 
