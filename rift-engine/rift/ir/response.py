@@ -52,7 +52,6 @@ def parse_code_blocks(code_blocks: List[IR.Code], language: IR.Language) -> IR.F
 def replace_functions_in_document(
     ir_doc: IR.File,
     ir_blocks: IR.File,
-    document: IR.Code,
     replace_body: bool,
     filter_function_ids: Optional[List[IR.QualifiedId]] = None,
 ) -> List[IR.CodeEdit]:
@@ -115,6 +114,5 @@ def replace_functions_from_code_blocks(
         filter_function_ids=filter_function_ids,
         ir_doc=ir_doc,
         ir_blocks=ir_blocks,
-        document=document,
         replace_body=replace_body,
     )
