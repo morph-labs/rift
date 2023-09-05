@@ -25,7 +25,7 @@ from rift.ir.IR import (
 )
 from tree_sitter import Node
 
-def get_type(language: Language, node: Node) -> Type:
+def parse_type(language: Language, node: Node) -> Type:
     if (
         language in ["typescript", "tsx"]
         and node.type == "type_annotation"
@@ -67,7 +67,7 @@ def get_c_cpp_parameter(language: Language, node: Node) -> Parameter:
     type_node = node.child_by_field_name("type")
     if type_node is None:
         raise Exception(f"Could not find type node in {node}")
-    type = get_type(language=language, node=type_node)
+    type = parse_type(language=language, node=type_node)
     type = add_c_cpp_declarators_to_type(type, declarators)
     name = ""
     if final_node.type == "identifier":
@@ -88,7 +88,7 @@ def get_parameters(language: Language, node: Node) -> List[Parameter]:
                 if grandchild.type == "identifier":
                     name = grandchild.text.decode()
                 elif grandchild.type == "type":
-                    type = get_type(language, grandchild)
+                    type = parse_type(language, grandchild)
             parameters.append(Parameter(name=name, type=type))
         elif child.type == "parameter_declaration":
             if language in ["c", "cpp"]:
@@ -97,7 +97,7 @@ def get_parameters(language: Language, node: Node) -> List[Parameter]:
                 type: Optional[Type] = None
                 type_node = child.child_by_field_name("type")
                 if type_node is not None:
-                    type = get_type(language, type_node)
+                    type = parse_type(language, type_node)
                 name = child.text.decode()
                 parameters.append(Parameter(name=name, type=type))
         elif child.type == "required_parameter" or child.type == "optional_parameter":
@@ -108,7 +108,7 @@ def get_parameters(language: Language, node: Node) -> List[Parameter]:
             type: Optional[Type] = None
             type_node = child.child_by_field_name("type")
             if type_node is not None:
-                type = get_type(language, type_node)
+                type = parse_type(language, type_node)
             parameters.append(
                 Parameter(name=name, type=type, optional=child.type == "optional_parameter")
             )
@@ -245,7 +245,7 @@ def find_declarations(
                 if n2:
                     n3 = n2.prev_sibling
                     if n3 and n3.type == ":":
-                        return get_type(language, n2)
+                        return parse_type(language, n2)
             else:
                 body_sub = (body_node.start_byte, body_node.end_byte)
 
@@ -295,7 +295,7 @@ def find_declarations(
         type_node = node.child_by_field_name("type")
         type = None
         if type_node is not None:
-            type = get_type(language=language, node=type_node)
+            type = parse_type(language=language, node=type_node)
         res = find_c_cpp_function_declarator(node)
         if res is None or type is None:
             return []
@@ -326,7 +326,7 @@ def find_declarations(
         return_type: Optional[Type] = None
         return_type_node = node.child_by_field_name("return_type")
         if return_type_node is not None:
-            return_type = get_type(language=language, node=return_type_node)
+            return_type = parse_type(language=language, node=return_type_node)
         if (
             body_node is not None
             and len(body_node.children) > 0
@@ -380,7 +380,7 @@ def find_declarations(
     elif node.type == "value_definition" and language == "ocaml":
         parameters = []
         def extract_type(node: Node) -> Type:
-            return get_type(language, node)
+            return parse_type(language, node)
         def parse_inner_parameter(inner: Node) -> Optional[Parameter]:
             if inner.type in ["label_name", "value_pattern"]:
                 name = inner.text.decode()
@@ -475,7 +475,7 @@ def find_declarations(
                 nodes = par.children
                 type: Optional[Type] = None
                 if len(nodes) >= 2 and nodes[1].type == "type_annotation" and len(nodes[1].children) >= 2:
-                    type = get_type(language, nodes[1].children[1])
+                    type = parse_type(language, nodes[1].children[1])
                 default_value = None
                 if nodes[0].type == "labeled_parameter":
                     children = nodes[0].children
@@ -486,7 +486,7 @@ def find_declarations(
                             default_value = next.text.decode()
                     for child in children:
                         if child.type == "type_annotation" and len(child.children) >= 2:
-                            type = get_type(language, child.children[1])
+                            type = parse_type(language, child.children[1])
                     name = "~" + children[1].text.decode()
                 else:
                     name = nodes[0].text.decode()
@@ -502,7 +502,7 @@ def find_declarations(
                         for par in nodes[0].children:
                             parse_res_parameter(par, parameters)
                     if nodes[1].type == "type_annotation" and nodes[1].child_count >= 2:
-                        return_type = get_type(language, nodes[1].children[1])
+                        return_type = parse_type(language, nodes[1].children[1])
                     if body_sub is not None:
                             body_sub = (nodes[-2].start_byte, body_sub[1])
         def parse_res_let_binding(nodes: List[Node], parents: List[Node]) -> Optional[ValueDeclaration]:
@@ -539,7 +539,7 @@ def find_declarations(
                 if parameters == []:
                     type: Optional[Type] = None
                     if typ is not None and typ.child_count >= 2:
-                        type = get_type(language, typ.children[1])
+                        type = parse_type(language, typ.children[1])
                     declaration = mk_val_decl(id=id, parents=parents, type=type)
                 else:
                     declaration = mk_fun_decl(id=id, parents=parents, parameters=parameters, return_type=return_type)
