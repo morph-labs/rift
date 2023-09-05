@@ -1,6 +1,5 @@
 import os
 from dataclasses import dataclass, field
-from textwrap import dedent
 from typing import List, Tuple
 
 import rift.ir.IR as IR
@@ -41,14 +40,14 @@ def functions_missing_types_in_file(file: IR.File) -> List[MissingType]:
         function_kind = d.value_kind
         if not isinstance(function_kind, IR.FunctionKind):
             raise Exception(f"Expected function kind, got {function_kind}")
-        missing_parameters = []
+        missing_parameters: List[str] = []
         missing_return = False
         parameters = function_kind.parameters
         if parameters != []:
             if (
                 (parameters[0].name == "self" or parameters[0].name == "cls")
                 and d.language == "python"
-                and d.scope != []
+                and d.scope != ""
             ):
                 parameters = parameters[1:]
             for p in parameters:
