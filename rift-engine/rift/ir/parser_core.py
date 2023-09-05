@@ -142,6 +142,7 @@ def contains_direct_return(body: Node):
             "function_declaration",
             "function_definition",
             "method_definition",
+            "method",
         ]:
             continue
         # If the child is a return statement, return True.
@@ -229,8 +230,25 @@ def find_declarations(
             docstring = docstring_
 
     body_node = node.child_by_field_name("body")
-    if body_node is not None:
-        body_sub = (body_node.start_byte, body_node.end_byte)
+
+    def process_ruby_body(n: Node) -> Optional[str]:
+        nonlocal body_sub
+        method_name_node = n.child_by_field_name("name")
+
+        if method_name_node is not None:
+            start_node = method_name_node
+            parameters_node = node.child_by_field_name("parameters")
+            if parameters_node is not None:
+                start_node = parameters_node
+            
+            end_node = None
+            # Iterate until last children
+            for child in n.children:
+                if child is not None:
+                     end_node = child
+
+            body_sub = (start_node.next_sibling.start_byte, end_node.end_byte)
+
     def process_ocaml_body(n: Node) -> Optional[str]:
         nonlocal body_node, body_sub
         body_node = n.child_by_field_name("body")
@@ -247,6 +265,10 @@ def find_declarations(
             else:
                 body_sub = (body_node.start_byte, body_node.end_byte)
 
+    if body_node is not None:
+        body_sub = (body_node.start_byte, body_node.end_byte)
+    elif language == "ruby":
+        process_ruby_body(node)
 
     if node.type in [
         "class_definition",

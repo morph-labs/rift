@@ -310,15 +310,18 @@ Function: sum
    language: ruby
    range: ((1, 8), (3, 11))
    substring: (30, 73)
+   body: (56, 73)
    parameters: [a, b]
 Function: output
    language: ruby
    range: ((5, 8), (7, 11))
    substring: (83, 130)
+   body: (106, 130)
 Function: greetings
    language: ruby
    range: ((9, 8), (13, 11))
    substring: (140, 216)
+   body: (160, 216)
    parameters: [a]
 
 === Project Map ===
@@ -383,13 +386,5 @@ File: test.res
   and bindings = (z:int)
 File: test.rb
   def sum(a, b)
-              a + b
-          end
   def output
-              puts 'hello'
-          end
   def greetings(a)
-  			return 'ciao' if a == 1
-  
-              'hello'
-          end
