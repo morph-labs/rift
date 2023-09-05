@@ -185,8 +185,8 @@ class Tests:
     code_ruby = (
         dedent(
             """
-        # This is a docstring
         def sum(a, b)
+            # This is a docstring
             a + b
         end
 

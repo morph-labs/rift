@@ -308,20 +308,20 @@ Function: bindings
 === Symbol Table for test.rb ===
 Function: sum
    language: ruby
-   range: ((1, 8), (3, 11))
-   substring: (30, 73)
-   body: (56, 73)
+   range: ((0, 0), (3, 11))
+   substring: (0, 77)
+   body: (26, 77)
    parameters: [a, b]
 Function: output
    language: ruby
    range: ((5, 8), (7, 11))
-   substring: (83, 130)
-   body: (106, 130)
+   substring: (87, 134)
+   body: (110, 134)
 Function: greetings
    language: ruby
    range: ((9, 8), (13, 11))
-   substring: (140, 216)
-   body: (160, 216)
+   substring: (144, 220)
+   body: (164, 220)
    parameters: [a]
 
 === Project Map ===
