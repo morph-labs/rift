@@ -89,6 +89,5 @@ def generate_typing_types_set():
 
 typing_set = generate_typing_types_set()
 
-# Add a function to check if a name is in the typing types set
 def is_typing_type(name: str) -> bool:
     return name in typing_set
