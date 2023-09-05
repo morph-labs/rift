@@ -63,11 +63,34 @@ class Import:
     names: List[str] # import foo, bar, baz
     module_name: Optional[str] = None # from module_name import ...
 
+
+@dataclass
+class Type:
+    _str: str
+
+    def create_pointer(self) -> "Type":
+        return Type(f"{self._str}*")
+    
+    def create_array(self) -> "Type":
+        return Type(f"{self._str}[]")
+    
+    def create_function(self) -> "Type":
+        return Type(f"{self._str}()")
+    
+    def create_type_of(self) -> "Type":
+        return Type(f"typeof({self._str})")
+
+    def __str__(self):
+        return self._str
+
+    __repr__ = __str__
+
+
 @dataclass
 class Parameter:
     name: str
     default_value: Optional[str] = None
-    type: Optional[str] = None
+    type: Optional[Type] = None
     optional: bool = False
 
     def __str__(self) -> str:
@@ -98,7 +121,7 @@ class ValueKind(ABC):
 class FunctionKind(ValueKind):
     has_return: bool
     parameters: List[Parameter]
-    return_type: Optional[str] = None
+    return_type: Optional[Type] = None
 
     def name(self) -> str:
         return "Function"
@@ -113,7 +136,7 @@ class FunctionKind(ValueKind):
 
 @dataclass
 class ValKind(ValueKind):
-    type: Optional[str] = None
+    type: Optional[Type] = None
 
     def name(self) -> str:
         return "Value"
