@@ -323,6 +323,12 @@ Function: greetings
    substring: (144, 220)
    body: (164, 220)
    parameters: [a]
+Function: swap
+   language: ruby
+   range: ((15, 8), (20, 11))
+   substring: (230, 340)
+   body: (257, 340)
+   parameters: [a, b]
 
 === Project Map ===
 File: test.c
@@ -388,3 +394,4 @@ File: test.rb
   def sum(a, b)
   def output
   def greetings(a)
+  def swap(a, b)

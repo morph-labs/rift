@@ -199,6 +199,13 @@ class Tests:
             
             'hello'
         end
+
+        def swap(a, b)
+            temp = a
+            a = b
+            b = temp
+            return a, b
+        end
     """
         )
         .lstrip()

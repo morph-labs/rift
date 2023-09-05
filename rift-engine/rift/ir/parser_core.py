@@ -231,23 +231,19 @@ def find_declarations(
 
     body_node = node.child_by_field_name("body")
 
-    def process_ruby_body(n: Node) -> Optional[str]:
+    def process_ruby_body(root_node: Node) -> Optional[str]:
         nonlocal body_sub
-        method_name_node = n.child_by_field_name("name")
+        method_name_node = root_node.child_by_field_name("name")
 
         if method_name_node is not None:
             start_node = method_name_node
             parameters_node = node.child_by_field_name("parameters")
             if parameters_node is not None:
                 start_node = parameters_node
-            
-            end_node = None
-            # Iterate until last children
-            for child in n.children:
-                if child is not None:
-                     end_node = child
 
-            body_sub = (start_node.next_sibling.start_byte, end_node.end_byte)
+            if start_node.next_sibling is not None:
+                start_node = start_node.next_sibling
+            body_sub = (start_node.start_byte, root_node.end_byte)
 
     def process_ocaml_body(n: Node) -> Optional[str]:
         nonlocal body_node, body_sub
