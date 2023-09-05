@@ -271,6 +271,7 @@ def find_declarations(
         "class_declaration",
         "class_specifier",
         "namespace_definition",
+        "class",
     ]:
         is_namespace = node.type == "namespace_definition"
         superclasses_node = node.child_by_field_name("superclasses")
@@ -279,6 +280,9 @@ def find_declarations(
             superclasses = superclasses_node.text.decode()
         body_node = node.child_by_field_name("body")
         name = node.child_by_field_name("name")
+        if body_node is None and name is not None and language == "ruby":
+            body_node = node
+
         if body_node is not None and name is not None:
             if is_namespace:
                 separator = "::"
@@ -289,12 +293,17 @@ def find_declarations(
                 code=code, file=file, language=language, node=body_node, scope=scope
             )
             docstring = ""
-            # see if the first child is a string expression statemetns, and if so, use it as the docstring
+            # see if the first child is a string expression statements, and if so, use it as the docstring
             if body_node.child_count > 0 and body_node.children[0].type == "expression_statement":
                 stmt = body_node.children[0]
                 if len(stmt.children) > 0 and stmt.children[0].type == "string":
                     docstring_node = stmt.children[0]
                     docstring = docstring_node.text.decode()
+            elif node.prev_sibling is not None and node.prev_sibling.type == "comment":
+                # parse class comments before class definition
+                docstring_node = node.prev_sibling
+                docstring = docstring_node.text.decode()
+
             if is_namespace:
                 declaration = mk_namespace_decl(id=name, body=body, parents=[node])
             else:
@@ -610,10 +619,13 @@ def find_declarations(
 def process_body(
     code: Code, file: File, language: Language, node: Node, scope: Scope
 ) -> List[Statement]:
-    return [
-        process_statement(code=code, file=file, language=language, node=child, scope=scope)
-        for child in node.children
-    ]
+    statements = []
+    for child in node.children:
+        if language == "ruby" and child.text.decode() == "name":
+            continue 
+        statement = process_statement(code=code, file=file, language=language, node=child, scope=scope)
+        statements.append(statement)
+    return statements
 
 def find_import(node: Node) -> Optional[Import]:
     if node.type == "import_statement":

@@ -329,6 +329,24 @@ Function: swap
    substring: (230, 340)
    body: (257, 340)
    parameters: [a, b]
+Function: initialize
+   language: ruby
+   range: ((26, 12), (29, 15))
+   substring: (461, 558)
+   scope: Person.
+   body: (503, 558)
+   parameters: [name, age]
+Function: introduce
+   language: ruby
+   range: ((31, 12), (33, 15))
+   substring: (572, 668)
+   scope: Person.
+   body: (602, 668)
+Class: Person
+   language: ruby
+   range: ((23, 8), (34, 11))
+   substring: (397, 680)
+   docstring: # This is a docstring for class Person
 
 === Project Map ===
 File: test.c
@@ -395,3 +413,6 @@ File: test.rb
   def output
   def greetings(a)
   def swap(a, b)
+  class Person
+    def initialize(name, age)
+    def introduce
