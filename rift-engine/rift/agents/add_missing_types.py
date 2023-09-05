@@ -1,11 +1,10 @@
 import asyncio
-import functools
 import logging
 import os
 import re
 from dataclasses import dataclass, field
 from textwrap import dedent
-from typing import ClassVar, Dict, List, Optional, cast
+from typing import Any, ClassVar, Coroutine, Dict, List, Optional, cast
 from urllib.parse import urlparse
 
 import openai
@@ -189,17 +188,17 @@ def get_num_missing_in_code(code: IR.Code, language: IR.Language) -> int:
 @dataclass
 class MissingTypesAgent(agent.ThirdPartyAgent):
     agent_type: ClassVar[str] = "missing_types"
-    params_cls: ClassVar[type[MissingTypesParams]] = MissingTypesParams
+    params_cls: ClassVar[Any] = MissingTypesParams
 
     debug = Config.debug
 
     @classmethod
-    async def create(cls, params: MissingTypesParams, server: LspServer) -> agent.ThirdPartyAgent:
+    async def create(cls, params: Any, server: LspServer) -> Any:
         state = MissingTypesAgentState(
             params=params,
             messages=[],
         )
-        obj = cls(
+        obj: agent.ThirdPartyAgent = cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
@@ -235,24 +234,24 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
             language=language, missing_types=missing_types
         )
         response_stream = TextStream()
-        collected_messages = []
+        collected_messages: List[str] = []
 
         async def feed_task():
             openai.api_key = os.environ.get('OPENAI_API_KEY')
-            completion = openai.ChatCompletion.create(
+            completion: List[Dict[str, Any]] = openai.ChatCompletion.create( # type: ignore
                 model=Config.model, messages=prompt, temperature=Config.temperature, stream=True
             )
             for chunk in completion:
                 await asyncio.sleep(0.0001)
                 chunk_message_dict = chunk["choices"][0]  # type: ignore
-                chunk_message = chunk_message_dict["delta"].get("content")  # extract the message
+                chunk_message: str = chunk_message_dict["delta"].get("content")  # extract the message
                 if chunk_message_dict["finish_reason"] is None and chunk_message:
                     collected_messages.append(chunk_message)  # save the message
                     response_stream.feed_data(chunk_message)
             response_stream.feed_eof()
 
-        response_stream._feed_task = asyncio.create_task(
-            self.add_task(
+        response_stream._feed_task = asyncio.create_task( # type: ignore
+            self.add_task( # type: ignore
                 f"Generate type annotations for {'/'.join(mt.function_declaration.name for mt in missing_types)}",
                 feed_task,
             ).run()
@@ -341,7 +340,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
         return self.server
 
     async def run(self) -> MissingTypesResult:
-        async def info_update(msg):
+        async def info_update(msg: str):
             logger.info(msg)
             await self.send_chat_update(msg)
 
@@ -370,7 +369,8 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
 
         get_user_response_task = AgentTask("Get user response", get_user_response)
         self.set_tasks([get_user_response_task])
-        user_response_task = asyncio.create_task(get_user_response_task.run())
+        user_response_coro = cast(Coroutine[None, None, Optional[str]], get_user_response_task.run())
+        user_response_task = asyncio.create_task(user_response_coro)
         await self.send_progress()
         user_response = await user_response_task
         if user_response is None:
@@ -399,7 +399,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
             return MissingTypesResult()
         await self.send_chat_update(f"Missing {tot_num_missing} types in {files_missing_str}")
 
-        tasks: List[asyncio.Task] = [
+        tasks: List[asyncio.Task[Any]] = [
             asyncio.create_task(self.process_file(file_process=file_processes[i], project=project))
             for i in range(len(files_missing_types))
         ]
