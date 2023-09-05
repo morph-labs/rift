@@ -224,6 +224,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
             filter_function_ids=filter_function_ids,
             language=language,
             replace_body=False,
+            update_imports=True,
         )
         return edits
 

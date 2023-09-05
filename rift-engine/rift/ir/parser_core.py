@@ -25,6 +25,11 @@ from rift.ir.IR import (
 )
 from tree_sitter import Node
 
+
+def dump_node(node: Node) -> str:
+    """ Dump a node for debugging purposes. """
+    return f"  type:{node.type} children:{node.child_count}\n  code:{node.text.decode()}\n  sexp:{node.sexp()}"
+
 def parse_type(language: Language, node: Node) -> Type:
     if (
         language in ["typescript", "tsx"]
@@ -34,17 +39,18 @@ def parse_type(language: Language, node: Node) -> Type:
         # TS: first child should be ":" and second child should be type
         second_child = node.children[1]
         return Type(second_child.text.decode())
-    elif language == "python":
-        if node.type == "subscript":
-            node_value = node.child_by_field_name("value")
+    elif language == "python" and node.type == "type" and node.child_count >= 1:
+        child = node.children[0]
+        if child.type == "subscript":
+            node_value = child.child_by_field_name("value")
             if node_value is not None:
-                subscripts = node_value.children_by_field_name("subscript")
+                subscripts = child.children_by_field_name("subscript")
                 arguments = [parse_type(language, n) for n in subscripts]
                 name = node_value.text.decode()
-                return Type(node_value.text.decode(), name=name, arguments=arguments)
-        elif node.type == "identifier":
-            name = node.text.decode()
-            return Type(name, name=name)
+                return Type(node.text.decode(), name=name, arguments=arguments)
+        elif child.type == "identifier":
+            name = child.text.decode()
+            return Type(node.text.decode(), name=name)
     return Type(node.text.decode())
 
 
@@ -173,10 +179,6 @@ def find_declarations(
     docstring: str = ""
     exported = False
     has_return = False
-
-    def dump_node(node: Node) -> str:
-        """ Dump a node for debugging purposes. """
-        return f"  type:{node.type} children:{node.child_count}\n  code:{node.text.decode()}\n  sexp:{node.sexp()}"
 
     def mk_value_decl(id: Node, parents: List[Node], value_kind: ValueKind):
         return ValueDeclaration(
@@ -610,9 +612,10 @@ def process_body(
     ]
 
 def find_import(node: Node) -> Optional[Import]:
+    substring = (node.start_byte, node.end_byte)
     if node.type == "import_statement":
         names = [n.text.decode() for n in node.children_by_field_name("name")]
-        return Import(names=names)
+        return Import(names=names, substring=substring)
     elif node.type == "import_from_statement":
         names = [n.text.decode() for n in node.children_by_field_name("name")]
         module_name_node = node.child_by_field_name("module_name")
@@ -620,7 +623,7 @@ def find_import(node: Node) -> Optional[Import]:
             module_name = module_name_node.text.decode()
         else:
             module_name = None
-        return Import(names=names, module_name=module_name)
+        return Import(names=names, module_name=module_name, substring=substring)
 
 def process_statement(
     code: Code, file: File, language: Language, node: Node, scope: Scope

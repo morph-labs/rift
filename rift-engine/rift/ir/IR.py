@@ -61,6 +61,7 @@ class Declaration(Statement):
 @dataclass
 class Import:
     names: List[str] # import foo, bar, baz
+    substring: Substring # the substring of the document that corresponds to this import
     module_name: Optional[str] = None # from module_name import ...
 
 
@@ -291,6 +292,12 @@ class File:
             return [symbol for symbol in self._symbol_table.values() if name_filter(symbol.name)]
         else:
             return [symbol for symbol in self._symbol_table.values() if symbol.name == name]
+
+    def search_module_import(self, module_name: str) -> Optional[Import]:
+        for import_ in self._imports:
+            if import_.module_name == module_name:
+                return import_
+        return None
 
     def add_symbol(self, symbol: SymbolInfo) -> None:
         self._symbol_table[symbol.get_qualified_id()] = symbol

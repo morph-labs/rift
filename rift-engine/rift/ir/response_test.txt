@@ -53,6 +53,8 @@ int main() {
 
 New document3:
 ```
+from typing import List, Tuple
+
 def foo() -> None:
     print("Hello world!")
 
@@ -61,7 +63,7 @@ def get_num_tokens(content: str) -> int:
     return len(ENCODER.encode(content))
 
 @cache
-def get_num_tokens2(content: t1) -> t2:
+def get_num_tokens2(content: t1) -> List[t2]:
     return len(ENCODER.encode(content))
 
 def bar() -> None:
