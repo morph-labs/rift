@@ -333,20 +333,45 @@ Function: initialize
    language: ruby
    range: ((26, 12), (29, 15))
    substring: (461, 558)
-   scope: Person.
+   scope: Person::
    body: (503, 558)
    parameters: [name, age]
 Function: introduce
    language: ruby
    range: ((31, 12), (33, 15))
    substring: (572, 668)
-   scope: Person.
+   scope: Person::
    body: (602, 668)
 Class: Person
    language: ruby
    range: ((23, 8), (34, 11))
    substring: (397, 680)
    docstring: # This is a docstring for class Person
+Function: cream?
+   language: ruby
+   range: ((37, 12), (39, 15))
+   substring: (715, 762)
+   scope: Cream::
+   body: (742, 762)
+Module: Cream
+   language: ruby
+   range: ((36, 8), (40, 11))
+   substring: (690, 774)
+Function: pour
+   language: ruby
+   range: ((44, 16), (48, 19))
+   substring: (833, 987)
+   scope: Foo::Bar::
+   body: (881, 987)
+   parameters: [container, liquid]
+Class: Bar
+   language: ruby
+   range: ((43, 12), (49, 15))
+   substring: (807, 1003)
+Module: Foo
+   language: ruby
+   range: ((42, 8), (50, 11))
+   substring: (784, 1015)
 
 === Project Map ===
 File: test.c
@@ -416,3 +441,8 @@ File: test.rb
   class Person
     def initialize(name, age)
     def introduce
+  module Cream
+    def cream?
+  module Foo
+    class Bar
+      def pour(container, liquid)

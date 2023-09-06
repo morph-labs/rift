@@ -272,8 +272,10 @@ def find_declarations(
         "class_specifier",
         "namespace_definition",
         "class",
+        "module"
     ]:
         is_namespace = node.type == "namespace_definition"
+        is_module = node.type == "module"
         superclasses_node = node.child_by_field_name("superclasses")
         superclasses = None
         if superclasses_node is not None:
@@ -284,7 +286,7 @@ def find_declarations(
             body_node = node
 
         if body_node is not None and name is not None:
-            if is_namespace:
+            if is_namespace or language == "ruby":
                 separator = "::"
             else:
                 separator = "."
@@ -306,6 +308,8 @@ def find_declarations(
 
             if is_namespace:
                 declaration = mk_namespace_decl(id=name, body=body, parents=[node])
+            elif is_module:
+                declaration = mk_module_decl(id=name, body=body, parents=[node])
             else:
                 declaration = mk_class_decl(id=name, body=body, parents=[node], superclasses=superclasses)
             file.add_symbol(declaration)
@@ -611,8 +615,6 @@ def find_declarations(
                 return parse_module_binding(nodes)
             else:
                 raise Exception(f"Unexpected node type in module_declaration: {m1.type}")
-    elif language == "ruby":
-        print(f"TODO: {language}\n{dump_node(node)}")
     # if not returned earlier
     return []
 

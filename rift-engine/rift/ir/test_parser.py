@@ -220,6 +220,22 @@ class Tests:
                 puts "Hi, I'm #{@name} and I'm #{@age} years old."
             end
         end
+
+        module Cream
+            def cream?
+                true
+            end
+        end
+
+        module Foo
+            class Bar
+                def pour(container, liquid)
+                    for liquid in container do
+                        puts liquid
+                    end
+                end
+            end
+        end
     """
         )
         .lstrip()
