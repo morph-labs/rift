@@ -223,7 +223,8 @@ class LspServer(BaseLspServer):
             self.code_edit_model.load(),
             self.chat_model.load(),
         )
-        await asyncio.wait(cancel_tasks)
+        if cancel_tasks:
+            await asyncio.wait(cancel_tasks)
         try:
             await self._loading_task
         except asyncio.CancelledError:
