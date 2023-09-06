@@ -54,6 +54,35 @@ O = TypeVar("O", bound=BaseModel)
 
 import transformers
 
+@dataclass
+class PythonFileWithRegion:
+    before_region: str
+    region: str
+    after_region: str
+    instruction: Optional[str] = None
+    completion: Optional[str] = None
+
+    def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
+        formatted = (
+            f"==== {before_cursor} ====\n"
+            f"{self.before_region}\n"
+            f"==== REGION ====\n"
+            f"{latest_region or self.region}\n"
+            f"==== {after_cursor} ====\n"
+            f"{self.after_region}\n"
+        )
+        return formatted
+
+    def get_prompt(self):
+        assert self.instruction, "instruction not set"
+        result = (
+            f"### INSTRUCTIONS\n\nPlease generate code completing the task which will replace the below region. Task: {self.instruction}\n\n"
+            + self.format() + (
+                "\n\n### RESPONSE\n\n"
+            )
+        )
+        return result
+
 ENCODER = transformers.AutoTokenizer.from_pretrained("TheBloke/CodeLlama-7B-Instruct-fp16")
 ENCODER_LOCK = Lock()
 
@@ -465,7 +494,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         def worker():
             for chunk in self.model.create_completion(
                 prompt=prompt,
-                temperature=0.3,
+                temperature=0.001,
                 max_tokens=MAX_LEN_SAMPLED_COMPLETION,
                 stream=True
             ):
@@ -476,6 +505,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         completion_stream._feed_task = fut
         async def real_worker():
             async for delta in completion_stream:
+                logger.info(f"{delta=}")
                 yield delta
         return real_worker()
 
@@ -646,31 +676,6 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
             # asg.map(postprocess, self.chat_completions(messages, stream=True))
         # )
 
-        @dataclass
-        class PythonFileWithRegion:
-            before_region: str
-            region: str
-            after_region: str
-            instruction: Optional[str] = None
-            completion: Optional[str] = None
-
-            def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
-                formatted = (
-                    f"==== {before_cursor} ====\n"
-                    f"{self.before_region}\n"
-                    f"==== REGION ====\n"
-                    f"{latest_region or self.region}\n"
-                    f"==== {after_cursor} ====\n"
-                    f"{self.after_region}\n"
-                )
-                return formatted
-
-            def get_prompt(self):
-                assert self.instruction, "instruction not set"
-                result = f"Please generate code completing the task which will replace the below region. Task: {self.instruction}\n\n" +\
-                    self.format()
-                result = f"### INSTRUCTION\n\n{self.instruction or ''}" + self.format() + f"\n### RESPONSE\n\n"
-                return result
 
         def postprocess2(chunk: CompletionChunk) -> str:
             return chunk["choices"][0]["text"]
@@ -747,22 +752,63 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         # # logger.info("[edit_code] about to return")
 
 
+        # codestream = TextStream()
+        # async def worker():
+        #     try:
+        #         async for delta in stream:
+        #             logger.info(f"[worker] {delta=}")
+        #             codestream.feed_data(delta)
+        #         codestream.feed_eof()
+        #     except MissingKeyError as e:
+        #         event.set()
+        #         raise e
+        #     finally:
+        #         codestream.feed_eof()
+
+        # t = asyncio.create_task(worker())
+        # codestream._feed_task = t
+        # return EditCodeResult(thoughts=None, code=codestream, plan=None, event=event)
+        thoughtstream = TextStream()
         codestream = TextStream()
+        planstream = TextStream()
+
         async def worker():
+            logger.info("[edit_code:worker]")
             try:
-                async for delta in stream:
-                    logger.info(f"[worker] {delta=}")
+                prelude, stream2 = stream.split_once("```")
+                # logger.info(f"{prelude=}")
+                async for delta in prelude:
+                    # logger.info(f"plan {delta=}")
+                    planstream.feed_data(delta)
+                planstream.feed_eof()
+                lang_tag = await stream2.readuntil("\n")
+                before, after = stream2.split_once("\n```")
+                # logger.info(f"{before=}")
+                logger.info("reading codestream")
+                async for delta in before:
+                    # logger.info(f"code {delta=}")
                     codestream.feed_data(delta)
                 codestream.feed_eof()
-            except MissingKeyError as e:
+                # thoughtstream.feed_data("\n")
+                logger.info("reading thoughtstream")
+                async for delta in after:
+                    thoughtstream.feed_data(delta)
+                thoughtstream.feed_eof()
+            except Exception as e:
                 event.set()
                 raise e
             finally:
+                planstream.feed_eof()
+                thoughtstream.feed_eof()
                 codestream.feed_eof()
+                # logger.info("FED EOF TO ALL")
 
         t = asyncio.create_task(worker())
+        thoughtstream._feed_task = t
         codestream._feed_task = t
-        return EditCodeResult(thoughts=None, code=codestream, plan=None, event=event)
+        planstream._feed_task = t
+        # logger.info("[edit_code] about to return")
+        return EditCodeResult(thoughts=thoughtstream, code=codestream, plan=planstream, event=event)
 
     async def insert_code(self, document: str, cursor_offset: int, goal=None) -> InsertCodeResult:
         raise Exception("unreachable code")
