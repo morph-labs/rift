@@ -103,6 +103,7 @@ class Test:
     code3 = (
         dedent(
             """
+        from typing import Tuple
         def foo() -> None:
             print("Hello world!")
 
@@ -132,7 +133,7 @@ class Test:
         ...
                        
         @cache
-        def get_num_tokens2(content: t1) -> t2:           
+        def get_num_tokens2(content: t1) -> List[t2]:           
             return some(imaginary(code))
                        
         def foo() -> string:
@@ -182,6 +183,7 @@ def test_response():
         filter_function_ids=filter_function_ids,
         language=language,
         replace_body=False,
+        update_imports=True,
     )
     new_document3 = document3.apply_edits(edits3)
     new_test_output += f"\n\nNew document3:\n```\n{new_document3}```"

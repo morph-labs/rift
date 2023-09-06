@@ -17,6 +17,7 @@ from rift.ir.IR import (
     Scope,
     Statement,
     SymbolInfo,
+    Type,
     TypeKind,
     ValKind,
     ValueDeclaration,
@@ -24,7 +25,12 @@ from rift.ir.IR import (
 )
 from tree_sitter import Node
 
-def get_type(language: Language, node: Node) -> str:
+
+def dump_node(node: Node) -> str:
+    """ Dump a node for debugging purposes. """
+    return f"  type:{node.type} children:{node.child_count}\n  code:{node.text.decode()}\n  sexp:{node.sexp()}"
+
+def parse_type(language: Language, node: Node) -> Type:
     if (
         language in ["typescript", "tsx"]
         and node.type == "type_annotation"
@@ -32,23 +38,36 @@ def get_type(language: Language, node: Node) -> str:
     ):
         # TS: first child should be ":" and second child should be type
         second_child = node.children[1]
-        return second_child.text.decode()
-    return node.text.decode()
+        return Type(second_child.text.decode())
+    elif language == "python" and node.type == "type" and node.child_count >= 1:
+        child = node.children[0]
+        if child.type == "subscript":
+            node_value = child.child_by_field_name("value")
+            if node_value is not None:
+                subscripts = child.children_by_field_name("subscript")
+                arguments = [parse_type(language, n) for n in subscripts]
+                name = node_value.text.decode()
+                return Type(node.text.decode(), name=name, arguments=arguments)
+        elif child.type == "identifier":
+            name = child.text.decode()
+            return Type(node.text.decode(), name=name)
+    return Type(node.text.decode())
 
 
-def add_c_cpp_declarators_to_type(type: str, declarators: List[str]) -> str:
+def add_c_cpp_declarators_to_type(type: Type, declarators: List[str]) -> Type:
+    t = type
     for d in declarators:
         if d == "pointer_declarator":
-            type += "*"
+            t = t.create_pointer()
         elif d == "array_declarator":
-            type += "[]"
+            t = t.create_array()
         elif d == "function_declarator":
-            type += "()"
+            t = t.create_function()
         elif d == "identifier":
             pass
         else:
             raise Exception(f"Unknown declarator: {d}")
-    return type
+    return t
 
 
 def extract_c_cpp_declarators(node: Node) -> Tuple[List[str], Node]:
@@ -60,12 +79,12 @@ def extract_c_cpp_declarators(node: Node) -> Tuple[List[str], Node]:
     return declarators, final_node
 
 
-def get_c_cpp_parameter(node: Node) -> Parameter:
+def get_c_cpp_parameter(language: Language, node: Node) -> Parameter:
     declarators, final_node = extract_c_cpp_declarators(node)
     type_node = node.child_by_field_name("type")
     if type_node is None:
         raise Exception(f"Could not find type node in {node}")
-    type = type_node.text.decode()
+    type = parse_type(language=language, node=type_node)
     type = add_c_cpp_declarators_to_type(type, declarators)
     name = ""
     if final_node.type == "identifier":
@@ -81,21 +100,21 @@ def get_parameters(language: Language, node: Node) -> List[Parameter]:
             parameters.append(Parameter(name=name))
         elif child.type == "typed_parameter":
             name = ""
-            type = ""
+            type: Optional[Type] = None
             for grandchild in child.children:
                 if grandchild.type == "identifier":
                     name = grandchild.text.decode()
                 elif grandchild.type == "type":
-                    type = grandchild.text.decode()
+                    type = parse_type(language, grandchild)
             parameters.append(Parameter(name=name, type=type))
         elif child.type == "parameter_declaration":
             if language in ["c", "cpp"]:
-                parameters.append(get_c_cpp_parameter(child))
+                parameters.append(get_c_cpp_parameter(language, child))
             else:
-                type = ""
+                type: Optional[Type] = None
                 type_node = child.child_by_field_name("type")
                 if type_node is not None:
-                    type = type_node.text.decode()
+                    type = parse_type(language, type_node)
                 name = child.text.decode()
                 parameters.append(Parameter(name=name, type=type))
         elif child.type == "required_parameter" or child.type == "optional_parameter":
@@ -103,10 +122,10 @@ def get_parameters(language: Language, node: Node) -> List[Parameter]:
             pattern_node = child.child_by_field_name("pattern")
             if pattern_node is not None:
                 name = pattern_node.text.decode()
-            type = None
+            type: Optional[Type] = None
             type_node = child.child_by_field_name("type")
             if type_node is not None:
-                type = get_type(language=language, node=type_node)
+                type = parse_type(language, type_node)
             parameters.append(
                 Parameter(name=name, type=type, optional=child.type == "optional_parameter")
             )
@@ -162,10 +181,6 @@ def find_declarations(
     exported = False
     has_return = False
 
-    def dump_node(node: Node) -> str:
-        """ Dump a node for debugging purposes. """
-        return f"  type:{node.type} children:{node.child_count}\n  code:{node.text.decode()}\n  sexp:{node.sexp()}"
-
     def mk_value_decl(id: Node, parents: List[Node], value_kind: ValueKind):
         return ValueDeclaration(
             body_sub=body_sub,
@@ -180,11 +195,11 @@ def find_declarations(
             value_kind=value_kind,
         )
 
-    def mk_fun_decl(id: Node, parents: List[Node], parameters: List[Parameter] = [], return_type: Optional[str] = None):
+    def mk_fun_decl(id: Node, parents: List[Node], parameters: List[Parameter] = [], return_type: Optional[Type] = None):
         value_kind = FunctionKind(has_return=has_return, parameters=parameters, return_type=return_type)
         return mk_value_decl(id=id, parents=parents, value_kind=value_kind)
 
-    def mk_val_decl(id: Node, parents: List[Node], type: Optional[str] = None):
+    def mk_val_decl(id: Node, parents: List[Node], type: Optional[Type] = None):
         value_kind = ValKind(type=type)
         return mk_value_decl(id=id, parents=parents, value_kind=value_kind)
 
@@ -245,7 +260,7 @@ def find_declarations(
                 start_node = start_node.next_sibling
             body_sub = (start_node.start_byte, root_node.end_byte)
 
-    def process_ocaml_body(n: Node) -> Optional[str]:
+    def process_ocaml_body(n: Node) -> Optional[Type]:
         nonlocal body_node, body_sub
         body_node = n.child_by_field_name("body")
         if body_node is not None:
@@ -257,7 +272,7 @@ def find_declarations(
                 if n2:
                     n3 = n2.prev_sibling
                     if n3 and n3.type == ":":
-                        return n2.text.decode()
+                        return parse_type(language, n2)
             else:
                 body_sub = (body_node.start_byte, body_node.end_byte)
 
@@ -324,7 +339,7 @@ def find_declarations(
         type_node = node.child_by_field_name("type")
         type = None
         if type_node is not None:
-            type = get_type(language=language, node=type_node)
+            type = parse_type(language=language, node=type_node)
         res = find_c_cpp_function_declarator(node)
         if res is None or type is None:
             return []
@@ -352,10 +367,10 @@ def find_declarations(
         parameters_node = node.child_by_field_name("parameters")
         if parameters_node is not None:
             parameters = get_parameters(language=language, node=parameters_node)
-        return_type: Optional[str] = None
+        return_type: Optional[Type] = None
         return_type_node = node.child_by_field_name("return_type")
         if return_type_node is not None:
-            return_type = get_type(language=language, node=return_type_node)
+            return_type = parse_type(language=language, node=return_type_node)
         if (
             body_node is not None
             and len(body_node.children) > 0
@@ -408,8 +423,8 @@ def find_declarations(
 
     elif node.type == "value_definition" and language == "ocaml":
         parameters = []
-        def extract_type(node: Node) -> str:
-            return node.text.decode()
+        def extract_type(node: Node) -> Type:
+            return parse_type(language, node)
         def parse_inner_parameter(inner: Node) -> Optional[Parameter]:
             if inner.type in ["label_name", "value_pattern"]:
                 name = inner.text.decode()
@@ -424,7 +439,7 @@ def find_declarations(
                     return Parameter(name=name, type=type)
             elif inner.type == "unit":
                 name = "()"
-                type = "unit"
+                type = Type("unit")
                 return Parameter(name=name, type=type)
         def parse_ocaml_parameter(parameter: Node) -> None:
             if parameter.child_count == 1:
@@ -455,7 +470,7 @@ def find_declarations(
                 inner_parameter = parse_inner_parameter(parameter.children[2])
                 if inner_parameter is not None:
                     inner_parameter.name = parameter.children[0].type + inner_parameter.name
-                    type = "type of " + extract_type(parameter.children[4])
+                    type = extract_type(parameter.children[4]).create_type_of()
                     inner_parameter.type = type
                     parameters.append(inner_parameter)
         declarations: List[SymbolInfo] = []
@@ -502,9 +517,9 @@ def find_declarations(
                 pass
             elif par.type == "parameter" and par.child_count >= 1:
                 nodes = par.children
-                type = None
+                type: Optional[Type] = None
                 if len(nodes) >= 2 and nodes[1].type == "type_annotation" and len(nodes[1].children) >= 2:
-                    type = nodes[1].children[1].text.decode()
+                    type = parse_type(language, nodes[1].children[1])
                 default_value = None
                 if nodes[0].type == "labeled_parameter":
                     children = nodes[0].children
@@ -515,7 +530,7 @@ def find_declarations(
                             default_value = next.text.decode()
                     for child in children:
                         if child.type == "type_annotation" and len(child.children) >= 2:
-                            type = child.children[1].text.decode()
+                            type = parse_type(language, child.children[1])
                     name = "~" + children[1].text.decode()
                 else:
                     name = nodes[0].text.decode()
@@ -531,7 +546,7 @@ def find_declarations(
                         for par in nodes[0].children:
                             parse_res_parameter(par, parameters)
                     if nodes[1].type == "type_annotation" and nodes[1].child_count >= 2:
-                        return_type = nodes[1].children[1].text.decode()
+                        return_type = parse_type(language, nodes[1].children[1])
                     if body_sub is not None:
                             body_sub = (nodes[-2].start_byte, body_sub[1])
         def parse_res_let_binding(nodes: List[Node], parents: List[Node]) -> Optional[ValueDeclaration]:
@@ -566,9 +581,9 @@ def find_declarations(
                 if exp is not None:
                     parse_res_parameters(exp, parameters)
                 if parameters == []:
-                    type = None
+                    type: Optional[Type] = None
                     if typ is not None and typ.child_count >= 2:
-                        type = typ.children[1].text.decode()
+                        type = parse_type(language, typ.children[1])
                     declaration = mk_val_decl(id=id, parents=parents, type=type)
                 else:
                     declaration = mk_fun_decl(id=id, parents=parents, parameters=parameters, return_type=return_type)
@@ -630,9 +645,10 @@ def process_body(
     return statements
 
 def find_import(node: Node) -> Optional[Import]:
+    substring = (node.start_byte, node.end_byte)
     if node.type == "import_statement":
         names = [n.text.decode() for n in node.children_by_field_name("name")]
-        return Import(names=names)
+        return Import(names=names, substring=substring)
     elif node.type == "import_from_statement":
         names = [n.text.decode() for n in node.children_by_field_name("name")]
         module_name_node = node.child_by_field_name("module_name")
@@ -640,7 +656,7 @@ def find_import(node: Node) -> Optional[Import]:
             module_name = module_name_node.text.decode()
         else:
             module_name = None
-        return Import(names=names, module_name=module_name)
+        return Import(names=names, module_name=module_name, substring=substring)
 
 def process_statement(
     code: Code, file: File, language: Language, node: Node, scope: Scope

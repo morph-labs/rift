@@ -181,7 +181,7 @@ Function: bump
    substring: (79, 112)
    scope: M.
    body: (102, 112)
-   parameters: [?step:type of 1, x]
+   parameters: [?step:typeof(1), x]
 Function: hline
    language: ocaml
    range: ((4, 4), (4, 42))

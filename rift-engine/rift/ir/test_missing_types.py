@@ -1,5 +1,6 @@
 import difflib
 import os
+from typing import List
 
 import rift.ir.parser as parser
 import rift.ir.test_parser as test_parser
@@ -13,7 +14,7 @@ def test_missing_types():
         old_missing_types_str = f.read()
 
     project = test_parser.get_test_project()
-    new_missing_types = []
+    new_missing_types: List[str] = []
     for file in project.get_files():
         missing_types = functions_missing_types_in_file(file)
         new_missing_types += [str(mt) for mt in missing_types]
