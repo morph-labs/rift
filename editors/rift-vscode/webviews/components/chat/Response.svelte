@@ -45,11 +45,11 @@
     }
 
     const fixedCodeBlocksText = fixCodeBlocks(text)
-    console.log(`Original text: ${text}`);
+    // console.log(`Original text: ${text}`);
     const text2 = fixedCodeBlocksText.replace(/\n{2,}/g, (m) => m.replace(/\n/g, "<br/>"))
     const text3 = text2.replace(/<br\/>([^<])/g, "<br/>\n\n$1")
     text = converter.makeHtml(text3)
-    console.log(`Converted text: ${text}`);
+    // console.log(`Converted text: ${text}`);
     return text
   }
   let something: string

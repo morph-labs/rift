@@ -18,6 +18,9 @@ from rift.lsp import rpc_method
 from rift.rpc import RpcServerStatus
 from rift.util.ofdict import ofdict, todict
 
+from rift.ir.completions import get_symbol_completions_raw
+from rift.ir.parser import parse_files_in_paths
+
 logger = logging.getLogger(__name__)
 
 
@@ -101,6 +104,16 @@ class LspServer(BaseLspServer):
         self._chat_loading_task = None
         self.logger = logging.getLogger("rift")
         self.logger.addHandler(LspLogHandler(self))
+
+    @rpc_method("morph/parseSymbolsFromFiles")
+    async def on_did_request_symbols_for_files(self, params):
+        file_list = params[0]
+        logger.info(f"morph/parseSymbolsFromFiles with {params=}")
+
+        project = parse_files_in_paths(file_list)
+        symbols = get_symbol_completions_raw(project)
+
+        return {"symbols": symbols, "project_root": project.root_path}
 
     @rpc_method("workspace/didChangeConfiguration")
     async def on_workspace_did_change_configuration(self, params: lsp.DidChangeConfigurationParams):

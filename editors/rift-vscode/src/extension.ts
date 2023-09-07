@@ -53,9 +53,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     let recentlyOpenedFiles: string[] = [];
     vscode.workspace.onDidOpenTextDocument((document) => {
-        const filePath = document.uri.fsPath;
-        if (filePath.endsWith(".git")) return; // weirdly getting both file.txt and file.txt.git on every file change
+        if (document.uri.scheme !== 'file') return;
 
+        const filePath = document.uri.fsPath;
         // Check if file path already exists in the recent files list
         const existingIndex = recentlyOpenedFiles.indexOf(filePath);
 
@@ -64,16 +64,27 @@ export function activate(context: vscode.ExtensionContext) {
             recentlyOpenedFiles.splice(existingIndex, 1);
         }
 
-        // Add the file to the end of the list (top of the stack)
-        recentlyOpenedFiles.push(filePath);
+        // Add the file to the front of the list (top of the stack)
+        recentlyOpenedFiles.unshift(filePath);
 
         // Limit the history to the last 10 files
         if (recentlyOpenedFiles.length > 10) {
-            recentlyOpenedFiles.shift();
+            recentlyOpenedFiles.pop();
         }
 
         morph_language_client.sendRecentlyOpenedFilesChange(recentlyOpenedFiles);
     });
+
+    let changeDelay: NodeJS.Timeout
+    vscode.workspace.onDidChangeTextDocument((document) => {
+        if (recentlyOpenedFiles.includes(document.document.uri.fsPath)) {
+            clearTimeout(changeDelay)
+            changeDelay = setTimeout(() => {
+                morph_language_client.sendRecentlyOpenedFilesChange(recentlyOpenedFiles)
+            }, 1000)
+        }
+    })
+
     console.log('Congratulations, your extension "rift" is now active!');
 
     let disposablefocusOmnibar = vscode.commands.registerCommand(

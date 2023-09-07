@@ -91,6 +91,19 @@ export const FileChip = Node.create<FileChipOptions>({
           };
         },
       },
+      symbolName: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-symbolname"),
+        renderHTML: (attributes) => {
+          if (!attributes.symbolName) {
+            return undefined;
+          }
+
+          return {
+            "data-symbolname": attributes.symbolName,
+          };
+        },
+      },
       fullPath: {
         default: null,
         parseHTML: (element) => element.getAttribute("data-fullpath"),
@@ -179,7 +192,7 @@ export const FileChip = Node.create<FileChipOptions>({
     const svg = createFileSvg();
     svg.classList.add("mr-[2px]");
     span.append(svg);
-    span.append(document.createTextNode(`${node.attrs.fileName}`));
+    span.append(document.createTextNode(`${node.attrs.symbolName || node.attrs.fileName}`));
 
     return span;
   },

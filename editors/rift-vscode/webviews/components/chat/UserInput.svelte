@@ -18,8 +18,9 @@
   function parseProseMirrorHTMLfromMessageContent(message:string) {
     const regex = /\[(.*?)\]\((.*?)\)/g;
     return message.replace(regex, (match, uri, path) => {
-      const filename = path.split('/').pop();
-      return `<span data-type="filechip" data-fullpath="${path}" data-filename="${filename}"></span>`;
+      const filename: string = path.split('/').pop();
+      const symbolname = filename.includes('#') ? filename.slice(filename.indexOf('#') + 1) : ''
+      return `<span data-type="filechip" data-fullpath="${path}" data-filename="${filename}" data-symbolname="${symbolname}"></span>`;
     });
   }
   

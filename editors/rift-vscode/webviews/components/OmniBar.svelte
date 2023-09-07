@@ -13,26 +13,34 @@
   import { FileChip } from "./FileChip"
 
 
-const suggestion:Omit<SuggestionOptions<AtableFile>, 'editor'> = {
+  const suggestion:Omit<SuggestionOptions<AtableFile>, 'editor'> = {
   items: ({ query }) => {
-        const filteredFiles = Array.from(
-          new Set([...$state.files.recentlyOpenedFiles, ...$state.files.nonGitIgnoredFiles])
-        )
-        console.log('filteredFiles1')
-        console.log(filteredFiles)
-        const filteredfiles2 = filteredFiles.filter((file) => {
-        let searchString = query.toLowerCase()
-        // return true
-        return (
-          file.fileName.toLowerCase().includes(searchString) ||
-          file.fromWorkspacePath.toLowerCase().includes(searchString)
-        )
-      })
-      .slice(0, 4)
-      console.log('new filtered files2:', filteredfiles2)
-      return filteredfiles2
+            const allFiles = Array.from(
+                new Set([
+                    ...$state.symbols,
+                    ...$state.files.recentlyOpenedFiles,
+                    ...$state.files.nonGitIgnoredFiles,
+                ])
+            );
+            const seen = new Set<string>()
+            const filteredFiles = allFiles
+                .filter((file) => {
+                    const needle = query.toLowerCase();
+                    const haystack = (
+                        file.fromWorkspacePath +
+                        "/" +
+                        file.fileName +
+                        "@" +
+                        file.symbolName
+                    ).toLowerCase();
+                    if (seen.has(haystack)) return false;
+                    seen.add(haystack);
+                    return haystack.includes(needle);
+                })
+                .slice(0, 4);
+            console.log({allFiles, filteredFiles});
+            return filteredFiles;
   },
-
   render: () => {
     return {
       onStart: (props) => {

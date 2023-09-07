@@ -39,6 +39,7 @@ import {
     WebviewAgent,
     WebviewState,
     EditorMetadata,
+    AgentSymbols,
 } from "./types";
 import { Store } from "./lib/Store";
 import {
@@ -279,7 +280,7 @@ export class MorphLanguageClient
 
             // the below 3 lines populate the webview state with initial state needed for @URI chips
             const activeUri = vscode.window.activeTextEditor?.document.uri;
-            if (activeUri)
+            if (activeUri) {
                 this.webviewState.update((pS) => ({
                     ...pS,
                     files: {
@@ -287,6 +288,8 @@ export class MorphLanguageClient
                         recentlyOpenedFiles: [AtableFileFromUri(activeUri)],
                     },
                 }));
+                this.fetchSymbolsForRecentFiles([activeUri.fsPath]);
+            }
             this.refreshNonGitIgnoredFiles();
             this.refreshAvailableAgents();
         });
@@ -670,13 +673,13 @@ export class MorphLanguageClient
         //   }
         //   return fullGitIgnoreFolderPathToGlobArray
         // }
-        const time = Date.now();
+        // const time = Date.now();
         // const gitIgnoreToGlobsMap = await getGlobPatternsFromGitIgnores()
 
-        const latency = Date.now() - time;
-        console.log(
-            `latency in regetting gitignore globs is ${latency}ms. If too high, consider adding event listeners to when the gitignores change instead of refetching them every time`
-        );
+        // const latency = Date.now() - time;
+        // console.log(
+        //     `latency in regetting gitignore globs is ${latency}ms. If too high, consider adding event listeners to when the gitignores change instead of refetching them every time`
+        // );
 
         let vsCodeFiles: vscode.Uri[] = await vscode.workspace.findFiles(
             "**/*",
@@ -815,7 +818,10 @@ export class MorphLanguageClient
             ...state,
             agents: {
                 ...state.agents,
-                [agentId]: { ...state.agents[agentId], doesShowAcceptRejectBar },
+                [agentId]: {
+                    ...state.agents[agentId],
+                    doesShowAcceptRejectBar,
+                },
             },
         }));
     }
@@ -830,7 +836,9 @@ export class MorphLanguageClient
                 [agentId]: {
                     ...state.agents[agentId],
                     hasNotification:
-                        agentId == state.selectedAgentId ? false : hasNotification, //this ternary operatory will make sure we don't set currently selected agents as having notifications
+                        agentId == state.selectedAgentId
+                            ? false
+                            : hasNotification, //this ternary operatory will make sure we don't set currently selected agents as having notifications
                 },
             },
         }));
@@ -858,6 +866,39 @@ export class MorphLanguageClient
             files: { ...pS.files, recentlyOpenedFiles: atableFiles },
         }));
         this.refreshNonGitIgnoredFiles();
+
+        this.fetchSymbolsForRecentFiles(recentlyOpenedFiles);
+    }
+
+    private async fetchSymbolsForRecentFiles(recentlyOpenedFiles: string[]) {
+        try {
+            const parsedSymbols = await this.client?.sendRequest<{
+                symbols: AgentSymbols;
+                project_root: string;
+            }>("morph/parseSymbolsFromFiles", recentlyOpenedFiles);
+            console.log("got parsed symbols for files", {
+                recentlyOpenedFiles,
+                parsedSymbols,
+            });
+            if (parsedSymbols) {
+                const newSymbols = parsedSymbols.symbols.flatMap((symbolFile) => symbolFile.symbols.map((symbol) => {
+                    const uri = vscode.Uri.file(
+                        parsedSymbols.project_root + "/" + symbolFile.path
+                    ).with({ fragment: symbol.scope + symbol.name });
+                    return AtableFileFromUri(uri);
+                })
+                );
+                this.webviewState.update((pS) => ({
+                    ...pS,
+                    symbols: newSymbols,
+                }));
+            }
+        } catch (e) {
+            console.error("error getting symbols from files", {
+                e,
+                recentlyOpenedFiles,
+            });
+        }
     }
 
     focusOmnibar() {

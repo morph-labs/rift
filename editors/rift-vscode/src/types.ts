@@ -66,6 +66,7 @@ export type WebviewState = {
     recentlyOpenedFiles: AtableFile[];
     nonGitIgnoredFiles: AtableFile[];
   };
+  symbols: AtableFile[];
 };
 
 export const DEFAULT_STATE: WebviewState = {
@@ -84,6 +85,7 @@ export const DEFAULT_STATE: WebviewState = {
     recentlyOpenedFiles: [],
     nonGitIgnoredFiles: [],
   },
+  symbols: [],
 };
 
 export type OptionalTextDocument = {
@@ -140,9 +142,9 @@ export interface RunAgentProgress {
 
 export type ChatAgentPayload =
   | {
-    response?: string;
-    done_streaming?: boolean;
-  }
+      response?: string;
+      done_streaming?: boolean;
+    }
   | undefined;
 
 export type CodeEditPayload = any;
@@ -162,10 +164,10 @@ export interface AgentIdParams {
 
 export type ChatMessage =
   | {
-    role: "assistant";
-    content: string;
-    name?: null | string | undefined;
-  }
+      role: "assistant";
+      content: string;
+      name?: null | string | undefined;
+    }
   | ChatMessageUser;
 
 export type ChatMessageUser = {
@@ -194,11 +196,21 @@ export type AgentResult = {
   id: string;
   type: string;
 }; //is just an ID rn
+export type AgentSymbols = {
+  path: string;
+  symbols: {
+    name: string;
+    scope: string;
+    kind: string;
+    range: [[number, number], [number, number]];
+  }[];
+}[];
 
 export interface AtableFile {
   fileName: string; //example.ts
   fullPath: string; //Users/brent/dev/project/src/example.ts
   fromWorkspacePath: string; //project/src/example.ts
+  symbolName?: string; // MainNamespace.SomeClass.someMethod
 }
 
 export interface AtableFileWithCommand extends AtableFile {

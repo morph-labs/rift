@@ -6,6 +6,9 @@ import re
 from typing import Callable, List, Optional, TypeVar
 
 import rift.lsp.types as lsp
+import rift.ir.parser as parser
+import rift.ir.IR as IR
+
 
 T = TypeVar("T")
 
@@ -24,21 +27,33 @@ def lookup_match(match: str, server: "Server") -> str:
     if lsp_uri in server.documents:
         logger.info(f"[lookup_match] found in server {server.documents.keys()=}")
         return server.documents[lsp_uri].text
-    else:
-        logger.info(f"[lookup_match] not found in server")
-        try:
-            if os.path.isdir(match):
-                logger.info("[lookup_match] match is dir")
-                return ""
-            else:
-                logger.info("[lookup_match] reading from filesystem")
-                try:
-                    with open(match, "r") as f:
-                        return f.read()
-                except:
-                    return ""
-        except:
+
+    # technically invalid in windows, where # can be in a path name.
+    elif '#' in match:
+        this_file = match.split('#')[0]
+        project = parser.parse_files_in_paths([this_file])
+        reference_some_function = IR.Reference.from_uri(lsp_uri)
+        symbol_ref = project.lookup_reference(reference_some_function)
+        print ('The file', this_file, project, reference_some_function, symbol_ref)
+        if symbol_ref is not None and symbol_ref.symbol is not None:
+            body = symbol_ref.symbol.get_substring_without_body().decode().strip()
+            logger.info(f"[lookup_match] symbol reference found")
+            return body
+
+    logger.info(f"[lookup_match] not found in server")
+    try:
+        if os.path.isdir(match):
+            logger.info("[lookup_match] match is dir")
             return ""
+        else:
+            logger.info("[lookup_match] reading from filesystem")
+            try:
+                with open(match, "r") as f:
+                    return f.read()
+            except:
+                return ""
+    except:
+        return ""
 
 
 def replace_inline_uris(user_response: str, server: "Server") -> str:

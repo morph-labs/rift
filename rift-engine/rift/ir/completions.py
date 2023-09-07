@@ -17,6 +17,9 @@ class File:
     symbols: List[Symbol]
 
 def get_symbol_completions(project: IR.Project) -> str:
+    return json.dumps(get_symbol_completions_raw(project), indent=4)
+
+def get_symbol_completions_raw(project: IR.Project) -> str:
     files: List[File] = []
     for file_ir in project.get_files():
         symbols: List[Symbol] = []
@@ -25,5 +28,4 @@ def get_symbol_completions(project: IR.Project) -> str:
             symbols.append(symbol)
         file = File(file_ir.path, symbols)
         files.append(file)
-    json_data = json.dumps([asdict(symbol) for symbol in files], indent=4)
-    return json_data
+    return [asdict(symbol) for symbol in files]

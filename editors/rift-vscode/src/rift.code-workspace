@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../../rift-engine"
+		}
+	],
+	"settings": {
+		"typescript.tsc.autoDetect": "off",
+		"typescript.tsdk": "node_modules/typescript/lib",
+		"prettier.tabWidth": 4
+	}
+}

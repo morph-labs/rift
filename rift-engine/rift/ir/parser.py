@@ -72,8 +72,10 @@ def parse_files_in_paths(paths: List[str], filter_file: Optional[Callable[[str],
     project = IR.Project(root_path=root_path)
     for path in paths:
         if os.path.isfile(path):
+            print ("Path is file", path)
             parse_path(path, project, filter_file)
         else:
+            print ("Path is not a file", path)
             for root, _dirs, files in os.walk(path):
                 for file in files:
                     full_path = os.path.join(root, file)
