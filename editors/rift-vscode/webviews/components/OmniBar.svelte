@@ -37,7 +37,7 @@
                     seen.add(haystack);
                     return haystack.includes(needle);
                 })
-                .slice(0, 4);
+                .slice(0, 50);
             console.log({allFiles, filteredFiles});
             return filteredFiles;
   },
