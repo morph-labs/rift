@@ -55,7 +55,13 @@ O = TypeVar("O", bound=BaseModel)
 import transformers
 
 @dataclass
-class PythonFileWithRegion:
+class SourceCodeFileWithRegion:
+    """
+    Datastructure for a training datapoint (inference if the completion is None)
+
+    Represents a file that has been split into a region, the parts before/after the region, a natural language instruction, and a completion.
+    """
+
     before_region: str
     region: str
     after_region: str
@@ -77,9 +83,8 @@ class PythonFileWithRegion:
         assert self.instruction, "instruction not set"
         result = (
             f"### INSTRUCTIONS\n\nPlease generate code completing the task which will replace the below region. Task: {self.instruction}\n\n"
-            + self.format() + (
-                "\n\n### RESPONSE\n\n"
-            )
+            + self.format()
+            + ("\n\n### RESPONSE\n\n")
         )
         return result
 
@@ -680,7 +685,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         def postprocess2(chunk: CompletionChunk) -> str:
             return chunk["choices"][0]["text"]
         
-        pre_prompt: PythonFileWithRegion = PythonFileWithRegion(
+        pre_prompt: SourceCodeFileWithRegion = SourceCodeFileWithRegion(
             region=region,
             before_region=before_cursor,
             after_region=after_cursor,
