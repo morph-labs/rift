@@ -12,6 +12,7 @@
     {#each $filteredFiles as file, index}
       <AtDropdownCard
         focused={index === $focusedFileIndex}
+        type={file.symbolName ? 'symbol' : 'file'}
         displayName={file.symbolName || file.fileName}
         description={file.fromWorkspacePath}
         onClick={file.onEnter}
