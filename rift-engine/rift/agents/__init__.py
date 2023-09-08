@@ -4,6 +4,7 @@ from .code_edit import *
 from .curl_agent import *
 from .docstring_agent import *
 from .engineer import *
+#from .linter_agent import *
 from .mentat_agent import *
 from .registry import *
 from .rift_chat import *
