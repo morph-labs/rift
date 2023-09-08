@@ -7,9 +7,17 @@
   export let onClick: (...args: any) => any;
   export let displayName = "example.ts";
   export let description = "/project/server/example.ts";
+
+  let ref: HTMLDivElement | undefined = undefined;
+
+  $: {
+    if (focused && ref) {
+      ref.scrollIntoView({block:'center'})
+    }
+  }
 </script>
 
-<div class="bg-[var(--vscode-editor-background)]">
+<div bind:this={ref} class="bg-[var(--vscode-editor-background)]">
   <!-- me and my homies love a11y -->
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div
