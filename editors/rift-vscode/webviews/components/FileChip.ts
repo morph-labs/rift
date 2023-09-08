@@ -139,42 +139,54 @@ export const FileChip = Node.create<FileChipOptions>({
    */
   renderHTML({ node, HTMLAttributes }) {
     function createFileSvg() {
-      const xmlns = "http://www.w3.org/2000/svg";
+        const xmlns = "http://www.w3.org/2000/svg";
 
-      let svg = document.createElementNS(xmlns, "svg");
-      svg.setAttribute("width", "10");
-      svg.setAttribute("height", "10");
-      svg.setAttribute("viewBox", "0 0 10 10");
-      svg.setAttribute("fill", "none");
-      svg.setAttribute("xmlns", xmlns);
+        let svg = document.createElementNS(xmlns, "svg");
+        svg.setAttribute("width", "10");
+        svg.setAttribute("height", "10");
+        svg.setAttribute("fill", "none");
+        svg.setAttribute("xmlns", xmlns);
 
-      let g = document.createElementNS(xmlns, "g");
-      g.setAttribute("clip-path", "url(#clip0_511_33161)");
-      svg.appendChild(g);
+        let g = document.createElementNS(xmlns, "g");
+        svg.appendChild(g);
 
-      let path = document.createElementNS(xmlns, "path");
-      path.setAttribute(
-        "d",
-        "M1.4248 1.22499C1.4248 1.0084 1.51085 0.800676 1.664 0.647521C1.81716 0.494367 2.02488 0.408325 2.24147 0.408325H6.31745C6.53403 0.408371 6.74172 0.494443 6.89484 0.647609L8.53552 2.28829C8.68869 2.44141 8.77476 2.6491 8.7748 2.86568V8.57499C8.7748 8.79158 8.68876 8.99931 8.53561 9.15246C8.38245 9.30562 8.17473 9.39166 7.95814 9.39166H2.24147C2.02488 9.39166 1.81716 9.30562 1.664 9.15246C1.51085 8.99931 1.4248 8.79158 1.4248 8.57499V1.22499ZM2.24147 1.02083C2.18732 1.02083 2.13539 1.04234 2.0971 1.08062C2.05882 1.11891 2.0373 1.17084 2.0373 1.22499V8.57499C2.0373 8.62914 2.05882 8.68107 2.0971 8.71936C2.13539 8.75765 2.18732 8.77916 2.24147 8.77916H7.95814C8.01229 8.77916 8.06422 8.75765 8.10251 8.71936C8.14079 8.68107 8.1623 8.62914 8.1623 8.57499V3.47083H6.52897C6.31238 3.47083 6.10466 3.38478 5.9515 3.23163C5.79835 3.07847 5.7123 2.87075 5.7123 2.65416V1.02083H2.24147ZM6.3248 1.02083V2.65416C6.3248 2.70831 6.34631 2.76024 6.3846 2.79853C6.42289 2.83681 6.47482 2.85833 6.52897 2.85833H8.1623C8.16051 2.8067 8.1392 2.75767 8.10269 2.72113L6.462 1.08044C6.42546 1.04393 6.37643 1.02262 6.3248 1.02083Z"
-      );
-      path.setAttribute("fill", "#CCCCCC");
-      g.appendChild(path);
+        let path = document.createElementNS(xmlns, "path");
+        let defs = document.createElementNS(xmlns, "defs");
+        svg.appendChild(defs);
 
-      let defs = document.createElementNS(xmlns, "defs");
-      svg.appendChild(defs);
+        let clipPath = document.createElementNS(xmlns, "clipPath");
+        let rect = document.createElementNS(xmlns, "rect");
 
-      let clipPath = document.createElementNS(xmlns, "clipPath");
-      clipPath.setAttribute("id", "clip0_511_33161");
-      defs.appendChild(clipPath);
+        if (!node.attrs.symbolName) {
+            svg.setAttribute("viewBox", "0 0 10 10");
+            path.setAttribute(
+                "d",
+                "M1.4248 1.22499C1.4248 1.0084 1.51085 0.800676 1.664 0.647521C1.81716 0.494367 2.02488 0.408325 2.24147 0.408325H6.31745C6.53403 0.408371 6.74172 0.494443 6.89484 0.647609L8.53552 2.28829C8.68869 2.44141 8.77476 2.6491 8.7748 2.86568V8.57499C8.7748 8.79158 8.68876 8.99931 8.53561 9.15246C8.38245 9.30562 8.17473 9.39166 7.95814 9.39166H2.24147C2.02488 9.39166 1.81716 9.30562 1.664 9.15246C1.51085 8.99931 1.4248 8.79158 1.4248 8.57499V1.22499ZM2.24147 1.02083C2.18732 1.02083 2.13539 1.04234 2.0971 1.08062C2.05882 1.11891 2.0373 1.17084 2.0373 1.22499V8.57499C2.0373 8.62914 2.05882 8.68107 2.0971 8.71936C2.13539 8.75765 2.18732 8.77916 2.24147 8.77916H7.95814C8.01229 8.77916 8.06422 8.75765 8.10251 8.71936C8.14079 8.68107 8.1623 8.62914 8.1623 8.57499V3.47083H6.52897C6.31238 3.47083 6.10466 3.38478 5.9515 3.23163C5.79835 3.07847 5.7123 2.87075 5.7123 2.65416V1.02083H2.24147ZM6.3248 1.02083V2.65416C6.3248 2.70831 6.34631 2.76024 6.3846 2.79853C6.42289 2.83681 6.47482 2.85833 6.52897 2.85833H8.1623C8.16051 2.8067 8.1392 2.75767 8.10269 2.72113L6.462 1.08044C6.42546 1.04393 6.37643 1.02262 6.3248 1.02083Z"
+            );
+            rect.setAttribute("width", "9.8");
+            rect.setAttribute("height", "9.8");
+            rect.setAttribute("fill", "white");
+            rect.setAttribute("transform", "translate(0.200195)");
+            clipPath.setAttribute("id", "clip0_511_33161");
+            g.setAttribute("clip-path", "url(#clip0_511_33161)");
+        } else {
+            svg.setAttribute("viewBox", "0 0 24 24");
+            path.setAttribute(
+                "d",
+                "M7 8L3 11.6923L7 16M17 8L21 11.6923L17 16M14 4L10 20"
+            );
+            path.setAttribute("stroke-width", "2");
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("stroke-linejoin", "round");
+        }
 
-      let rect = document.createElementNS(xmlns, "rect");
-      rect.setAttribute("width", "9.8");
-      rect.setAttribute("height", "9.8");
-      rect.setAttribute("fill", "white");
-      rect.setAttribute("transform", "translate(0.200195)");
-      clipPath.appendChild(rect);
+        defs.appendChild(clipPath);
+        path.setAttribute("fill", "#CCCCCC");
+        path.setAttribute("stroke", "#CCCCCC");
+        g.appendChild(path);
+        clipPath.appendChild(rect);
 
-      return svg;
+        return svg;
     }
     const span = document.createElement("span");
 
