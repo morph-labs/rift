@@ -165,6 +165,26 @@ Namespace: namespace_name
    language: cpp
    range: ((0, 0), (7, 1))
    substring: (0, 116)
+=== Symbol Table for test.cs ===
+Function: sum
+   language: c_sharp
+   range: ((6, 8), (10, 9))
+   substring: (110, 214)
+   scope: SampleNamespace::SampleClass.
+   body: (149, 214)
+   return_type: int
+   has_return: True
+Class: SampleClass
+   language: c_sharp
+   range: ((4, 4), (11, 5))
+   substring: (78, 220)
+   scope: SampleNamespace::
+   docstring: // This is docstring
+Namespace: SampleNamespace
+   language: c_sharp
+   range: ((1, 0), (12, 1))
+   substring: (21, 222)
+   docstring: // This is docstring
 === Symbol Table for test.ml ===
 Function: divide
    language: ocaml
@@ -413,6 +433,10 @@ File: test.cpp
     void add()
     class student
       void print();
+File: test.cs
+  namespace SampleNamespace
+    class SampleClass
+      public int sum(int a, int b)
 File: test.ml
   let divide (x:int) y
   let callback () : unit

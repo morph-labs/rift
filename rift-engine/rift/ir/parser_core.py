@@ -299,12 +299,13 @@ class DeclarationFinder:
 
         if\
             (node.type in ["class_specifier"] and language in [ "c", "cpp"]) or \
-            (node.type in ["class_declaration"] and language in ["javascript", "tsx", "typescript"]) or \
+            (node.type in ["class_declaration"] and language in ["javascript", "tsx", "typescript", "c_sharp"]) or \
             (node.type in ["class_definition"] and language in ["python"]) or \
             (node.type in ["namespace_definition"] and language in ["cpp"]) or \
+            (node.type in ["namespace_declaration"] and language in ["c_sharp"]) or \
             (node.type in ["class", "module"] and language == "ruby"):
 
-            is_namespace = node.type == "namespace_definition"
+            is_namespace = (node.type in ["namespace_definition", "namespace_declaration"])
             is_module = node.type == "module"
             superclasses_node = node.child_by_field_name("superclasses")
             superclasses = None
@@ -374,6 +375,7 @@ class DeclarationFinder:
         elif\
             (node.type in ["function_declaration", "method_definition"] and language in ["javascript", "tsx", "typescript"]) or\
             (node.type in ["function_definition"] and language in ["python"]) or\
+            (node.type in ["method_declaration"] and language in ["c_sharp"]) or\
             (node.type in ["method"] and language in ["ruby"]):
             id: Optional[Node] = None
             for child in node.children:
@@ -384,7 +386,10 @@ class DeclarationFinder:
             if parameters_node is not None:
                 parameters = get_parameters(language=language, node=parameters_node)
             return_type: Optional[Type] = None
-            return_type_node = node.child_by_field_name("return_type")
+            if language == 'c_sharp':
+                return_type_node = node.child_by_field_name("type")
+            else:
+                return_type_node = node.child_by_field_name("return_type")
             if return_type_node is not None:
                 return_type = parse_type(language=language, node=return_type_node)
             if (

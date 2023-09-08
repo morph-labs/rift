@@ -4,7 +4,7 @@ import os
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 from urllib.parse import urlparse
 
-Language = Literal["c", "cpp", "javascript", "ocaml", "python", "rescript", "typescript", "tsx", "ruby"]
+Language = Literal["c", "cpp", "c_sharp", "javascript", "ocaml", "python", "rescript", "typescript", "tsx", "ruby"]
 # e.g. ("A", "B", "foo") for function foo inside class B inside class A
 QualifiedId = str
 Pos = Tuple[int, int]  # (line, column)
@@ -443,6 +443,8 @@ def language_from_file_extension(file_path: str) -> Optional[Language]:
         or file_path.endswith(".c++")
     ):
         return "cpp"
+    elif file_path.endswith(".cs"):
+        return "c_sharp"
     elif file_path.endswith(".js"):
         return "javascript"
     elif file_path.endswith(".ml"):

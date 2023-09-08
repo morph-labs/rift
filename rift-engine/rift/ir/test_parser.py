@@ -128,6 +128,27 @@ class Tests:
         .lstrip()
         .encode("utf-8")
     )
+    code_cs = (
+        dedent(
+            """
+        // This is docstring
+        namespace SampleNamespace
+        {
+            // This is docstring
+            class SampleClass
+            {
+                public int sum(int a, int b)  
+                {  
+                    int sum = a + b;
+                    return sq;
+                }
+            }
+        }
+    """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
     code_ocaml = (
         dedent(
             """
@@ -256,6 +277,7 @@ def get_test_project():
     new_file(IR.Code(Tests.code_tsx), "test.tsx", "tsx", project)
     new_file(IR.Code(Tests.code_py), "test.py", "python", project)
     new_file(IR.Code(Tests.code_cpp), "test.cpp", "cpp", project)
+    new_file(IR.Code(Tests.code_cs), "test.cs", "c_sharp", project)
     new_file(IR.Code(Tests.code_ocaml), "test.ml", "ocaml", project)
     new_file(IR.Code(Tests.code_rescript), "test.res", "rescript", project)
     new_file(IR.Code(Tests.code_ruby), "test.rb", "ruby", project)
