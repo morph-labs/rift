@@ -431,7 +431,7 @@ class DeclarationFinder:
                 self.exported = True
                 return self.find_declarations()
 
-        elif node.type in ["interface_declaration", "type_alias_declaration"] and language in ["js", "typescript", "tsx"]:
+        elif node.type in ["interface_declaration", "type_alias_declaration"] and language in ["js", "typescript", "tsx", "c_sharp"]:
             id: Optional[Node] = node.child_by_field_name("name")
             if id is not None:
                 if node.type == "interface_declaration":

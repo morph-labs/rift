@@ -144,6 +144,11 @@ class Tests:
                 }
             }
         }
+
+        interface IEquatable<T>
+        {
+            bool Equals(T obj);
+        }
     """
         )
         .lstrip()

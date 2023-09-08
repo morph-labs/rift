@@ -185,6 +185,11 @@ Namespace: SampleNamespace
    range: ((1, 0), (12, 1))
    substring: (21, 222)
    docstring: // This is docstring
+Interface: IEquatable
+   language: c_sharp
+   range: ((14, 0), (17, 1))
+   substring: (224, 275)
+   body: (248, 275)
 === Symbol Table for test.ml ===
 Function: divide
    language: ocaml
@@ -437,6 +442,7 @@ File: test.cs
   namespace SampleNamespace
     class SampleClass
       public int sum(int a, int b)
+  interface IEquatable<T>
 File: test.ml
   let divide (x:int) y
   let callback () : unit
