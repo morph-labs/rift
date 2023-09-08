@@ -11,6 +11,7 @@
   import type { Transaction } from "@tiptap/pm/state"
   import type { SuggestionOptions } from "@tiptap/suggestion"
   import { FileChip } from "./FileChip"
+    import AtIconSvg from "./icons/AtIconSvg.svelte";
 
 
   const suggestion:Omit<SuggestionOptions<AtableFile>, 'editor'> = {
@@ -220,7 +221,8 @@
     if (e.code === "Enter" && $dropdownStatus != "none") event.preventDefault()
   }
 
-  let editor: Editor | undefined
+let editor: Editor | undefined
+
   onMount(() => {
     editor = new Editor({
       element: _container,
@@ -270,7 +272,15 @@
   }
 </script>
 
-<div class="p-2 border-t border-b border-[var(--vscode-input-background)] w-full relative">
+<div class="p-2 border-t border-b border-[var(--vscode-input-background)] w-full relative flex flex-row">
+  <div class="justify-self-end flex mr-1">
+    <button on:click={() => editor?.chain().focus().insertContent('@').run()}
+      class="items-center flex"
+      title="Add reference to file or symbol"
+      >
+      <AtIconSvg />
+    </button>
+  </div>
   <div
     class={`w-full text-md p-2 bg-[var(--vscode-input-background)] rounded-md flex flex-row items-center border ${
       isFocused ? "border-[var(--vscode-focusBorder)]" : "border-transparent"
