@@ -49,6 +49,7 @@ def parse_code_blocks(code_blocks: List[IR.Code], language: IR.Language) -> IR.F
         parser.parse_code_block(file, block, language)
     return file
 
+
 def get_typing_names_from_types(types: List[IR.Type]) -> Set[str]:
     """
     Get names that need to be imported from "typing" given a list of types.
@@ -59,7 +60,8 @@ def get_typing_names_from_types(types: List[IR.Type]) -> Set[str]:
             names.add(t.name)
         new_names = get_typing_names_from_types(t.arguments)
         names = names.union(new_names)
-    return names      
+    return names
+
 
 def replace_functions_in_document(
     ir_doc: IR.File,
@@ -70,7 +72,9 @@ def replace_functions_in_document(
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
     """
-    function_declarations_in_document: List[IR.ValueDeclaration] = ir_doc.get_function_declarations()
+    function_declarations_in_document: List[
+        IR.ValueDeclaration
+    ] = ir_doc.get_function_declarations()
 
     code_edits: List[IR.CodeEdit] = []
     updated_functions: List[IR.ValueDeclaration] = []
@@ -108,7 +112,10 @@ def replace_functions_in_document(
             code_edits.append(code_edit)
     return (code_edits, updated_functions)
 
-def update_typing_imports(code: IR.Code, language: IR.Language, updated_functions: List[IR.ValueDeclaration]) -> Optional[IR.CodeEdit]:
+
+def update_typing_imports(
+    code: IR.Code, language: IR.Language, updated_functions: List[IR.ValueDeclaration]
+) -> Optional[IR.CodeEdit]:
     file = parse_code_blocks(code_blocks=[code], language=language)
     typing_import = file.search_module_import("typing")
     typing_names: Set[str] = set()
@@ -134,6 +141,7 @@ def update_typing_imports(code: IR.Code, language: IR.Language, updated_function
             substring = typing_import.substring
         code_edit = IR.CodeEdit(substring=substring, new_bytes=import_str.encode("utf-8"))
         return code_edit
+
 
 def replace_functions_from_code_blocks(
     code_blocks: List[IR.Code],

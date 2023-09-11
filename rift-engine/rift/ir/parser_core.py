@@ -1,6 +1,8 @@
 import logging
 from typing import List, Optional, Tuple
 
+from tree_sitter import Node
+
 from rift.ir.IR import (
     ClassKind,
     Code,
@@ -25,13 +27,14 @@ from rift.ir.IR import (
     ValueDeclaration,
     ValueKind,
 )
-from tree_sitter import Node
 
 logger = logging.getLogger(__name__)
 
+
 def dump_node(node: Node) -> str:
-    """ Dump a node for debugging purposes. """
+    """Dump a node for debugging purposes."""
     return f"  type:{node.type} children:{node.child_count}\n  code:{node.text.decode()}\n  sexp:{node.sexp()}"
+
 
 def parse_type(language: Language, node: Node) -> Type:
     if (
@@ -182,13 +185,12 @@ def contains_direct_return(body: Node):
             return True
     return False
 
+
 class DeclarationFinder:
-    def __init__(
-        self, code: Code, file: File, language: Language, node: Node, scope: Scope
-    ):
+    def __init__(self, code: Code, file: File, language: Language, node: Node, scope: Scope):
         self.code = code
         self.file = file
-        self.language : Language = language
+        self.language: Language = language
         self.node = node
         self.scope = scope
 
@@ -211,8 +213,16 @@ class DeclarationFinder:
             value_kind=value_kind,
         )
 
-    def mk_fun_decl(self, id: Node, parents: List[Node], parameters: List[Parameter] = [], return_type: Optional[Type] = None):
-        value_kind = FunctionKind(has_return=self.has_return, parameters=parameters, return_type=return_type)
+    def mk_fun_decl(
+        self,
+        id: Node,
+        parents: List[Node],
+        parameters: List[Parameter] = [],
+        return_type: Optional[Type] = None,
+    ):
+        value_kind = FunctionKind(
+            has_return=self.has_return, parameters=parameters, return_type=return_type
+        )
         return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
 
     def mk_val_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None):
@@ -227,7 +237,9 @@ class DeclarationFinder:
         value_kind = InterfaceKind()
         return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
 
-    def mk_container_decl(self, id: Node, parents: List[Node], body: List[Statement], container_kind: ContainerKind):
+    def mk_container_decl(
+        self, id: Node, parents: List[Node], body: List[Statement], container_kind: ContainerKind
+    ):
         return ContainerDeclaration(
             container_kind=container_kind,
             body=body,
@@ -242,17 +254,25 @@ class DeclarationFinder:
             substring=(parents[0].start_byte, parents[-1].end_byte),
         )
 
-    def mk_class_decl(self, id: Node, body: List[Statement], parents: List[Node], superclasses: Optional[str]):
+    def mk_class_decl(
+        self, id: Node, body: List[Statement], parents: List[Node], superclasses: Optional[str]
+    ):
         container_kind = ClassKind(superclasses=superclasses)
-        return self.mk_container_decl(id=id, body=body, container_kind=container_kind, parents=parents)
+        return self.mk_container_decl(
+            id=id, body=body, container_kind=container_kind, parents=parents
+        )
 
     def mk_namespace_decl(self, id: Node, body: List[Statement], parents: List[Node]):
         container_kind = NamespaceKind()
-        return self.mk_container_decl(id=id, body=body, container_kind=container_kind, parents=parents)
+        return self.mk_container_decl(
+            id=id, body=body, container_kind=container_kind, parents=parents
+        )
 
     def mk_module_decl(self, id: Node, body: List[Statement], parents: List[Node]):
         container_kind = ModuleKind()
-        return self.mk_container_decl(id=id, body=body, container_kind=container_kind, parents=parents)
+        return self.mk_container_decl(
+            id=id, body=body, container_kind=container_kind, parents=parents
+        )
 
     def process_ocaml_body(self, n: Node) -> Tuple[Optional[Type], Optional[Node]]:
         type = None
@@ -283,10 +303,10 @@ class DeclarationFinder:
                 start_node = start_node.next_sibling
             self.body_sub = (start_node.start_byte, self.node.end_byte)
         return self.node
-    
+
     def process_body(self) -> Optional[Node]:
         if self.language == "ocaml":
-            pass # handled for each declaration in a let binding
+            pass  # handled for each declaration in a let binding
         elif self.language == "ruby":
             return self.process_ruby_body()
         else:
@@ -306,15 +326,18 @@ class DeclarationFinder:
         language = self.language
         body_node = self.process_body()
 
-        if\
-            (node.type in ["class_specifier"] and language in [ "c", "cpp"]) or \
-            (node.type in ["class_declaration"] and language in ["javascript", "tsx", "typescript", "c_sharp"]) or \
-            (node.type in ["class_definition"] and language in ["python"]) or \
-            (node.type in ["namespace_definition"] and language in ["cpp"]) or \
-            (node.type in ["namespace_declaration"] and language in ["c_sharp"]) or \
-            (node.type in ["class", "module"] and language == "ruby"):
-
-            is_namespace = (node.type in ["namespace_definition", "namespace_declaration"])
+        if (
+            (node.type in ["class_specifier"] and language in ["c", "cpp"])
+            or (
+                node.type in ["class_declaration"]
+                and language in ["javascript", "tsx", "typescript", "c_sharp"]
+            )
+            or (node.type in ["class_definition"] and language in ["python"])
+            or (node.type in ["namespace_definition"] and language in ["cpp"])
+            or (node.type in ["namespace_declaration"] and language in ["c_sharp"])
+            or (node.type in ["class", "module"] and language == "ruby")
+        ):
+            is_namespace = node.type in ["namespace_definition", "namespace_declaration"]
             is_module = node.type == "module"
             superclasses_node = node.child_by_field_name("superclasses")
             superclasses = None
@@ -329,11 +352,18 @@ class DeclarationFinder:
                     separator = "."
                 new_scope = self.scope + name.text.decode() + separator
                 body = process_body(
-                    code=self.code, file=self.file, language=language, node=body_node, scope=new_scope
+                    code=self.code,
+                    file=self.file,
+                    language=language,
+                    node=body_node,
+                    scope=new_scope,
                 )
                 self.docstring = ""
                 # see if the first child is a string expression statements, and if so, use it as the docstring
-                if body_node.child_count > 0 and body_node.children[0].type == "expression_statement":
+                if (
+                    body_node.child_count > 0
+                    and body_node.children[0].type == "expression_statement"
+                ):
                     stmt = body_node.children[0]
                     if len(stmt.children) > 0 and stmt.children[0].type == "string":
                         docstring_node = stmt.children[0]
@@ -348,14 +378,22 @@ class DeclarationFinder:
                 elif is_module:
                     declaration = self.mk_module_decl(id=name, body=body, parents=[node])
                 else:
-                    declaration = self.mk_class_decl(id=name, body=body, parents=[node], superclasses=superclasses)
+                    declaration = self.mk_class_decl(
+                        id=name, body=body, parents=[node], superclasses=superclasses
+                    )
                 self.file.add_symbol(declaration)
                 return [declaration]
 
         elif node.type in ["decorated_definition"] and language == "python":  # python decorator
             defitinion = node.child_by_field_name("definition")
             if defitinion is not None:
-                finder = DeclarationFinder(code=self.code, file=self.file, language=language, node=defitinion, scope=self.scope)
+                finder = DeclarationFinder(
+                    code=self.code,
+                    file=self.file,
+                    language=language,
+                    node=defitinion,
+                    scope=self.scope,
+                )
                 return finder.find_declarations()
 
         elif node.type in ["field_declaration", "function_definition"] and language in ["c", "cpp"]:
@@ -377,15 +415,21 @@ class DeclarationFinder:
                     parameters = get_parameters(language=language, node=child)
             if id is None:
                 return []
-            declaration = self.mk_fun_decl(id=id, parameters=parameters, return_type=type, parents=[node])
+            declaration = self.mk_fun_decl(
+                id=id, parameters=parameters, return_type=type, parents=[node]
+            )
             self.file.add_symbol(declaration)
             return [declaration]
 
-        elif\
-            (node.type in ["function_declaration", "method_definition"] and language in ["javascript", "tsx", "typescript"]) or\
-            (node.type in ["function_definition"] and language in ["python"]) or\
-            (node.type in ["method_declaration"] and language in ["c_sharp"]) or\
-            (node.type in ["method"] and language in ["ruby"]):
+        elif (
+            (
+                node.type in ["function_declaration", "method_definition"]
+                and language in ["javascript", "tsx", "typescript"]
+            )
+            or (node.type in ["function_definition"] and language in ["python"])
+            or (node.type in ["method_declaration"] and language in ["c_sharp"])
+            or (node.type in ["method"] and language in ["ruby"])
+        ):
             id: Optional[Node] = None
             for child in node.children:
                 if child.type in ["identifier", "property_identifier"]:
@@ -395,7 +439,7 @@ class DeclarationFinder:
             if parameters_node is not None:
                 parameters = get_parameters(language=language, node=parameters_node)
             return_type: Optional[Type] = None
-            if language == 'c_sharp':
+            if language == "c_sharp":
                 return_type_node = node.child_by_field_name("type")
             else:
                 return_type_node = node.child_by_field_name("return_type")
@@ -413,11 +457,17 @@ class DeclarationFinder:
             if body_node is not None:
                 self.has_return = contains_direct_return(body_node)
             if id is not None:
-                declaration = self.mk_fun_decl(id=id, parents=[node], parameters=parameters, return_type=return_type)
+                declaration = self.mk_fun_decl(
+                    id=id, parents=[node], parameters=parameters, return_type=return_type
+                )
                 self.file.add_symbol(declaration)
                 return [declaration]
 
-        elif node.type in ["lexical_declaration", "variable_declaration"] and language in ["javascript", "typescript", "tsx"]:
+        elif node.type in ["lexical_declaration", "variable_declaration"] and language in [
+            "javascript",
+            "typescript",
+            "tsx",
+        ]:
             # arrow functions in js/ts e.g. let foo = x => x+1
             for child in node.children:
                 if child.type == "variable_declarator":
@@ -440,7 +490,12 @@ class DeclarationFinder:
                 self.exported = True
                 return self.find_declarations()
 
-        elif node.type in ["interface_declaration", "type_alias_declaration"] and language in ["js", "typescript", "tsx", "c_sharp"]:
+        elif node.type in ["interface_declaration", "type_alias_declaration"] and language in [
+            "js",
+            "typescript",
+            "tsx",
+            "c_sharp",
+        ]:
             id: Optional[Node] = node.child_by_field_name("name")
             if id is not None:
                 if node.type == "interface_declaration":
@@ -452,13 +507,19 @@ class DeclarationFinder:
 
         elif node.type == "value_definition" and language == "ocaml":
             parameters = []
+
             def extract_type(node: Node) -> Type:
                 return parse_type(language, node)
+
             def parse_inner_parameter(inner: Node) -> Optional[Parameter]:
                 if inner.type in ["label_name", "value_pattern"]:
                     name = inner.text.decode()
                     return Parameter(name=name)
-                elif inner.type == "typed_pattern" and inner.child_count == 5 and inner.children[2].type == ":":
+                elif (
+                    inner.type == "typed_pattern"
+                    and inner.child_count == 5
+                    and inner.children[2].type == ":"
+                ):
                     # "(", par, ":", typ, ")"
                     id = inner.children[1]
                     tp = inner.children[3]
@@ -470,6 +531,7 @@ class DeclarationFinder:
                     name = "()"
                     type = Type("unit")
                     return Parameter(name=name, type=type)
+
             def parse_ocaml_parameter(parameter: Node) -> None:
                 if parameter.child_count == 1:
                     inner_parameter = parse_inner_parameter(parameter.children[0])
@@ -480,13 +542,21 @@ class DeclarationFinder:
                     if inner_parameter is not None:
                         inner_parameter.name = parameter.children[0].type + inner_parameter.name
                         parameters.append(inner_parameter)
-                elif parameter.child_count == 4 and parameter.children[0].type in ["~", "?"] and parameter.children[2].type == ":":
+                elif (
+                    parameter.child_count == 4
+                    and parameter.children[0].type in ["~", "?"]
+                    and parameter.children[2].type == ":"
+                ):
                     # "~", par, ":", name
                     inner_parameter = parse_inner_parameter(parameter.children[1])
                     if inner_parameter is not None:
                         inner_parameter.name = parameter.children[0].type + inner_parameter.name
                         parameters.append(inner_parameter)
-                elif parameter.child_count == 6 and parameter.children[0].type in ["~", "?"] and parameter.children[3].type == ":":
+                elif (
+                    parameter.child_count == 6
+                    and parameter.children[0].type in ["~", "?"]
+                    and parameter.children[3].type == ":"
+                ):
                     # "~", "(", par, ":", typ, ")"
                     inner_parameter = parse_inner_parameter(parameter.children[2])
                     if inner_parameter is not None:
@@ -494,7 +564,11 @@ class DeclarationFinder:
                         type = extract_type(parameter.children[4])
                         inner_parameter.type = type
                         parameters.append(inner_parameter)
-                elif parameter.child_count == 6 and parameter.children[0].type == "?" and parameter.children[3].type == "=":
+                elif (
+                    parameter.child_count == 6
+                    and parameter.children[0].type == "?"
+                    and parameter.children[3].type == "="
+                ):
                     # "?", "(", par, "=", val, ")"
                     inner_parameter = parse_inner_parameter(parameter.children[2])
                     if inner_parameter is not None:
@@ -502,6 +576,7 @@ class DeclarationFinder:
                         type = extract_type(parameter.children[4]).create_type_of()
                         inner_parameter.type = type
                         parameters.append(inner_parameter)
+
             declarations: List[SymbolInfo] = []
             for child in node.children:
                 if child.type == "let_binding":
@@ -513,13 +588,23 @@ class DeclarationFinder:
                                 parse_ocaml_parameter(grandchild)
                         parents = [n for n in (child.prev_sibling, child) if n]
                         # let rec: add node of type "let" if present before the first parent
-                        if len(parents) > 0 and parents[0].prev_sibling is not None and parents[0].prev_sibling.type == "let":
+                        if (
+                            len(parents) > 0
+                            and parents[0].prev_sibling is not None
+                            and parents[0].prev_sibling.type == "let"
+                        ):
                             parents = [parents[0].prev_sibling] + parents
                         if parameters != []:
                             declaration = self.mk_fun_decl(
-                                id=pattern_node, parents=parents, parameters=parameters, return_type=return_type)
+                                id=pattern_node,
+                                parents=parents,
+                                parameters=parameters,
+                                return_type=return_type,
+                            )
                         else:
-                            declaration = self.mk_val_decl(id=pattern_node, parents=parents, type=return_type)
+                            declaration = self.mk_val_decl(
+                                id=pattern_node, parents=parents, type=return_type
+                            )
                         self.file.add_symbol(declaration)
                         declarations.append(declaration)
             return declarations
@@ -532,22 +617,33 @@ class DeclarationFinder:
                     if name is not None:
                         new_scope = self.scope + name.text.decode() + "."
                         if body_node is not None:
-                            body = process_body(code=self.code, file=self.file, language=language, node=body_node, scope=new_scope)
+                            body = process_body(
+                                code=self.code,
+                                file=self.file,
+                                language=language,
+                                node=body_node,
+                                scope=new_scope,
+                            )
                         else:
                             body = []
                         declaration = self.mk_module_decl(id=name, body=body, parents=[node])
                         self.file.add_symbol(declaration)
                         return [declaration]
-        
+
         elif node.type == "let_declaration" and language == "rescript":
             return_type = None
+
             def parse_res_parameter(par: Node, parameters: List[Parameter]) -> None:
                 if par.type in ["(", ")", ","]:
                     pass
                 elif par.type == "parameter" and par.child_count >= 1:
                     nodes = par.children
                     type: Optional[Type] = None
-                    if len(nodes) >= 2 and nodes[1].type == "type_annotation" and len(nodes[1].children) >= 2:
+                    if (
+                        len(nodes) >= 2
+                        and nodes[1].type == "type_annotation"
+                        and len(nodes[1].children) >= 2
+                    ):
                         type = parse_type(language, nodes[1].children[1])
                     default_value = None
                     if nodes[0].type == "labeled_parameter":
@@ -566,6 +662,7 @@ class DeclarationFinder:
                     parameters.append(Parameter(default_value=default_value, name=name, type=type))
                 else:
                     logger.warning(f"Unexpected parameter type: {par.type}")
+
             def parse_res_parameters(exp: Node, parameters: List[Parameter]) -> None:
                 nonlocal return_type
                 if exp.type == "function":
@@ -577,21 +674,34 @@ class DeclarationFinder:
                         if nodes[1].type == "type_annotation" and nodes[1].child_count >= 2:
                             return_type = parse_type(language, nodes[1].children[1])
                         if self.body_sub is not None:
-                                self.body_sub = (nodes[-2].start_byte, self.body_sub[1])
-            def parse_res_let_binding(nodes: List[Node], parents: List[Node]) -> Optional[ValueDeclaration]:
+                            self.body_sub = (nodes[-2].start_byte, self.body_sub[1])
+
+            def parse_res_let_binding(
+                nodes: List[Node], parents: List[Node]
+            ) -> Optional[ValueDeclaration]:
                 id = None
                 exp = None
                 typ = None
                 if len(nodes) == 0:
                     pass
-                elif len(nodes) == 3 and nodes[0].type == "value_identifier" and nodes[1].text == b"=":
+                elif (
+                    len(nodes) == 3
+                    and nodes[0].type == "value_identifier"
+                    and nodes[1].text == b"="
+                ):
                     id = nodes[0]
                     exp = nodes[2]
                     self.body_sub = (nodes[1].start_byte, exp.end_byte)
-                elif len(nodes) > 2 and nodes[0].type == "parenthesized_pattern" and nodes[1].type == "=":
-                    pat = nodes[0].children[1:-1] # remove ( and )
+                elif (
+                    len(nodes) > 2
+                    and nodes[0].type == "parenthesized_pattern"
+                    and nodes[1].type == "="
+                ):
+                    pat = nodes[0].children[1:-1]  # remove ( and )
                     return parse_res_let_binding(pat + nodes[1:], parents)
-                elif len(nodes) == 4 and nodes[1].type == "type_annotation" and nodes[2].type == "=":
+                elif (
+                    len(nodes) == 4 and nodes[1].type == "type_annotation" and nodes[2].type == "="
+                ):
                     id = nodes[0]
                     typ = nodes[1]
                     exp = nodes[3]
@@ -614,29 +724,46 @@ class DeclarationFinder:
                             type = parse_type(language, typ.children[1])
                         declaration = self.mk_val_decl(id=id, parents=parents, type=type)
                     else:
-                        declaration = self.mk_fun_decl(id=id, parents=parents, parameters=parameters, return_type=return_type)
+                        declaration = self.mk_fun_decl(
+                            id=id, parents=parents, parameters=parameters, return_type=return_type
+                        )
                     self.file.add_symbol(declaration)
                     return declaration
+
             declarations: List[SymbolInfo] = []
             for child in node.children:
                 if child.type == "let_binding":
                     parents = [n for n in (child.prev_sibling, child) if n]
                     # let rec: add node of type "let" if present before the first parent
-                    if len(parents) > 0 and parents[0].prev_sibling is not None and parents[0].prev_sibling.type == "let":
+                    if (
+                        len(parents) > 0
+                        and parents[0].prev_sibling is not None
+                        and parents[0].prev_sibling.type == "let"
+                    ):
                         parents = [parents[0].prev_sibling] + parents
                     decl = parse_res_let_binding(nodes=child.children, parents=parents)
                     if decl is not None:
                         declarations.append(decl)
             return declarations
         elif node.type == "module_declaration" and language == "rescript":
+
             def parse_module_binding(nodes: List[Node]) -> List[SymbolInfo]:
                 id = None
                 body = None
-                if len(nodes) == 3 and nodes[0].type == "module_identifier" and nodes[1].type == "=":
+                if (
+                    len(nodes) == 3
+                    and nodes[0].type == "module_identifier"
+                    and nodes[1].type == "="
+                ):
                     id = nodes[0]
                     body = nodes[2]
                     self.body_sub = (nodes[0].end_byte, nodes[2].end_byte)
-                elif len(nodes) == 5 and nodes[0].type == "module_identifier" and nodes[1].type == ":" and nodes[3].type == "=":
+                elif (
+                    len(nodes) == 5
+                    and nodes[0].type == "module_identifier"
+                    and nodes[1].type == ":"
+                    and nodes[3].type == "="
+                ):
                     id = nodes[0]
                     body = nodes[4]
                     self.body_sub = (nodes[0].end_byte, nodes[4].end_byte)
@@ -644,13 +771,20 @@ class DeclarationFinder:
                     print(f"Unexpected module_binding nodes:{len(nodes)}")
                 if id is not None and body is not None:
                     new_scope = self.scope + id.text.decode() + "."
-                    body = process_body(code=self.code, file=self.file, language=language, node=body, scope=new_scope)
+                    body = process_body(
+                        code=self.code,
+                        file=self.file,
+                        language=language,
+                        node=body,
+                        scope=new_scope,
+                    )
                     declaration = self.mk_module_decl(id=id, body=body, parents=[node])
                     self.file.add_symbol(declaration)
                     return [declaration]
                 else:
                     return []
-            if len (node.children) == 2:
+
+            if len(node.children) == 2:
                 m1 = node.children[1]
                 if m1.type == "module_binding":
                     nodes = m1.children
@@ -668,10 +802,13 @@ def process_body(
     statements: List[Statement] = []
     for child in node.children:
         if language == "ruby" and child.text.decode() == "name":
-            continue 
-        statement = process_statement(code=code, file=file, language=language, node=child, scope=scope)
+            continue
+        statement = process_statement(
+            code=code, file=file, language=language, node=child, scope=scope
+        )
         statements.append(statement)
     return statements
+
 
 def find_import(node: Node) -> Optional[Import]:
     substring = (node.start_byte, node.end_byte)
@@ -686,6 +823,7 @@ def find_import(node: Node) -> Optional[Import]:
         else:
             module_name = None
         return Import(names=names, module_name=module_name, substring=substring)
+
 
 def process_statement(
     code: Code, file: File, language: Language, node: Node, scope: Scope

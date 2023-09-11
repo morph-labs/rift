@@ -184,7 +184,9 @@ def test_response():
         language=language,
         replace_body=False,
     )
-    edit_imports = response.update_typing_imports(code=document3, language=language, updated_functions=updated_functions)
+    edit_imports = response.update_typing_imports(
+        code=document3, language=language, updated_functions=updated_functions
+    )
     if edit_imports is not None:
         edits3.append(edit_imports)
 

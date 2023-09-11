@@ -187,7 +187,9 @@ def main(
 
 def entrypoint():
     import fire
+
     fire.Fire(main)
+
 
 if __name__ == "__main__":
     entrypoint()

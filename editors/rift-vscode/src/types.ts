@@ -1,7 +1,6 @@
 import type * as vscode from "vscode";
 import type { TextDocumentIdentifier } from "vscode-languageclient/node";
 
-
 export interface Task {
   description: string;
   status: AgentStatus;
@@ -32,20 +31,20 @@ export type AgentRegistryItem = {
 export class WebviewAgent {
   type: string;
   hasNotification: boolean;
-  isDeleted: boolean = false;
+  isDeleted = false;
   chatHistory: ChatMessage[];
   inputRequest?: InputRequest | null;
   taskWithSubtasks?: TaskWithSubtasks;
-  isStreaming: boolean = false;
-  streamingText: string = "";
-  doesShowAcceptRejectBar: boolean = false;
+  isStreaming = false;
+  streamingText = "";
+  doesShowAcceptRejectBar = false;
 
   constructor(
     type: string,
     hasNotification?: boolean,
     chatHistory?: ChatMessage[],
     inputRequest?: InputRequest | null,
-    tasks?: TaskWithSubtasks
+    tasks?: TaskWithSubtasks,
   ) {
     this.type = type;
     this.hasNotification = hasNotification ?? false;
@@ -93,7 +92,11 @@ export type OptionalTextDocument = {
   version: number;
 } | null;
 
-export type EditorMetadata = { selection: vscode.Selection | null, position: vscode.Position | null, textDocument: OptionalTextDocument };
+export type EditorMetadata = {
+  selection: vscode.Selection | null;
+  position: vscode.Position | null;
+  textDocument: OptionalTextDocument;
+};
 
 export interface AgentParams {
   agent_type: string;

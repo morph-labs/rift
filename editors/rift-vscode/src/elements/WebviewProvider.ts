@@ -18,7 +18,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
   constructor(
     public name: "Chat" | "Logs",
     private readonly _extensionUri: vscode.Uri,
-    public morph_language_client: MorphLanguageClient
+    public morph_language_client: MorphLanguageClient,
   ) {}
 
   // Posts a message to the webview view.
@@ -31,7 +31,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
       console.log("postMessage to: ", endpoint);
       console.log("with message: ", message);
       console.error(
-        `No view available for ${this.name}. Its possibly collapsed`
+        `No view available for ${this.name}. Its possibly collapsed`,
       );
     } else {
       this._view.webview.postMessage({ type: endpoint, data: message });
@@ -45,7 +45,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
     context: vscode.WebviewViewResolveContext,
-    _token: vscode.CancellationToken
+    _token: vscode.CancellationToken,
   ) {
     let editor: vscode.TextEditor | undefined;
     this._view = webviewView;
@@ -57,7 +57,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
     this.postMessage(
       "stateUpdate",
-      this.morph_language_client.getWebviewState()
+      this.morph_language_client.getWebviewState(),
     );
 
     interface SelectedAgentIdMessage {
@@ -175,17 +175,17 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         case "chatMessage": {
           console.log(
             "Sending publish message",
-            `${message.agent_type}_${message.agent_id}_chat_request`
+            `${message.agent_type}_${message.agent_id}_chat_request`,
           );
 
           this.morph_language_client.sendChatHistoryChange(
             message.agent_id,
-            message.messages
+            message.messages,
           );
 
           PubSub.pub(
             `${message.agent_type}_${message.agent_id}_chat_request`,
-            message
+            message,
           );
 
           break;
@@ -194,11 +194,11 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         case "inputRequest": {
           console.log(
             "Sending publish message",
-            `${message.agent_type}_${message.agent_id}_input_request`
+            `${message.agent_type}_${message.agent_id}_input_request`,
           );
           PubSub.pub(
             `${message.agent_type}_${message.agent_id}_input_request`,
-            message
+            message,
           );
           break;
         }
@@ -213,7 +213,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         case "sendHasNotificationChange": {
           this.morph_language_client.sendHasNotificationChange(
             message.agentId,
-            message.hasNotification
+            message.hasNotification,
           );
           break;
         }
@@ -256,19 +256,23 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
   private _getHtmlForWebview(webview: vscode.Webview) {
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "out", `compiled/${this.name}.js`)
+      vscode.Uri.joinPath(
+        this._extensionUri,
+        "out",
+        `compiled/${this.name}.js`,
+      ),
     );
 
     const cssUri = webview.asWebviewUri(
       vscode.Uri.joinPath(
         this._extensionUri,
         "out",
-        `compiled/${this.name}.css`
-      )
+        `compiled/${this.name}.css`,
+      ),
     );
 
     const stylesResetUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "media", "reset.css")
+      vscode.Uri.joinPath(this._extensionUri, "media", "reset.css"),
     );
 
     const tailwindUri = webview.asWebviewUri(
@@ -276,8 +280,8 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         this._extensionUri,
         "media",
         "scripts",
-        "tailwind.min.js"
-      )
+        "tailwind.min.js",
+      ),
     );
 
     const showdownUri = webview.asWebviewUri(
@@ -285,8 +289,8 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         this._extensionUri,
         "media",
         "scripts",
-        "showdown.min.js"
-      )
+        "showdown.min.js",
+      ),
     );
 
     const microlightUri = webview.asWebviewUri(
@@ -294,8 +298,8 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         this._extensionUri,
         "media",
         "scripts",
-        "microlight.min.js"
-      )
+        "microlight.min.js",
+      ),
     );
 
     // Use a nonce to only allow specific scripts to be run

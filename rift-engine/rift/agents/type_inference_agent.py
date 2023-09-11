@@ -8,6 +8,7 @@ from typing import Any, ClassVar, Coroutine, Dict, List, Optional, Tuple, cast
 from urllib.parse import urlparse
 
 import openai
+
 import rift.agents.abstract as agent
 import rift.agents.registry as registry
 import rift.ir.IR as IR
@@ -22,8 +23,11 @@ from rift.ir.missing_types import (
     files_missing_types_in_project,
     functions_missing_types_in_file,
 )
-from rift.ir.response import extract_blocks_from_response, replace_functions_from_code_blocks, update_typing_imports
-
+from rift.ir.response import (
+    extract_blocks_from_response,
+    replace_functions_from_code_blocks,
+    update_typing_imports,
+)
 from rift.lsp import LspServer
 from rift.util.TextStream import TextStream
 
@@ -227,21 +231,23 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
         collected_messages: List[str] = []
 
         async def feed_task():
-            openai.api_key = os.environ.get('OPENAI_API_KEY')
-            completion: List[Dict[str, Any]] = openai.ChatCompletion.create( # type: ignore
+            openai.api_key = os.environ.get("OPENAI_API_KEY")
+            completion: List[Dict[str, Any]] = openai.ChatCompletion.create(  # type: ignore
                 model=Config.model, messages=prompt, temperature=Config.temperature, stream=True
             )
             for chunk in completion:
                 await asyncio.sleep(0.0001)
                 chunk_message_dict = chunk["choices"][0]  # type: ignore
-                chunk_message: str = chunk_message_dict["delta"].get("content")  # extract the message
+                chunk_message: str = chunk_message_dict["delta"].get(
+                    "content"
+                )  # extract the message
                 if chunk_message_dict["finish_reason"] is None and chunk_message:
                     collected_messages.append(chunk_message)  # save the message
                     response_stream.feed_data(chunk_message)
             response_stream.feed_eof()
 
-        response_stream._feed_task = asyncio.create_task( # type: ignore
-            self.add_task( # type: ignore
+        response_stream._feed_task = asyncio.create_task(  # type: ignore
+            self.add_task(  # type: ignore
                 f"Generate type annotations for {'/'.join(mt.function_declaration.name for mt in missing_types)}",
                 feed_task,
             ).run()
@@ -284,11 +290,14 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
         groups_of_missing_types = self.split_missing_types_in_groups(fmt.missing_types)
 
         for missing_types in groups_of_missing_types:
-            new_edits, updated_functions = await self.code_edits_for_missing_files(document, language, missing_types)
+            new_edits, updated_functions = await self.code_edits_for_missing_files(
+                document, language, missing_types
+            )
             file_process.edits += new_edits
             file_process.updated_functions += updated_functions
         edit_imports = update_typing_imports(
-            code=document, language=language, updated_functions=file_process.updated_functions)
+            code=document, language=language, updated_functions=file_process.updated_functions
+        )
         if edit_imports is not None:
             file_process.edits.append(edit_imports)
         new_document = fmt.code.apply_edits(file_process.edits)
@@ -349,7 +358,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
                 agent.RequestChatRequest(messages=self.get_state().messages)
             )
             return result
-        
+
         await self.send_progress()
         text_document = self.get_state().params.textDocument
         if text_document is not None:
@@ -363,7 +372,9 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
 
         get_user_response_task = AgentTask("Get user response", get_user_response)
         self.set_tasks([get_user_response_task])
-        user_response_coro = cast(Coroutine[None, None, Optional[str]], get_user_response_task.run())
+        user_response_coro = cast(
+            Coroutine[None, None, Optional[str]], get_user_response_task.run()
+        )
         user_response_task = asyncio.create_task(user_response_coro)
         await self.send_progress()
         user_response = await user_response_task

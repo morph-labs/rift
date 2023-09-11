@@ -1,10 +1,11 @@
+import functools
 import logging
 import os
-import functools
 import weakref
 from typing import Literal, Optional, Tuple
 
 from pydantic import BaseModel, SecretStr
+
 from rift.llm.abstract import AbstractChatCompletionProvider, AbstractCodeCompletionProvider
 
 
@@ -96,7 +97,9 @@ def create_client_core(
             kwargs["api_key"] = openai_api_key
         else:
             if not os.environ.get("OPENAI_API_KEY"):
-                logging.getLogger().error("Trying to create an OpenAIClient without an OpenAI key set in Rift settings or set as the OPENAI_API_KEY environment variable.")
+                logging.getLogger().error(
+                    "Trying to create an OpenAIClient without an OpenAI key set in Rift settings or set as the OPENAI_API_KEY environment variable."
+                )
         if path:
             kwargs["api_url"] = path
         return OpenAIClient.parse_obj(kwargs)

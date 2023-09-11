@@ -1,25 +1,25 @@
-import sys
 import asyncio
 import glob
 import json
 import logging
 import os
+import sys
 import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 import pydantic
+
 import rift.lsp.types as lsp
 from rift.agents import AGENT_REGISTRY, Agent, AgentParams, AgentRegistryResult
+from rift.ir.completions import get_symbol_completions_raw
+from rift.ir.parser import parse_files_in_paths
 from rift.llm.abstract import AbstractChatCompletionProvider, AbstractCodeCompletionProvider
 from rift.llm.create import ModelConfig, parse_type_name_path
 from rift.lsp import LspServer as BaseLspServer
 from rift.lsp import rpc_method
 from rift.rpc import RpcServerStatus
 from rift.util.ofdict import ofdict, todict
-
-from rift.ir.completions import get_symbol_completions_raw
-from rift.ir.parser import parse_files_in_paths
 
 logger = logging.getLogger(__name__)
 
