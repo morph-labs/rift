@@ -18,8 +18,8 @@
   items: ({ query }) => {
             const allFiles = Array.from(
                 new Set([
-                    ...$state.symbols,
                     ...$state.files.recentlyOpenedFiles,
+                    ...$state.symbols,
                     ...$state.files.nonGitIgnoredFiles,
                 ])
             );

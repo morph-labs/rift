@@ -277,21 +277,9 @@ export class MorphLanguageClient
                     this.on_config_change.bind(this)
                 )
             );
-
-            // the below 3 lines populate the webview state with initial state needed for @URI chips
-            const activeUri = vscode.window.activeTextEditor?.document.uri;
-            if (activeUri) {
-                this.webviewState.update((pS) => ({
-                    ...pS,
-                    files: {
-                        ...pS.files,
-                        recentlyOpenedFiles: [AtableFileFromUri(activeUri)],
-                    },
-                }));
-                this.fetchSymbolsForRecentFiles([activeUri.fsPath]);
-            }
-            this.refreshNonGitIgnoredFiles();
-            this.refreshAvailableAgents();
+          this.initializeRecentFileObservers()
+          this.refreshNonGitIgnoredFiles()
+          this.refreshAvailableAgents()
         });
 
         this.changeLensEmitter = new vscode.EventEmitter<void>();
@@ -857,7 +845,57 @@ export class MorphLanguageClient
         });
     }
 
-    sendRecentlyOpenedFilesChange(recentlyOpenedFiles: string[]) {
+    private initializeRecentFileObservers() {
+        let recentlyOpenedFiles: string[] = []
+        const onUriInteractedWith = (uri: vscode.Uri) => {
+            if (uri.scheme !== "file") return
+
+            const filePath = uri.fsPath
+            // Check if file path already exists in the recent files list
+            const existingIndex = recentlyOpenedFiles.indexOf(filePath)
+
+            // If the file is found, remove it from the current location
+            if (existingIndex > -1) {
+                recentlyOpenedFiles.splice(existingIndex, 1)
+            }
+
+            // Add the file to the front of the list (top of the stack)
+            recentlyOpenedFiles.unshift(filePath)
+
+            // Limit the history to the last 10 files
+            if (recentlyOpenedFiles.length > 10) {
+                recentlyOpenedFiles.pop()
+            }
+
+            this.sendRecentlyOpenedFilesChange(recentlyOpenedFiles)
+        }
+
+        this.context.subscriptions.push(
+            vscode.workspace.onDidOpenTextDocument((d) =>
+                onUriInteractedWith(d.uri)
+            )
+        )
+
+        const initialDocumentUri = vscode.window.activeTextEditor?.document.uri
+        if (initialDocumentUri) {
+            onUriInteractedWith(initialDocumentUri)
+        }
+
+        let changeDelay: NodeJS.Timeout
+        this.context.subscriptions.push(
+            vscode.workspace.onDidChangeTextDocument((change) => {
+                if (recentlyOpenedFiles.includes(change.document.uri.fsPath)) {
+                    clearTimeout(changeDelay)
+                    changeDelay = setTimeout(() => {
+                        onUriInteractedWith(change.document.uri)
+                    }, 1000)
+                }
+            })
+        )
+    }
+
+
+    private sendRecentlyOpenedFilesChange(recentlyOpenedFiles: string[]) {
         const atableFiles = recentlyOpenedFiles.map((fspath) =>
             AtableFileFromFsPath(fspath)
         );
@@ -871,35 +909,37 @@ export class MorphLanguageClient
     }
 
     private async fetchSymbolsForRecentFiles(recentlyOpenedFiles: string[]) {
-        // TODO: turn this back on for symbol @-completion
-        // try {
-        //     const parsedSymbols = await this.client?.sendRequest<{
-        //         symbols: AgentSymbols;
-        //         project_root: string;
-        //     }>("morph/parseSymbolsFromFiles", recentlyOpenedFiles);
-        //     console.log("got parsed symbols for files", {
-        //         recentlyOpenedFiles,
-        //         parsedSymbols,
-        //     });
-        //     if (parsedSymbols) {
-        //         const newSymbols = parsedSymbols.symbols.flatMap((symbolFile) => symbolFile.symbols.map((symbol) => {
-        //             const uri = vscode.Uri.file(
-        //                 parsedSymbols.project_root + "/" + symbolFile.path
-        //             ).with({ fragment: symbol.scope + symbol.name });
-        //             return AtableFileFromUri(uri);
-        //         })
-        //         );
-        //         this.webviewState.update((pS) => ({
-        //             ...pS,
-        //             symbols: newSymbols,
-        //         }));
-        //     }
-        // } catch (e) {
-        //     console.error("error getting symbols from files", {
-        //         e,
-        //         recentlyOpenedFiles,
-        //     });
-        // }
+        try {
+            const parsedSymbols = await this.client?.sendRequest<{
+                symbols: AgentSymbols
+                project_root: string
+            }>("morph/parseSymbolsFromFiles", recentlyOpenedFiles)
+
+            console.log("got parsed symbols for files", {
+                recentlyOpenedFiles,
+                parsedSymbols,
+                client: this.client
+            })
+            if (parsedSymbols) {
+                const newSymbols = parsedSymbols.symbols.flatMap((symbolFile) =>
+                    symbolFile.symbols.map((symbol) => {
+                        const uri = vscode.Uri.file(
+                            parsedSymbols.project_root + "/" + symbolFile.path
+                        ).with({ fragment: symbol.scope + symbol.name })
+                        return AtableFileFromUri(uri)
+                    })
+                )
+                this.webviewState.update((pS) => ({
+                    ...pS,
+                    symbols: newSymbols,
+                }))
+            }
+        } catch (e) {
+            console.error("error getting symbols from files", {
+                e,
+                recentlyOpenedFiles,
+            })
+        }
     }
 
     focusOmnibar() {
