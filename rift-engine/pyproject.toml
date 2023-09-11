@@ -19,6 +19,7 @@ authors = [
 dependencies = [
   "aiohttp",
   "pydantic[dotenv]==1.*",
+  "pydantic-settings",
   "python-dotenv",
   "rich",
   "fire",

@@ -39,6 +39,7 @@ class CurlAgent(Agent):
     params_cls: ClassVar[Any] = CurlAgentParams
 
     async def run(self):
+        
         # Send an initial update
         await self.send_update("Please enter a URL")
 

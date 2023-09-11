@@ -9,7 +9,8 @@ from typing import Any, Optional, List, Dict, Callable
 import rift.lsp.types as lsp
 import rift.util.asyncgen as asg
 
-from pydantic import BaseModel, BaseSettings
+from pydantic import BaseModel
+from pydantic_settings BaseSettings
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from rift.llm.abstract import AbstractCodeCompletionProvider, EditCodeResult, ChatResult, AbstractCodeEditProvider

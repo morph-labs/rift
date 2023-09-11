@@ -21,7 +21,8 @@ from typing import (
 from urllib.parse import parse_qs, urlparse
 
 import aiohttp
-from pydantic import BaseModel, BaseSettings, SecretStr
+from pydantic import BaseModel, SecretStr
+from pydantic_settings import BaseSettings
 
 import rift.lsp.types as lsp
 import rift.util.asyncgen as asg
@@ -41,7 +42,7 @@ from rift.llm.openai_types import (
 )
 from rift.util.TextStream import TextStream
 
-from llama_cpp import Llama
+from llama_cpp.llama import Llama
 from llama_cpp.llama_types import CompletionChunk
 
 logger = logging.getLogger(__name__)
@@ -62,13 +63,30 @@ class SourceCodeFileWithRegion:
     Represents a file that has been split into a region, the parts before/after the region, a natural language instruction, and a completion.
     """
 
+    # The text before the region
     before_region: str
+
+    # The text in the region
     region: str
+
+    # The text after the region
     after_region: str
+
+    # A natural language instruction for completing the task
     instruction: Optional[str] = None
+
+    # The completion of the task
     completion: Optional[str] = None
 
     def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
+        """
+        Formats the source code file with region into a string that can be used for code completion.
+
+        The function takes in three arguments:
+            - `before_cursor`: The text to display before the cursor. Defaults to "PREFIX".
+            - `after_cursor`: The text to display after the cursor. Defaults to "SUFFIX".
+            - `latest_region`: The latest region of code. If not provided, it defaults to the region in this object.
+        """
         formatted = (
             f"[PREFIX]\n{self.before_region}\n[/PREFIX]\n"
             f"[REGION]\n{latest_region or self.region}\n[/REGION]\n"
@@ -77,6 +95,14 @@ class SourceCodeFileWithRegion:
         return formatted
 
     def get_prompt(self):
+        """
+        Generates a prompt for code completion based on the instruction and region in this object.
+
+        The function returns a string that includes:
+            - "Please generate code completing the task which will replace the below region."
+            - The natural language instruction from this object's `instruction` attribute.
+            - The formatted source code file with region, using the latest region if not provided in this object's `region` attribute.
+        """
         assert self.instruction, "instruction not set"
         result = (
             f"### INSTRUCTIONS\n\nPlease generate code completing the task which will replace the below region.\nTask: {self.instruction}\n\n"
@@ -84,6 +110,7 @@ class SourceCodeFileWithRegion:
             + ("\n\n### RESPONSE\n\n")
         )
         return result
+
 
 ENCODER = transformers.AutoTokenizer.from_pretrained("TheBloke/CodeLlama-7B-Instruct-fp16")
 ENCODER_LOCK = Lock()
@@ -137,6 +164,7 @@ def split_sizes(size1: int, size2: int, max_size: int) -> tuple[int, int]:
     available2 = max_size - size1
     size2 = max(size2_bound, available2)
     return size1, size2
+
 
 
 def split_lists(list1: list, list2: list, max_size: int) -> tuple[list, list]:
@@ -370,6 +398,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         keep_untouched = (cached_property,)    
 
     def __init__(self, name: str, model_path: Optional[str] = None):
+        logger.info("client created")
         if model_path is None:
             raise Exception("Must specify path to GGUF model weights on filesystem in Rift settings. Try downloading e.g. `https://huggingface.co/TheBloke/CodeLlama-7B-GGUF/resolve/main/codellama-7b.Q5_K_M.gguf`")
         self.name = name
@@ -496,9 +525,10 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         def worker():
             for chunk in self.model.create_completion(
                 prompt=prompt,
-                temperature=0.0001,
+                temperature=0.1,
                 max_tokens=MAX_LEN_SAMPLED_COMPLETION,
-                stream=True
+                stream=True,
+                mirostat_mode=2,
             ):
                 _send_chunk(chunk["choices"][0]["text"])
             completion_stream.feed_eof()
