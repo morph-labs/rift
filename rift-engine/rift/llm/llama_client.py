@@ -70,19 +70,16 @@ class SourceCodeFileWithRegion:
 
     def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
         formatted = (
-            f"==== {before_cursor} ====\n"
-            f"{self.before_region}\n"
-            f"==== REGION ====\n"
-            f"{latest_region or self.region}\n"
-            f"==== {after_cursor} ====\n"
-            f"{self.after_region}\n"
+            f"[PREFIX]\n{self.before_region}\n[/PREFIX]\n"
+            f"[REGION]\n{latest_region or self.region}\n[/REGION]\n"
+            f"[SUFFIX]\n{self.after_region}\n[/SUFFIX]"
         )
         return formatted
 
     def get_prompt(self):
         assert self.instruction, "instruction not set"
         result = (
-            f"### INSTRUCTIONS\n\nPlease generate code completing the task which will replace the below region. Task: {self.instruction}\n\n"
+            f"### INSTRUCTIONS\n\nPlease generate code completing the task which will replace the below region.\nTask: {self.instruction}\n\n"
             + self.format()
             + ("\n\n### RESPONSE\n\n")
         )
