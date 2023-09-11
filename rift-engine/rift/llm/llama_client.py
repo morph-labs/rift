@@ -499,7 +499,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         def worker():
             for chunk in self.model.create_completion(
                 prompt=prompt,
-                temperature=0.001,
+                temperature=0.0001,
                 max_tokens=MAX_LEN_SAMPLED_COMPLETION,
                 stream=True
             ):
@@ -692,8 +692,10 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
             instruction=goal
         )
 
+        prompt = pre_prompt.get_prompt()
+        logger.info(f"{prompt=}")
         stream = TextStream.from_aiter(
-            self.completion(pre_prompt.get_prompt(), stream=True)
+            self.completion(prompt, stream=True)
         )
         # async def postprocess2(completion_chunk: CompletionChunk) -> str:
         #     if completion_chunk["choices"]:

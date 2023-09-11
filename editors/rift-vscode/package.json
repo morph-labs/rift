@@ -68,7 +68,14 @@
             "openai:gpt-3.5-turbo",
             "openai:gpt-4",
             "hf:bigcode/starcoderbase-3b",
-            "llama:codellama-7b-instruct @ /Users/pv/Downloads/CodeLlama-7B-Instruct-GGUF/ft-9-1.gguf"
+            "llama:codellama-7b-instruct @ /Users/pv/Downloads/CodeLlama-7B-Instruct-GGUF/codellama-7b-instruct.Q5_K_M.gguf",
+            "llama:codellama-7b-instruct @ /Users/pv/zeta/flanlabs/rift/model_weights/ft-9-10-3.gguf",
+            "llama:codellama-7b-instruct @ /Users/pv/zeta/flanlabs/rift/model_weights/ft-9-10.gguf",
+            "llama:codellama-7b-instruct @ /Users/pv/zeta/flanlabs/rift/model_weights/ft-9-9.gguf",
+            "llama:codellama-7b-instruct @ /Users/pv/zeta/flanlabs/rift/model_weights/ft-9-7.gguf",
+            "llama:codellama-7b-instruct @ /Users/pv/zeta/flanlabs/rift/model_weights/ft-9-1.gguf",
+            "gpt4all:orca-mini-7b.ggmlv3.q4_0",
+            "gpt4all:orca-mini-3b.ggmlv3.q4_0"
           ],
           "markdownDescription": "Model to use for code edits. (remember to set the OpenAI API key if using an openai:* model). You can also set your own (use the JSON settings editor), the format is `{type}:{name} [@ {path}]` where `type` is one of `gpt4all`, `openai`, or `hf` (for huggingface models), `name` is the name of the model, and `path` is an optional path to the downloaded model weights."
         },
