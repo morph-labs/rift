@@ -57,7 +57,7 @@ def test_symbol_reference():
     assert res_some_function.symbol is not None
     assert (
         res_some_function.symbol.get_substring_without_body().decode().strip()
-        == "def some_function(self, x:int, y:int) -> int:"
+        == "def some_function(self, x: int, y: int) -> int:"
     )
 
 
