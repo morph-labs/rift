@@ -46,6 +46,54 @@
           "default": null,
           "description": "OpenAI API key"
         },
+        "rift.anthropicKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Anthropic API key"
+        },
+        "rift.cohereKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Cohere API key"
+        },
+        "rift.replicateKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Replicate API Key"
+        },
+        "rift.azureKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Azure OpenAI key"
+        },
+        "rift.azureBase": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Azure OpenAI API Base"
+        },
+        "rift.azureVersion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Azure OpenAI API Version"
+        },
         "rift.riftPath": {
           "type": [
             "string",

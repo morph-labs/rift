@@ -289,6 +289,32 @@ class Agent:
             logger.info("found `rift.openaiKey` in settings, setting `OPENAI_API_KEY` environment variable")
             os.environ["OPENAI_API_KEY"] = settings["openaiKey"]
 
+        # anthropic
+        if "anthropicKey" in settings and settings["anthropicKey"]:
+            logger.info("found `rift.anthropicKey` in settings, setting `ANTHROPIC_API_KEY` environment variable")
+            os.environ["ANTHROPIC_API_KEY"] = settings["anthropicKey"]
+
+        # cohere
+        if "cohereKey" in settings and settings["cohereKey"]:
+            logger.info("found `rift.cohereKey` in settings, setting `COHERE_API_KEY` environment variable")
+            os.environ["COHERE_API_KEY"] = settings["cohereKey"]
+
+        # replicate
+        if "replicateKey" in settings and settings["replicateKey"]:
+            logger.info("found `rift.replicateKey` in settings, setting `REPLICATE_API_KEY` environment variable")
+            os.environ["REPLICATE_API_KEY"] = settings["replicateKey"]
+
+        # azure configs
+        if "azureKey" in settings and settings["azureKey"]:
+            logger.info("found `rift.azureKey` in settings, setting `OPENAI_API_KEY` environment variable")
+            os.environ["AZURE_API_KEY"] = settings["azureKey"]
+        if "azureBase" in settings and settings["azureBase"]:
+            logger.info("found `rift.azureBase` in settings, setting `OPENAI_API_KEY` environment variable")
+            os.environ["AZURE_API_BASE"] = settings["azureBase"]
+        if "azureVersion" in settings and settings["azureVersion"]:
+            logger.info("found `rift.azureVersion` in settings, setting `OPENAI_API_KEY` environment variable")
+            os.environ["AZURE_API_VERSION"] = settings["azureVersion"]
+
     async def main(self):
         """
         The main method called by the LSP server to handle method `morph/run`.

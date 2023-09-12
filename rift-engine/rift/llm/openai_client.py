@@ -39,6 +39,7 @@ from rift.llm.openai_types import (
     Message,
 )
 from rift.util.TextStream import TextStream
+from litellm import completion
 
 logger = logging.getLogger(__name__)
 
@@ -456,6 +457,8 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
             raise ValueError("To use streaming please use the _post_streaming method")
         payload = params.dict(exclude_none=True)
         path = self._make_path(endpoint)
+
+
         async with self.session.post(path, params=self.url_query, json=payload) as resp:
             if not resp.ok:
                 await self.handle_error(resp)
@@ -490,20 +493,21 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
             **kwargs,
         )
         if self.default_model:
+            # select any of the LiteLLM supported LLMs here
             params.model = self.default_model
-        output_type = ChatCompletionResponse
 
         if stream:
-            return self._post_streaming(
-                endpoint,
-                params=params,
-                input_type=input_type,
-                stream_data_type=ChatCompletionChunk,
+            return completion(
+                params,
+                stream=True
             )
         else:
-            return self._post_endpoint(
-                endpoint, params=params, input_type=input_type, output_type=output_type
+            response =  completion(
+                params,
+                stream=True
             )
+            for chunk in response:
+                yield chunk # text content found at chunk['choices'][0]['delta']
 
     async def run_chat(
         self,
