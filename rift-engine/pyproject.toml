@@ -12,6 +12,7 @@ keywords = []
 authors = [{ name = "Morph Labs", email = "support@morph.so" }]
 dependencies = [
   "aiohttp",
+  "certifi",
   "pyinstaller",
   "pydantic[dotenv]==1.*",
   "python-dotenv",

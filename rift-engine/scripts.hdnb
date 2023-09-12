@@ -7,7 +7,7 @@ python3 -m venv venv
 
 ```bash
 # Build portable bundle
-./venv/bin/pyinstaller rift.spec
+./venv/bin/pyinstaller -y rift.spec
 ```
 
 ```bash
