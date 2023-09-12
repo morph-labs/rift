@@ -1,0 +1,48 @@
+name: build portable rift engine bundles
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  # allow manual trigger of workflow
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "test engine"
+    environment: development
+    runs-on: ubuntu-latest
+    working-directory: ./rift-engine
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: |
+            3.9
+            3.10
+            3.11
+          cache: "pip" # caching pip dependencies
+      - run: pip install .
+      - run: pytest
+  bundle:
+    needs: test
+    name: "bundle engine"
+    working-directory: ./rift-engine
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: "pip" # caching pip dependencies
+      - run: python3 -m venv venv
+      - run: ./venv/bin/pip install -e .
+      - run: ./venv/bin/pyinstaller rift.spec
+      - uses: actions/upload-artifact@v3
+        with:
+          name: bundle-${{ matrix.os }}
+          path: ./dist/*

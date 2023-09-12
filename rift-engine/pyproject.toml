@@ -1,9 +1,5 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.metadata]
-allow-direct-references = true
+[tool.setuptools]
+packages = ["rift"]
 
 [project]
 name = "pyrift"
@@ -11,13 +7,12 @@ version = "2.0.19"
 description = ''
 readme = "README.md"
 requires-python = ">=3.9"
-license = "Apache-2.0"
+license = { text = "Apache-2.0" }
 keywords = []
-authors = [
-  { name = "Morph Labs", email = "support@morph.so" },
-]
+authors = [{ name = "Morph Labs", email = "support@morph.so" }]
 dependencies = [
   "aiohttp",
+  "pyinstaller",
   "pydantic[dotenv]==1.*",
   "python-dotenv",
   "rich",
@@ -33,32 +28,23 @@ dependencies = [
   "gpt-engineer @ git+https://github.com/morph-labs/gpt-engineer",
   "aider-chat @ git+https://github.com/morph-labs/aider",
   "smol_dev @ git+https://github.com/morph-labs/smol_dev",
-  "mentat-ai @ git+https://www.github.com/morph-labs/mentat",  
-  "protobuf"
+  "mentat-ai @ git+https://www.github.com/morph-labs/mentat",
+  "protobuf",
 ]
 
 [project.optional-dependencies]
 # install these to use huggingface models
-hf = [
-  "torch",
-]
+hf = ["torch"]
 
-smol_dev = [
-  "smol_dev @ git+https://www.github.com/morph-labs/smol_dev",
-]
+smol_dev = ["smol_dev @ git+https://www.github.com/morph-labs/smol_dev"]
 
 gpt-engineer = [
   "gpt-engineer @ git+https://www.github.com/morph-labs/gpt-engineer",
 ]
 
-aider = [
-  "aider-chat @ git+https://github.com/morph-labs/aider"
-]
+aider = ["aider-chat @ git+https://github.com/morph-labs/aider"]
 
-mentat = [
-  "mentat-ai @ git+https://www.github.com/morph-labs/mentat"
-]
-
+mentat = ["mentat-ai @ git+https://www.github.com/morph-labs/mentat"]
 
 [project.urls]
 Documentation = "https://github.com/morph-labs/rift#readme"
@@ -68,37 +54,10 @@ Source = "https://github.com/morph-labs/rift"
 [project.scripts]
 rift = "rift.server.core:entrypoint"
 
-[tool.hatch.version]
-path = "rift/__about__.py"
-
-[tool.hatch.envs.default]
-dependencies = [
-  "pytest",
-  "pytest-cov",
-  'pyinstaller',
-  "gpt4all==0.3.4",
-  "einops",
-]
-
-[tool.hatch.envs.default.scripts]
-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=rift --cov=tests {args}"
-no-cov = "cov --no-cov {args}"
-dev = "python -m rift.server.core --debug {args}"
-bundle = "pyinstaller rift/server/core.py --name rift -y --collect-all gpt4all --onefile --log-level=DEBUG {args}"
-
-[[tool.hatch.envs.test.matrix]]
-python = ["310", "311"]
-
 [tool.coverage.run]
 branch = true
 parallel = true
-omit = [
-  "rift/__about__.py",
-]
+omit = ["rift/__about__.py"]
 
 [tool.coverage.report]
-exclude_lines = [
-  "no cov",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
