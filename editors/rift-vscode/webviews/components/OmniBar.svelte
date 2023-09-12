@@ -35,14 +35,20 @@
           const needle = query.toLowerCase();
           const haystack = (
             file.fromWorkspacePath +
-            "/" +
-            file.fileName +
-            "@" +
-            file.symbolName
+            (file.symbolName ? "#" + file.symbolName : "")
           ).toLowerCase();
           if (seen.has(haystack)) return false;
           seen.add(haystack);
-          return haystack.includes(needle);
+          const [filePart, symbolPart] = needle.split("#");
+          if (symbolPart !== undefined && !file.symbolName) {
+            // user is looking for symbols, don't show files
+            return false;
+          }
+          return (
+            haystack.includes(needle) ||
+            (file.fromWorkspacePath.includes(filePart) &&
+              file.symbolName?.includes(symbolPart))
+          );
         })
         .slice(0, 50);
       console.log({ allFiles, filteredFiles });
