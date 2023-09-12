@@ -48,5 +48,5 @@ jobs:
       - run: ./venv/bin/pyinstaller rift.spec
       - uses: actions/upload-artifact@v3
         with:
-          name: bundle-${{ matrix.os }}
-          path: ./dist/*
+          name: rift-${{ matrix.os }}
+          path: ./rift-engine/dist/rift
