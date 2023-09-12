@@ -314,7 +314,7 @@ export async function runRiftCodeEngine() {
         .then((selection) => {
           if (selection === "Kill rift processes") {
             if (process.platform === "win32") {
-              aexec("taskkill /IM rift.exe /F", (err, stdout, stderr) => {
+              exec("taskkill /IM rift.exe /F", (err, stdout, stderr) => {
                 if (err) {
                   vscode.window.showErrorMessage(
                     "Could not kill the rift processes. Error - " + err.message,
@@ -322,7 +322,7 @@ export async function runRiftCodeEngine() {
                 }
               });
             } else if (process.platform === "linux") {
-              aexec("pkill -f rift", (err, stdout, stderr) => {
+              exec("pkill -f rift", (err, stdout, stderr) => {
                 if (err) {
                   vscode.window.showErrorMessage(
                     "Could not kill the rift processes. Error - " + err.message,
@@ -330,7 +330,7 @@ export async function runRiftCodeEngine() {
                 }
               });
             } else if (process.platform === "darwin") {
-              aexec("pkill -f rift", (err, stdout, stderr) => {
+              exec("pkill -f rift", (err, stdout, stderr) => {
                 if (err) {
                   vscode.window.showErrorMessage(
                     "Could not kill the rift processes. Error - " + err.message,
@@ -345,7 +345,7 @@ export async function runRiftCodeEngine() {
           }
           if (selection === "Kill processes bound to port 7797") {
             if (process.platform === "win32") {
-              aexec(
+              exec(
                 'FOR /F "tokens=5" %a IN (\'netstat -aon ^| find "7797" ^| find "LISTENING"\') DO taskkill /F /PID %a',
                 (err, stdout, stderr) => {
                   if (err) {
@@ -360,7 +360,7 @@ export async function runRiftCodeEngine() {
               process.platform === "linux" ||
               process.platform === "darwin"
             ) {
-              aexec("fuser -k 7797/tcp", (err, stdout, stderr) => {
+              exec("fuser -k 7797/tcp", (err, stdout, stderr) => {
                 if (err) {
                   vscode.window.showErrorMessage(
                     "Could not kill the port 7797 processes. Error - " +
