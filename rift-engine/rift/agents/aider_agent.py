@@ -1,7 +1,9 @@
+import logging
 import os
 import re
 from concurrent import futures
 
+aider_available = False
 try:
     import aider
     import aider.coders
@@ -9,10 +11,9 @@ try:
     import aider.io
     import aider.main
     from aider.coders.base_coder import ExhaustedContextWindow
+    aider_available = True
 except ImportError:
-    raise Exception(
-        '`aider` not found. Try `pip install -e "rift-engine[aider]"` from the Rift root directory.'
-    )
+    logging.exception('aider not available, is git in your path? Installation will continue without aider support.')
 
 try:
     aider.__author__
@@ -38,7 +39,6 @@ import rift.util.file_diff as file_diff
 from rift.util.TextStream import TextStream
 
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class AiderRunResult(agent.AgentRunResult):
@@ -85,6 +85,8 @@ class Aider(agent.ThirdPartyAgent):
         :param server: The server where the Aider agent is running.
         :return: An instance of the Aider class.
         """
+        if (not aider_available):
+            raise Exception('aider not available, is git in your path?')
         state = AiderAgentState(
             params=params,
             messages=[],
