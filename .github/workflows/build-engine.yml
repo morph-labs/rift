@@ -33,6 +33,7 @@ jobs:
     defaults:
       run:
         working-directory: rift-engine
+        shell: bash
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
