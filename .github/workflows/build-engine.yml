@@ -45,14 +45,14 @@ jobs:
           python-version: "3.11"
           cache: "pip" # caching pip dependencies
       - run: python3 -m venv venv
-        run:   |
-         if [ "$RUNNER_OS" == "Windows" ]; then
-            ./venv/bin/pip.exe install -e .
-            ./venv/bin/pyinstaller.exe rift.spec
-         else
-            ./venv/bin/pip install -e .
-            ./venv/bin/pyinstaller rift.spec
-         fi
+      - run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+             ./venv/bin/pip.exe install -e .
+             ./venv/bin/pyinstaller.exe rift.spec
+          else
+             ./venv/bin/pip install -e .
+             ./venv/bin/pyinstaller rift.spec
+          fi
       - uses: actions/upload-artifact@v3
         with:
           name: rift-${{ matrix.os }}
