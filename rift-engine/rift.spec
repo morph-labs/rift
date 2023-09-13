@@ -1,14 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import get_package_paths
 
 
 block_cipher = None
 
 added_files = [
-         ( 'vendor/tree-sitter-rescript/src', 'vendor/tree-sitter-rescript/src' ),
-         ('venv/lib/python3.11/site-packages/gpt4all/llmodel_DO_NOT_MODIFY/build', 'gpt4all/llmodel_DO_NOT_MODIFY/build'),
-         ('venv/lib/python3.11/site-packages/tree_sitter_languages/languages.so', 'tree_sitter_languages'),
+         ('vendor/tree-sitter-rescript/src', 'vendor/tree-sitter-rescript/src' ),
+         (get_package_paths('gpt4all')[1] + '/llmodel_DO_NOT_MODIFY/build', 'gpt4all/llmodel_DO_NOT_MODIFY/build'),
+         (get_package_paths('tree_sitter_languages')[1] + '/languages.so', 'tree_sitter_languages'),
           # hack to touch "__init__.pyc" as Language#build_library() wants it to exist to check its mtime
-         ('venv/lib/python3.11/site-packages/tree_sitter/__init__.py', 'tree_sitter/__init__.pyc')
+         (get_package_paths('tree_sitter')[1] + '/__init__.py', 'tree_sitter/__init__.pyc')
          ]
 
 a = Analysis(
