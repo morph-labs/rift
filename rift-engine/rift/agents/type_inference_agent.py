@@ -4,8 +4,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from textwrap import dedent
-from typing import Any, ClassVar, Coroutine, Dict, List, Optional, Tuple, cast
-from urllib.parse import urlparse
+from typing import Any, ClassVar, Coroutine, Dict, List, Optional, Set, Tuple, cast
 
 import openai
 
@@ -385,14 +384,39 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
             user_uris = re.findall(r"\[uri\]\((\S+)\)", user_response)
         if user_uris == []:
             user_uris = [current_file_uri]
-        user_paths = [urlparse(uri).path for uri in user_uris]
+        user_references = [IR.Reference.from_uri(uri) for uri in user_uris]
+        symbols_per_file: Dict[str, Set[IR.QualifiedId]] = {}
+        for ref in user_references:
+            if ref.qualified_id:
+                if ref.file_path not in symbols_per_file:
+                    symbols_per_file[ref.file_path] = set()
+                symbols_per_file[ref.file_path].add(ref.qualified_id)
+        user_paths = [ref.file_path for ref in user_references]
 
         file_processes: List[FileProcess] = []
         tot_num_missing = 0
         project = parser.parse_files_in_paths(paths=user_paths)
         if self.debug:
             logger.info(f"\n=== Project Map ===\n{project.dump_map()}\n")
-        files_missing_types = files_missing_types_in_project(project)
+
+        files_missing_types_ = files_missing_types_in_project(project)
+        files_missing_types: List[FileMissingTypes] = []
+
+        # filter files missing types to only include files in symbols_per_file
+        for fmt in files_missing_types_:
+            full_path = os.path.join(project.root_path, fmt.file.path)
+            if full_path not in symbols_per_file:  # no symbols in this file
+                files_missing_types.append(fmt)
+            else:  # filter missing types to only include symbols in symbols_per_file
+                missing_types = [
+                    mt
+                    for mt in fmt.missing_types
+                    if mt.function_declaration.get_qualified_id() in symbols_per_file[full_path]
+                ]
+                if missing_types != []:
+                    fmt.missing_types = missing_types
+                    files_missing_types.append(fmt)
+
         await info_update("\n=== Missing Types ===\n")
         files_missing_str = ""
         for fmt in files_missing_types:
