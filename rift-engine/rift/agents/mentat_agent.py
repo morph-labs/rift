@@ -10,16 +10,17 @@ from typing import ClassVar, List, Optional, Type
 logger = logging.getLogger(__name__)
 
 import mentat.app
-import rift.agents.abstract as agent
-import rift.llm.openai_types as openai
-import rift.lsp.types as lsp
-import rift.util.file_diff as file_diff
 from mentat.app import get_user_feedback_on_changes
 from mentat.code_file_manager import CodeFileManager
 from mentat.config_manager import ConfigManager
 from mentat.conversation import Conversation
 from mentat.llm_api import CostTracker
 from mentat.user_input_manager import UserInputManager
+
+import rift.agents.abstract as agent
+import rift.llm.openai_types as openai
+import rift.lsp.types as lsp
+import rift.util.file_diff as file_diff
 from rift.util.TextStream import TextStream
 
 
@@ -82,7 +83,6 @@ class Mentat(agent.ThirdPartyAgent):
         )
 
     async def _run_chat_thread(self, response_stream):
-
         before, after = response_stream.split_once("感")
         try:
             async with self.state.response_lock:
@@ -230,23 +230,29 @@ class Mentat(agent.ThirdPartyAgent):
 
         paths: List[str] = []
 
-        self.state.messages.append(openai.Message.assistant(content="Which files should be visible to me for this conversation? (You can @-mention as many files as you want.)"))
+        self.state.messages.append(
+            openai.Message.assistant(
+                content="Which files should be visible to me for this conversation? (You can @-mention as many files as you want.)"
+            )
+        )
 
         # Add a new task to request the user for the file names that should be visible
         get_repo_context_t = self.add_task(
-            "get_repo_context",
-            self.request_chat,
-            [agent.RequestChatRequest(self.state.messages)]
+            "get_repo_context", self.request_chat, [agent.RequestChatRequest(self.state.messages)]
         )
-        
+
         # Wait for the user's response
         user_visible_files_response = await get_repo_context_t.run()
         self.state.messages.append(openai.Message.user(content=user_visible_files_response))
         await self.send_progress()
-        
+
         # Return the response from the user
         from rift.util.context import resolve_inline_uris
-        uris: List[str] = [extract_path(x.uri) for x in resolve_inline_uris(user_visible_files_response, server=self.server)]
+
+        uris: List[str] = [
+            extract_path(x.uri)
+            for x in resolve_inline_uris(user_visible_files_response, server=self.server)
+        ]
         logger.info(f"{uris=}")
 
         paths += uris
@@ -257,7 +263,7 @@ class Mentat(agent.ThirdPartyAgent):
             nonlocal finished
             finished = True
             event.set()
-        
+
         async def mentat_loop():
             nonlocal file_changes
 

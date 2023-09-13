@@ -23,7 +23,7 @@ export class Store<T> {
   }
 
   notifyListeners() {
-    for (let listener of this.listeners) {
+    for (const listener of this.listeners) {
       listener(this.value);
     }
   }

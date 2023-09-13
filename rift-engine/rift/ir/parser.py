@@ -1,11 +1,13 @@
 import os
 from typing import Callable, List, Optional
+
 from tree_sitter import Parser
 from tree_sitter_languages import get_parser as get_tree_sitter_parser
 
 import rift.ir.custom_parsers as custom_parser
 import rift.ir.IR as IR
 import rift.ir.parser_core as parser_core
+
 
 def get_parser(language: IR.Language) -> Parser:
     if language == "rescript":
@@ -15,14 +17,20 @@ def get_parser(language: IR.Language) -> Parser:
     else:
         return get_tree_sitter_parser(language)
 
+
 def parse_code_block(file: IR.File, code: IR.Code, language: IR.Language) -> None:
     parser = get_parser(language)
     tree = parser.parse(code.bytes)
     for node in tree.root_node.children:
-        statement = parser_core.process_statement(code=code, file=file, language=language, node=node, scope="")
+        statement = parser_core.process_statement(
+            code=code, file=file, language=language, node=node, scope=""
+        )
         file.statements.append(statement)
 
-def parse_path(path: str, project: IR.Project, filter_file: Optional[Callable[[str], bool]] = None) -> None:
+
+def parse_path(
+    path: str, project: IR.Project, filter_file: Optional[Callable[[str], bool]] = None
+) -> None:
     """
     Parses a single file and adds it to the provided Project instance.
     """
@@ -35,7 +43,10 @@ def parse_path(path: str, project: IR.Project, filter_file: Optional[Callable[[s
         parse_code_block(file=file_ir, code=code, language=language)
         project.add_file(file=file_ir)
 
-def parse_files_in_paths(paths: List[str], filter_file: Optional[Callable[[str], bool]] = None) -> IR.Project:
+
+def parse_files_in_paths(
+    paths: List[str], filter_file: Optional[Callable[[str], bool]] = None
+) -> IR.Project:
     """
     Parses all files with known extensions in the provided list of paths.
     """
@@ -51,7 +62,7 @@ def parse_files_in_paths(paths: List[str], filter_file: Optional[Callable[[str],
             parse_path(path, project, filter_file)
         else:
             for root, dirs, files in os.walk(path):
-                dirs[:] = [d for d in dirs if d != 'node_modules']
+                dirs[:] = [d for d in dirs if d != "node_modules"]
                 for file in files:
                     full_path = os.path.join(root, file)
                     parse_path(full_path, project, filter_file)

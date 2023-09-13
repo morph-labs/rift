@@ -12,7 +12,7 @@
 
   $: {
     if (focused && ref) {
-      ref.scrollIntoView({block:'center'})
+      ref.scrollIntoView({ block: "center" });
     }
   }
 </script>
@@ -31,9 +31,9 @@
   >
     <div class="flex flex-row ml-[6px] items-center truncate overflow-hidden">
       <div class="mr-[3px]">
-        {#if type=== 'file'}
+        {#if type === "file"}
           <FileIcon />
-          {:else}
+        {:else}
           <CodeIcon />
         {/if}
       </div>

@@ -2,8 +2,8 @@ import difflib
 import os
 
 import rift.ir.completions as completions
-import rift.ir.parser as parser
 import rift.ir.IR as IR
+import rift.ir.parser as parser
 import rift.ir.test_parser as test_parser
 
 
@@ -33,10 +33,12 @@ def test_completions_file():
             update_missing_types
         ), f"Completions have changed (to update set `UPDATE_TESTS=True`):\n\n{diff_output}"
 
+
 class MyOuterClass:
     class MyInnerClass:
-        def some_function(self, x:int, y:int) -> int:
+        def some_function(self, x: int, y: int) -> int:
             return x + y
+
 
 def test_symbol_reference():
     this_file = os.path.abspath(__file__)
@@ -53,6 +55,10 @@ def test_symbol_reference():
     res_some_function = project.lookup_reference(reference_some_function)
     assert res_some_function is not None
     assert res_some_function.symbol is not None
-    assert res_some_function.symbol.get_substring_without_body().decode().strip() == "def some_function(self, x:int, y:int) -> int:"
+    assert (
+        res_some_function.symbol.get_substring_without_body().decode().strip()
+        == "def some_function(self, x: int, y: int) -> int:"
+    )
+
 
 test_symbol_reference()

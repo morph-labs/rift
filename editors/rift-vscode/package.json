@@ -60,7 +60,7 @@
           ],
           "default": 7797,
           "description": "Default port for the Rift Code Engine. Defaults to 7797."
-        },        
+        },
         "rift.codeEditModel": {
           "type": "string",
           "default": "openai:gpt-3.5-turbo",
@@ -73,9 +73,9 @@
         "rift.chatModel": {
           "type": "string",
           "default": "openai:gpt-3.5-turbo",
-            "enum": [
+          "enum": [
             "openai:gpt-3.5-turbo",
-            "openai:gpt-4",                
+            "openai:gpt-4",
             "gpt4all:ggml-mpt-7b-chat",
             "gpt4all:ggml-model-gpt4all-falcon-q4_0",
             "gpt4all:wizardlm-13b-v1.1-superhot-8k.ggmlv3.q4_0",
@@ -163,7 +163,7 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint --ext ts src",
-    "format": "prettier --write .",
+    "format": "prettier --write --plugin prettier-plugin-svelte .",
     "test": "node ./out/test/runTest.js",
     "clean": "rm -rf out/compiled & rm -rf dist/*"
   },
@@ -189,7 +189,8 @@
     "eslint-plugin-import": "^2.27.5",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
-    "prettier": "^3.0.0",
+    "prettier": "^3.0.3",
+    "prettier-plugin-svelte": "^3.0.3",
     "rollup": "^2.3.4",
     "rollup-plugin-svelte": "^6.0.0",
     "rollup-plugin-terser": "^7.0.2",

@@ -268,7 +268,8 @@ class Tests:
         .encode("utf-8")
     )
 
-def new_file(code: IR.Code, path: str, language: IR.Language, project:IR.Project) -> None:
+
+def new_file(code: IR.Code, path: str, language: IR.Language, project: IR.Project) -> None:
     file = IR.File(path)
     parser.parse_code_block(file, code, language)
     project.add_file(file)
@@ -288,10 +289,12 @@ def get_test_project():
     new_file(IR.Code(Tests.code_ruby), "test.rb", "ruby", project)
     return project
 
+
 def get_test_python_project():
     project = IR.Project(root_path="dummy_path")
     new_file(IR.Code(Tests.code_py), "test.py", "python", project)
     return project
+
 
 def test_parsing():
     script_dir = os.path.dirname(os.path.abspath(__file__))

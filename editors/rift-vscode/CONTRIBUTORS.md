@@ -48,11 +48,14 @@ We welcome contributions to the Rift VSCode Extension's codebase. If you want to
 1. We'll review your PR as soon as possible and provide feedback or merge it into the project.
 
 ## VSCode Extension Setup
+
 For development:
+
 1. Open VSCode in this directory.
 1. Select "Run and Debug" or press "Ctrl + F5" to load the extension development host.
 
 For testing:
+
 ```bash
 # clone latest version of extension and rift language server
 git clone https://www.github.com/morph-labs/rift
