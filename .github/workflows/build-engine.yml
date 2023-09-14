@@ -63,6 +63,7 @@ jobs:
   release:
     name: "create release from portable bundle"
     needs: bundle
+    runs-on: ubuntu-latest
     if: github.event_name == 'push'
     permissions:
       contents: write
