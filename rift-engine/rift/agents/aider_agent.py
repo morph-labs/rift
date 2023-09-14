@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from concurrent import futures
+from urllib.request import url2pathname
 
 aider_available = False
 try:
@@ -173,6 +174,7 @@ class Aider(agent.ThirdPartyAgent):
 
                 def refactor_uri_match(resp):
                     def process_path(path):
+                        path = url2pathname(path)
                         relative_path = os.path.relpath(path, self.state.params.workspaceFolderPath)
                         if not resp.startswith("/add"):  # /add does not like a quoted path
                             relative_path = f"`{relative_path}`"
