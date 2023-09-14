@@ -83,27 +83,78 @@ class Import:
 
 @dataclass
 class Type:
-    _str: str
-    name: Optional[str] = None
+    kind: Literal[
+        "array", "constructor", "function", "pointer", "record", "reference", "type_of", "unknown"
+    ]
     arguments: List["Type"] = field(default_factory=list)
+    fields: List["Field"] = field(default_factory=list)
+    name: Optional[str] = None
 
-    def create_pointer(self) -> "Type":
-        return Type(f"{self._str}*")
+    def array(self) -> "Type":
+        return Type(kind="array", arguments=[self])
 
-    def create_array(self) -> "Type":
-        return Type(f"{self._str}[]")
+    @staticmethod
+    def constructor(name: str, arguments: List["Type"] = []) -> "Type":
+        return Type(kind="constructor", name=name, arguments=arguments)
 
-    def create_function(self) -> "Type":
-        return Type(f"{self._str}()")
+    def function(self) -> "Type":
+        return Type(kind="function")
 
-    def create_reference(self) -> "Type":
-        return Type(f"{self._str}&")
+    def pointer(self) -> "Type":
+        return Type(kind="pointer", arguments=[self])
 
-    def create_type_of(self) -> "Type":
-        return Type(f"typeof({self._str})")
+    @staticmethod
+    def record(fields: List["Field"]) -> "Type":
+        return Type(kind="record", fields=fields)
 
-    def __str__(self):
-        return self._str
+    def reference(self) -> "Type":
+        return Type(kind="reference", arguments=[self])
+
+    def type_of(self) -> "Type":
+        return Type(kind="type_of", arguments=[self])
+
+    @staticmethod
+    def unknown(s: str) -> "Type":
+        return Type(kind="unknown", name=s)
+
+    def __str__(self) -> str:
+        if self.kind == "array":
+            return f"{self.arguments[0]}[]"
+        elif self.kind == "constructor":
+            if self.arguments != []:
+                return f"{self.name}<{', '.join([str(arg) for arg in self.arguments])}>"
+            else:
+                return self.name or "unknown"
+        elif self.kind == "function":
+            return f"{self.arguments[0]}()"
+        elif self.kind == "pointer":
+            return f"{self.arguments[0]}*"
+        elif self.kind == "record":
+            return f"{{{', '.join([str(field) for field in self.fields])}}}"
+        elif self.kind == "reference":
+            return f"{self.arguments[0]}&"
+        elif self.kind == "type_of":
+            return f"typeof({self.arguments[0]})"
+        elif self.kind == "unknown":
+            return self.name or "unknown"
+        else:
+            raise Exception(f"Unknown type kind: {self.kind}")
+
+    __repr__ = __str__
+
+
+@dataclass
+class Field:
+    name: str
+    optional: bool
+    type: Type
+
+    def __str__(self) -> str:
+        res = self.name
+        if self.optional:
+            res += "?"
+        res += f": {self.type}"
+        return res
 
     __repr__ = __str__
 
@@ -171,9 +222,21 @@ class ValKind(ValueKind):
 
 
 @dataclass
-class TypeKind(ValueKind):
+class TypeDefinitionKind(ValueKind):
+    type: Optional[Type] = None
+
     def name(self) -> str:
-        return "Type"
+        return "TypeDefinition"
+
+    def dump(self, lines: List[str]) -> None:
+        if self.type is not None:
+            lines.append(f"   type: {self.type}")
+
+    def __str__(self) -> str:
+        if self.type is None:
+            return f"{self.name()}"
+        else:
+            return f"{self.type}"
 
 
 @dataclass
