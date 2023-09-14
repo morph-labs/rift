@@ -60,6 +60,7 @@ jobs:
         with:
           name: rift-${{ runner.os }}
           path: ./rift-engine/dist/rift
+          retention-days: 5
 
   release:
     name: "release bundles"
@@ -104,7 +105,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./rift-Linux
+          asset_path: /home/runner/work/rift/rift/rift-Linux
           asset_name: rift-Linux-${{ github.ref }}
           asset_content_type: application/zip
 
@@ -118,7 +119,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./rift-macOS
+          asset_path: /home/runner/work/rift/rift/rift-macOS
           asset_name: rift-macOS-${{ github.ref }}
           asset_content_type: application/zip
 
@@ -132,6 +133,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./rift-Windows
+          asset_path: /home/runner/work/rift/rift/rift-Windows
           asset_name: rift-Windows-${{ github.ref }}
           asset_content_type: application/zip
