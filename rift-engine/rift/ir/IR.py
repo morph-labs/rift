@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 import rift.ir.custom_parsers as custom_parsers
 
@@ -395,7 +396,7 @@ class Reference:
     def from_uri(uri: str) -> "Reference":
         parsed = urlparse(uri)
         qualified_id = parsed.fragment if parsed.fragment != "" else None
-        return Reference(file_path=parsed.path, qualified_id=qualified_id)
+        return Reference(file_path=url2pathname(parsed.path), qualified_id=qualified_id)
 
 
 @dataclass
