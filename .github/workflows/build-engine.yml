@@ -98,7 +98,6 @@ jobs:
         with:
           name: rift-Linux-${{ github.ref }}
       - name: Upload Linux Bundle
-        id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -113,7 +112,6 @@ jobs:
         with:
           name: rift-macOS-${{ github.ref }}
       - name: Upload macOS Bundle
-        id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -128,7 +126,6 @@ jobs:
         with:
           name: rift-Windows-${{ github.ref }}
       - name: Upload Windows Bundle
-        id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
