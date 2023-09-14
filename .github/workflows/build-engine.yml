@@ -69,23 +69,14 @@ jobs:
       #   run: node -e "if ('refs/tags/v' + require('./package.json').version !== '${{ github.ref }}') { console.log('::error' + 'Version Mismatch. refs/tags/v' + require('./package.json').version, '${{ github.ref }}'); throw Error('Version Mismatch')} "
       # - name: Generate Name
       # run: python3 -c "console.log('PACKAGE_NAME=' + require('./package.json').name + '-v' + require('./package.json').version)" >> $GITHUB_ENV
-      - name: Download Linux Asset
+      - name: Download Artifacts
         uses: actions/download-artifact@v3
-        with:
-          name: rift-Linux
-      - name: Download macOS Asset
-        uses: actions/download-artifact@v3
-        with:
-          name: rift-macOS
-      - name: Download Windows Asset
-        uses: actions/download-artifact@v3
-        with:
-          name: rift-Windows
       - run: |
           pwd
           ls -la .
-          zip rift-Windows
+          zip rift-*
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "rift-Windows,rift-macOS,rift-Linux"
+          artifacts: "*.zip"
           draft: true
+          artifactErrorsFailBuild: true
