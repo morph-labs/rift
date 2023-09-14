@@ -88,3 +88,4 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "rift-Windows,rift-macOS,rift-Linux"
+          draft: true
