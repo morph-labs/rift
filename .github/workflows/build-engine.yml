@@ -71,10 +71,9 @@ jobs:
       # run: python3 -c "console.log('PACKAGE_NAME=' + require('./package.json').name + '-v' + require('./package.json').version)" >> $GITHUB_ENV
       - name: Download Artifacts
         uses: actions/download-artifact@v3
-      - run: |
-          pwd
-          ls -la .
-          zip rift-*
+      - run: for i in rift-*/; do zip -r "${i%/}-${TAG}.zip" "$i"; done
+        env: 
+          TAG: ${{ github.ref_name }}
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "*.zip"
