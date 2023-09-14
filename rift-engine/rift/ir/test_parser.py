@@ -204,6 +204,9 @@ class Tests:
         and bindings = (z:int) => multiple(z, z)
 
         let _  = "not in the symbol table"
+
+        type myRecord = {x: int, y?: option<string>}
+        type myList = list<int>
     """
         )
         .lstrip()
