@@ -62,7 +62,7 @@ def parse_files_in_paths(
             parse_path(path, project, filter_file)
         else:
             for root, dirs, files in os.walk(path):
-                dirs[:] = [d for d in dirs if d != "node_modules"]
+                dirs[:] = [d for d in dirs if d not in ["node_modules", ".git"]]
                 for file in files:
                     full_path = os.path.join(root, file)
                     parse_path(full_path, project, filter_file)

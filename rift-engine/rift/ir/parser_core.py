@@ -17,12 +17,13 @@ from rift.ir.IR import (
     ModuleKind,
     NamespaceKind,
     Parameter,
+    Field,
     Scope,
     Statement,
     Substring,
     SymbolInfo,
     Type,
-    TypeKind,
+    TypeDefinitionKind,
     ValKind,
     ValueDeclaration,
     ValueKind,
@@ -44,7 +45,7 @@ def parse_type(language: Language, node: Node) -> Type:
     ):
         # TS: first child should be ":" and second child should be type
         second_child = node.children[1]
-        return Type(second_child.text.decode())
+        return Type.unknown(second_child.text.decode())
     elif language == "python" and node.type == "type" and node.child_count >= 1:
         child = node.children[0]
         if child.type == "subscript":
@@ -53,24 +54,42 @@ def parse_type(language: Language, node: Node) -> Type:
                 subscripts = child.children_by_field_name("subscript")
                 arguments = [parse_type(language, n) for n in subscripts]
                 name = node_value.text.decode()
-                return Type(node.text.decode(), name=name, arguments=arguments)
+                return Type.constructor(name=name, arguments=arguments)
         elif child.type == "identifier":
             name = child.text.decode()
-            return Type(node.text.decode(), name=name)
-    return Type(node.text.decode())
+            return Type.constructor(name=name)
+    elif language == "rescript":
+        if node.type == "type_identifier":
+            name = node.text.decode()
+            return Type.constructor(name=name)
+        elif node.type == "generic_type" and node.child_count == 2:
+            name = node.children[0].text.decode()
+            arguments_node = node.children[1]
+            if arguments_node.type == "type_arguments":
+                # remove first and last argument: < and >
+                arguments = arguments_node.children[1:-1]
+                arguments = [parse_type(language, n) for n in arguments]
+                t = Type.constructor(name=name, arguments=arguments)
+                return t
+            else:
+                logger.warning(f"Unknown arguments_node type node: {arguments_node}")
+        else:
+            logger.warning(f"Unknown type node: {node}")
+
+    return Type.unknown(node.text.decode())
 
 
 def add_c_cpp_declarators_to_type(type: Type, declarators: List[str]) -> Type:
     t = type
     for d in declarators:
         if d == "pointer_declarator":
-            t = t.create_pointer()
+            t = t.pointer()
         elif d == "array_declarator":
-            t = t.create_array()
+            t = t.array()
         elif d == "function_declarator":
-            t = t.create_function()
+            t = t.function()
         elif d == "reference_declarator":
-            t = t.create_reference()
+            t = t.reference()
         elif d == "identifier":
             pass
         else:
@@ -95,7 +114,7 @@ def get_c_cpp_parameter(language: Language, node: Node) -> Parameter:
     type_node = node.child_by_field_name("type")
     if type_node is None:
         logger.warning(f"Could not find type node in {node}")
-        type = Type("unknown")
+        type = Type.unknown("unknown")
     else:
         type = parse_type(language=language, node=type_node)
         type = add_c_cpp_declarators_to_type(type, declarators)
@@ -236,8 +255,8 @@ class DeclarationFinder:
         value_kind = ValKind(type=type)
         return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
 
-    def mk_type_decl(self, id: Node, parents: List[Node]):
-        value_kind = TypeKind()
+    def mk_type_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None):
+        value_kind = TypeDefinitionKind(type)
         return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
 
     def mk_interface_decl(self, id: Node, parents: List[Node]):
@@ -541,7 +560,7 @@ class DeclarationFinder:
                         return Parameter(name=name, type=type)
                 elif inner.type == "unit":
                     name = "()"
-                    type = Type("unit")
+                    type = Type.constructor(name="unit")
                     return Parameter(name=name, type=type)
 
             def parse_ocaml_parameter(parameter: Node) -> None:
@@ -585,7 +604,7 @@ class DeclarationFinder:
                     inner_parameter = parse_inner_parameter(parameter.children[2])
                     if inner_parameter is not None:
                         inner_parameter.name = parameter.children[0].type + inner_parameter.name
-                        type = extract_type(parameter.children[4]).create_type_of()
+                        type = extract_type(parameter.children[4]).type_of()
                         inner_parameter.type = type
                         parameters.append(inner_parameter)
 
@@ -757,6 +776,7 @@ class DeclarationFinder:
                     if decl is not None:
                         declarations.append(decl)
             return declarations
+
         elif node.type == "module_declaration" and language == "rescript":
 
             def parse_module_binding(nodes: List[Node]) -> List[SymbolInfo]:
@@ -803,6 +823,67 @@ class DeclarationFinder:
                     return parse_module_binding(nodes)
                 else:
                     logger.warning(f"Unexpected node type in module_declaration: {m1.type}")
+
+        elif node.type == "type_declaration" and language == "rescript":
+
+            def parse_type_body(body: Node) -> Optional[Type]:
+                if body.type == "record_type":
+                    fields: List[Field] = []
+                    for f in body.children:
+                        if f.type == "record_type_field":
+                            children = f.children
+                            field = None
+                            if (
+                                len(children) == 3
+                                and children[0].type == "property_identifier"
+                                and children[1].type == "?"
+                                and children[2].type == "type_annotation"
+                            ):
+                                fname = children[0].text.decode()
+                                optional = True
+                                type = parse_type(language, children[2].children[1])
+                                field = Field(fname, optional, type)
+                            elif (
+                                len(children) == 2
+                                and children[0].type == "property_identifier"
+                                and children[1].type == "type_annotation"
+                            ):
+                                fname = children[0].text.decode()
+                                optional = False
+                                type = parse_type(language, children[1].children[1])
+                                field = Field(fname, optional, type)
+                            else:
+                                logger.warning(
+                                    f"Unexpected node structure in record_type_field: {f.text.decode()}"
+                                )
+                            if field is not None:
+                                fields.append(field)
+                    return Type.record(fields)
+                else:
+                    logger.warning(f"Unexpected node type in type_declaration: {body.type}")
+                    return None
+
+            if len(node.children) == 2:
+                t1 = node.children[1]
+                node_name = t1.child_by_field_name("name")
+                node_body = t1.child_by_field_name("body")
+                if t1.type == "type_binding" and node_name is not None:
+                    type = None
+                    if node_body is not None:
+                        type = parse_type_body(node_body)
+                    elif len(t1.children) == 3 and t1.children[1].type == "=":
+                        type = parse_type(language, t1.children[2])
+                    else:
+                        logger.warning(
+                            f"Unexpected node structure in type_binding: {t1.text.decode()}"
+                        )
+                    if type is not None:
+                        declaration = self.mk_type_decl(id=node_name, parents=[node], type=type)
+                        self.file.add_symbol(declaration)
+                        return [declaration]
+                else:
+                    logger.warning(f"Unexpected node type in type_declaration: {t1.type}")
+                return []
 
         # if not returned earlier
         return []
