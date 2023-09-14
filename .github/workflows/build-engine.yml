@@ -11,27 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  # test:
-  #   name: "test engine"
-  #   environment: development
-  #   # todo: matrix?
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: rift-engine
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/setup-python@v4
-  #       with:
-  #         python-version: |
-  #           # 3.9
-  #           3.10
-  #           3.11
-  #         cache: "pip" # caching pip dependencies
-  #     - run: pip install .
-  #     - run: pytest
   bundle:
-    # needs: test
     name: "bundle engines"
     defaults:
       run:
@@ -39,6 +19,7 @@ jobs:
         shell: bash
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
@@ -48,12 +29,26 @@ jobs:
           python-version: "3.11"
           cache: "pip" # caching pip dependencies
       - run: python3 -m venv venv
-      - run: |
+      - name: "Install"
+        run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
              ./venv/Scripts/pip.exe install -e .
-             ./venv/Scripts/pyinstaller.exe rift.spec
           else
              ./venv/bin/pip install -e .
+          fi
+      - name: "Test"
+        continue-on-error: true
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+             ./venv/Scripts/pytest.exe
+          else
+             ./venv/bin/pytest.exe
+          fi
+      - name: "Bundle"
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+             ./venv/Scripts/pyinstaller.exe rift.spec
+          else
              ./venv/bin/pyinstaller rift.spec
           fi
       - uses: actions/upload-artifact@v3
@@ -69,10 +64,6 @@ jobs:
     if: github.event_name == 'push'
     permissions:
       contents: write
-    defaults:
-      run:
-        working-directory: rift-engine
-        shell: bash
     steps:
       # - name: Verify Versions
       #   run: node -e "if ('refs/tags/v' + require('./package.json').version !== '${{ github.ref }}') { console.log('::error' + 'Version Mismatch. refs/tags/v' + require('./package.json').version, '${{ github.ref }}'); throw Error('Version Mismatch')} "
@@ -90,6 +81,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: rift-Windows
+      - run: |
+          pwd
+          ls -la .
+          zip rift-Windows
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "rift-*"
+          artifacts: "rift-Windows,rift-macOS,rift-Linux"
