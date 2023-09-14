@@ -42,7 +42,7 @@ jobs:
           if [ "$RUNNER_OS" == "Windows" ]; then
              ./venv/Scripts/pytest.exe
           else
-             ./venv/bin/pytest.exe
+             ./venv/bin/pytest
           fi
       - name: "Bundle"
         run: |
