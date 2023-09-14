@@ -3,6 +3,7 @@ import os
 from textwrap import dedent
 from typing import List
 
+import rift.ir.custom_parsers as custom_parsers
 import rift.ir.IR as IR
 import rift.ir.parser as parser
 
@@ -285,7 +286,8 @@ def get_test_project():
     new_file(IR.Code(Tests.code_cpp), "test.cpp", "cpp", project)
     new_file(IR.Code(Tests.code_cs), "test.cs", "c_sharp", project)
     new_file(IR.Code(Tests.code_ocaml), "test.ml", "ocaml", project)
-    new_file(IR.Code(Tests.code_rescript), "test.res", "rescript", project)
+    if custom_parsers.active:
+        new_file(IR.Code(Tests.code_rescript), "test.res", "rescript", project)
     new_file(IR.Code(Tests.code_ruby), "test.rb", "ruby", project)
     return project
 
