@@ -5,7 +5,9 @@ permissions:
 
 on:
   pull_request:
-  # allow manual trigger of workflow
+  push:
+    tags:
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
   workflow_dispatch:
 
 jobs:
@@ -55,5 +57,86 @@ jobs:
           fi
       - uses: actions/upload-artifact@v3
         with:
-          name: rift-${{ matrix.os }}
+          name: rift-${{ runner.os }}-${{ github.ref }}
           path: ./rift-engine/dist/rift
+
+  release:
+    name: "create release from portable bundle"
+    needs: bundle
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: rift-engine
+        shell: bash
+    steps:
+      # - name: Verify Versions
+      #   run: node -e "if ('refs/tags/v' + require('./package.json').version !== '${{ github.ref }}') { console.log('::error' + 'Version Mismatch. refs/tags/v' + require('./package.json').version, '${{ github.ref }}'); throw Error('Version Mismatch')} "
+      # - name: Generate Name
+      # run: python3 -c "console.log('PACKAGE_NAME=' + require('./package.json').name + '-v' + require('./package.json').version)" >> $GITHUB_ENV
+      # - name: Install/
+      # run: npm i
+      # - name: Build Extension
+      # run: npx vsce package -o ./${{ env.PACKAGE_NAME }}.vsix
+      # - name: Publish Extension
+      #   run: npx vsce publish --packagePath ./${{ env.PACKAGE_NAME }}.vsix -p ${{ secrets.MARKETPLACE_PAT }}
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        runs-on: ${{ matrix.os }}
+        strategy:
+          matrix:
+            os: [ubuntu-latest, windows-latest, macos-latest]
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: true
+
+      - name: Download Linux Asset
+        uses: actions/download-artifact@v3
+        with:
+          name: rift-Linux-${{ github.ref }}
+      - name: Upload Linux Bundle
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./rift-Linux-${{ github.ref }}
+          asset_name: rift-Linux-${{ github.ref }}
+          asset_content_type: application/zip
+
+      - name: Download macOS Asset
+        uses: actions/download-artifact@v3
+        with:
+          name: rift-macOS-${{ github.ref }}
+      - name: Upload macOS Bundle
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./rift-macOS-${{ github.ref }}
+          asset_name: rift-macOS-${{ github.ref }}
+          asset_content_type: application/zip
+
+      - name: Download Windows Asset
+        uses: actions/download-artifact@v3
+        with:
+          name: rift-Windows-${{ github.ref }}
+      - name: Upload Windows Bundle
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./rift-Windows-${{ github.ref }}
+          asset_name: rift-Windows-${{ github.ref }}
+          asset_content_type: application/zip
