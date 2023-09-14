@@ -84,55 +84,55 @@ jobs:
       # run: npx vsce package -o ./${{ env.PACKAGE_NAME }}.vsix
       # - name: Publish Extension
       #   run: npx vsce publish --packagePath ./${{ env.PACKAGE_NAME }}.vsix -p ${{ secrets.MARKETPLACE_PAT }}
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: true
+      # - name: Create Release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: ${{ github.ref }}
+      #     release_name: Release ${{ github.ref }}
+      #     draft: true
+      #     prerelease: true
 
       - name: Download Linux Asset
         uses: actions/download-artifact@v3
         with:
           name: rift-Linux
-      - name: Upload Linux Bundle
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /home/runner/work/rift/rift/rift-Linux
-          asset_name: rift-Linux-${{ github.ref }}
-          asset_content_type: application/zip
+      # - name: Upload Linux Bundle
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_name: rift-Linux
+      #     asset_content_type: application/zip
 
       - name: Download macOS Asset
         uses: actions/download-artifact@v3
         with:
           name: rift-macOS
-      - name: Upload macOS Bundle
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /home/runner/work/rift/rift/rift-macOS
-          asset_name: rift-macOS-${{ github.ref }}
-          asset_content_type: application/zip
+      # - name: Upload macOS Bundle
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_name: rift-macOS
+      #     asset_content_type: application/zip
 
       - name: Download Windows Asset
         uses: actions/download-artifact@v3
         with:
           name: rift-Windows
-      - name: Upload Windows Bundle
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /home/runner/work/rift/rift/rift-Windows
-          asset_name: rift-Windows-${{ github.ref }}
-          asset_content_type: application/zip
+      # - name: Upload Windows Bundle
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_name: rift-Windows
+      #     asset_content_type: application/zip
+    - uses: ncipollo/release-action@v1
+      with:
+        artifacts: "rift-*"
