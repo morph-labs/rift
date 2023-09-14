@@ -84,10 +84,6 @@ jobs:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
-        runs-on: ${{ matrix.os }}
-        strategy:
-          matrix:
-            os: [ubuntu-latest, windows-latest, macos-latest]
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
