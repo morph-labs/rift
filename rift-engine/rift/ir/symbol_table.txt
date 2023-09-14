@@ -71,7 +71,7 @@ Interface: Animal
    substring: (347, 451)
    body: (364, 451)
 === Symbol Table for test.ts ===
-Type: a
+TypeDefinition: a
    language: typescript
    range: ((0, 0), (0, 24))
    substring: (0, 24)
@@ -115,7 +115,7 @@ Interface: RunHelperSyncResult
    range: ((9, 0), (12, 1))
    substring: (225, 290)
    body: (255, 290)
-Type: HelperStatus
+TypeDefinition: HelperStatus
    language: typescript
    range: ((13, 0), (13, 74))
    substring: (291, 365)
