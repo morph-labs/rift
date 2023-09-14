@@ -58,7 +58,7 @@ jobs:
           fi
       - uses: actions/upload-artifact@v3
         with:
-          name: rift-${{ runner.os }
+          name: rift-${{ runner.os }}
           path: ./rift-engine/dist/rift
 
   release:
