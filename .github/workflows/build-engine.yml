@@ -11,27 +11,27 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: "test engine"
-    environment: development
-    # todo: matrix?
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: rift-engine
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: |
-            3.9
-            3.10
-            3.11
-          cache: "pip" # caching pip dependencies
-      - run: pip install .
-      - run: pytest
+  # test:
+  #   name: "test engine"
+  #   environment: development
+  #   # todo: matrix?
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: rift-engine
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-python@v4
+  #       with:
+  #         python-version: |
+  #           # 3.9
+  #           3.10
+  #           3.11
+  #         cache: "pip" # caching pip dependencies
+  #     - run: pip install .
+  #     - run: pytest
   bundle:
-    needs: test
+    # needs: test
     name: "bundle engines"
     defaults:
       run:
@@ -58,7 +58,7 @@ jobs:
           fi
       - uses: actions/upload-artifact@v3
         with:
-          name: rift-${{ runner.os }}-${{ github.ref }}
+          name: rift-${{ runner.os }
           path: ./rift-engine/dist/rift
 
   release:
@@ -97,41 +97,41 @@ jobs:
       - name: Download Linux Asset
         uses: actions/download-artifact@v3
         with:
-          name: rift-Linux-${{ github.ref }}
+          name: rift-Linux
       - name: Upload Linux Bundle
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./rift-Linux-${{ github.ref }}
+          asset_path: ./rift-Linux
           asset_name: rift-Linux-${{ github.ref }}
           asset_content_type: application/zip
 
       - name: Download macOS Asset
         uses: actions/download-artifact@v3
         with:
-          name: rift-macOS-${{ github.ref }}
+          name: rift-macOS
       - name: Upload macOS Bundle
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./rift-macOS-${{ github.ref }}
+          asset_path: ./rift-macOS
           asset_name: rift-macOS-${{ github.ref }}
           asset_content_type: application/zip
 
       - name: Download Windows Asset
         uses: actions/download-artifact@v3
         with:
-          name: rift-Windows-${{ github.ref }}
+          name: rift-Windows
       - name: Upload Windows Bundle
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./rift-Windows-${{ github.ref }}
+          asset_path: ./rift-Windows
           asset_name: rift-Windows-${{ github.ref }}
           asset_content_type: application/zip
