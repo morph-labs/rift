@@ -6,6 +6,7 @@ import time
 from concurrent import futures
 from dataclasses import dataclass, field
 from typing import ClassVar, List, Optional, Type
+from urllib.request import url2pathname
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +129,7 @@ class Mentat(agent.ThirdPartyAgent):
 
                 def refactor_uri_match(resp):
                     pattern = f"\[uri\]\({self.state.params.workspaceFolderPath}/(\S+)\)"
-                    replacement = r"`\1`"
+                    replacement = lambda m: f"`{url2pathname(m.group(1))}`"
                     resp = re.sub(pattern, replacement, resp)
                     return resp
 

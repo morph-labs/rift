@@ -4,6 +4,7 @@ import logging
 import os
 import re
 from typing import Callable, List, Optional, TypeVar
+from urllib.request import url2pathname
 
 import rift.ir.IR as IR
 import rift.ir.parser as parser
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 def extract_uris(user_response: str) -> List[str]:
     uri_pattern = r"\[uri\]\((\S+)\)"
     matches = re.findall(uri_pattern, user_response)
-    return [match.replace(" ", "") for match in matches]
+    return [url2pathname(match).replace(" ", "") for match in matches]
 
 
 def lookup_match(match: str, server: "Server") -> str:
