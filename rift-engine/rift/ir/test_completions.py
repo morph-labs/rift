@@ -1,5 +1,7 @@
 import difflib
 import os
+from urllib.request import pathname2url
+
 
 import rift.ir.completions as completions
 import rift.ir.IR as IR
@@ -41,7 +43,6 @@ class MyOuterClass:
 
 
 def test_symbol_reference():
-    from urllib.request import pathname2url
     this_file = os.path.abspath(__file__)
     project = parser.parse_files_in_paths([this_file])
 
