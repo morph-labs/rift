@@ -132,8 +132,8 @@ class Mentat(agent.ThirdPartyAgent):
                     uri_pattern = r"\[uri\]\((\S+)\)"
                     def replacement(m: re.Match[str]):
                         url_path = m.group(1)
-                        reference = IR.Reference.from_uri(url_path)
-                        file_path = reference.file_path # TODO: this ignores if it's a symbol path
+                        uri = IR.Reference.from_uri(url_path)
+                        file_path = uri.file_path # TODO: this ignores if it's a symbol path
                         relative_path = os.path.relpath(file_path, self.state.params.workspaceFolderPath)
                         return f"`{relative_path}`"
                     resp = re.sub(uri_pattern, replacement, resp)
