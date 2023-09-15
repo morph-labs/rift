@@ -1,11 +1,6 @@
-import * as path from "path";
-import * as os from "os";
-import { join } from "path";
-import type { ExtensionContext, TextEditor } from "vscode";
-import * as environmentSetup from "./activation/environmentSetup";
+import type { TextEditor } from "vscode";
 import * as vscode from "vscode";
 import {
-  Executable,
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
@@ -13,10 +8,8 @@ import {
   StreamInfo,
   TextDocumentIdentifier,
   TextDocumentPositionParams,
-  TransportKind,
 } from "vscode-languageclient/node";
 import * as net from "net";
-import * as tcpPortUsed from "tcp-port-used";
 import { chatProvider, logProvider } from "./extension";
 import PubSub from "./lib/PubSub";
 import {
@@ -49,18 +42,16 @@ import {
 
 let client: LanguageClient; //LanguageClient
 
-const DEFAULT_PORT: number =
-  vscode.workspace.getConfiguration("rift").get("riftServerPort", 7797) || 7797;
+export const port =
+  vscode.workspace.getConfiguration("rift").get<number>("riftServerPort") ||
+  7797;
 
 // ref: https://stackoverflow.com/questions/40284523/connect-external-language-server-to-vscode-extension
 
 // https://nodejs.org/api/child_process.html#child_processspawncommand-args-options
 
 /** Creates the ServerOptions for a system in the case that a language server is already running on the given port. */
-function tcpServerOptions(
-  context: ExtensionContext,
-  port = DEFAULT_PORT,
-): ServerOptions {
+function tcpServerOptions(port: number): ServerOptions {
   const socket = net.connect({
     port: port,
     host: "127.0.0.1",
@@ -71,41 +62,6 @@ function tcpServerOptions(
   };
   return () => {
     return Promise.resolve(si);
-  };
-}
-
-/** Creates the server options for spinning up our own server.*/
-function createServerOptions(port = 7797): ServerOptions {
-  const args = ["--port", `${port}`];
-  console.log(`args=${args}`);
-  const transport = { kind: 3, port: port };
-
-  const config: vscode.WorkspaceConfiguration =
-    vscode.workspace.getConfiguration("rift");
-
-  const morphDir = path.join(os.homedir(), ".morph");
-
-  console.log(`morphDir=${morphDir}`);
-
-  const riftExecutablePath: string = environmentSetup.morphBinPath("rift");
-
-  console.log(`riftExecutablePath=${riftExecutablePath}`);
-
-  console.log(`config=${config}`);
-
-  const riftPath =
-    config.get("riftPath", riftExecutablePath) || riftExecutablePath;
-
-  console.log(`riftPath=${riftPath}`);
-
-  const e: Executable = {
-    command: riftPath,
-    transport: transport,
-    args: args,
-  };
-  return {
-    run: e,
-    debug: e,
   };
 }
 
@@ -395,44 +351,10 @@ export class MorphLanguageClient
       return;
     }
 
-    const port = DEFAULT_PORT;
-
-    const autostart: boolean =
-      vscode.workspace.getConfiguration("rift").get("autostart", false) ||
-      false;
-
-    let serverOptions: ServerOptions;
-    if (!autostart) {
-      while (!(await tcpPortUsed.check(port))) {
-        console.log("waiting for server to come online");
-        try {
-          await tcpPortUsed.waitUntilUsed(port, 500, 1000000);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      console.log(`server detected on port ${port} `);
-      serverOptions = tcpServerOptions(this.context, port);
-    } else {
-      const serverPort = port + this.restartCount;
-      if (await tcpPortUsed.check(serverPort)) {
-        vscode.window
-          .showErrorMessage(
-            `port ${serverPort} is being used, try restarting using the 'Rift: Restart' command`,
-            "Restart",
-          )
-          .then((selection) => {
-            if (selection === "Restart") {
-              vscode.commands.executeCommand("rift.restart");
-            }
-          });
-      }
-      serverOptions = createServerOptions(serverPort); // lol
-    }
+    const serverOptions = tcpServerOptions(port);
     const clientOptions: LanguageClientOptions = {
       documentSelector: [{ language: "*" }],
     };
-    console.log("creating new server");
     this.client = new LanguageClient(
       "morph-server",
       "Morph Server",
@@ -466,7 +388,6 @@ export class MorphLanguageClient
     await this.client.start();
     console.log("rift-engine started");
     this.create("rift_chat");
-    vscode.window.showInformationMessage("Rift extension online");
   }
 
   async restart() {

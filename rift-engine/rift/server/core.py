@@ -195,9 +195,5 @@ def entrypoint():
 
 
 if __name__ == "__main__":
-    import ssl
-    print('before', ssl.get_default_verify_paths())
-    print('where', certifi.where())
     os.environ["SSL_CERT_FILE"] = certifi.where()
-    print('after', ssl.get_default_verify_paths())
     entrypoint()
