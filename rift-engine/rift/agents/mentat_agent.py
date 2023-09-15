@@ -19,6 +19,7 @@ from mentat.llm_api import CostTracker
 from mentat.user_input_manager import UserInputManager
 
 import rift.agents.abstract as agent
+import rift.ir.IR as IR
 import rift.llm.openai_types as openai
 import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
@@ -127,10 +128,15 @@ class Mentat(agent.ThirdPartyAgent):
                     agent.RequestChatRequest(messages=self.state.messages)
                 )
 
-                def refactor_uri_match(resp):
-                    pattern = f"\[uri\]\({self.state.params.workspaceFolderPath}/(\S+)\)"
-                    replacement = lambda m: f"`{url2pathname(m.group(1))}`"
-                    resp = re.sub(pattern, replacement, resp)
+                def refactor_uri_match(resp: str):
+                    uri_pattern = r"\[uri\]\((\S+)\)"
+                    def replacement(m: re.Match[str]):
+                        url_path = m.group(1)
+                        reference = IR.Reference.from_uri(url_path)
+                        file_path = reference.file_path # TODO: this ignores if it's a symbol path
+                        relative_path = os.path.relpath(file_path, self.state.params.workspaceFolderPath)
+                        return f"`{relative_path}`"
+                    resp = re.sub(uri_pattern, replacement, resp)
                     return resp
 
                 try:
