@@ -7,7 +7,7 @@ block_cipher = None
 added_files = [
          ('vendor/tree-sitter-rescript/src', 'vendor/tree-sitter-rescript/src' ),
          (get_package_paths('gpt4all')[1] + '/llmodel_DO_NOT_MODIFY/build', 'gpt4all/llmodel_DO_NOT_MODIFY/build'),
-          # (get_package_paths('tree_sitter_languages')[1] + '/languages.so', 'tree_sitter_languages'),
+         (get_package_paths('tree_sitter_languages')[1], 'tree_sitter_languages'),
           # hack to touch "__init__.pyc" as Language#build_library() wants it to exist to check its mtime
          (get_package_paths('tree_sitter')[1] + '/__init__.py', 'tree_sitter/__init__.pyc')
          ]
