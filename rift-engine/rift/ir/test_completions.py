@@ -1,5 +1,7 @@
 import difflib
 import os
+from urllib.request import pathname2url
+
 
 import rift.ir.completions as completions
 import rift.ir.IR as IR
@@ -44,13 +46,13 @@ def test_symbol_reference():
     this_file = os.path.abspath(__file__)
     project = parser.parse_files_in_paths([this_file])
 
-    uri_this_file = f"file://{this_file}"
+    uri_this_file = f"file://{pathname2url(this_file)}"
     reference_this_file = IR.Reference.from_uri(uri_this_file)
     res_this_file = project.lookup_reference(reference_this_file)
     assert res_this_file is not None
     assert res_this_file.symbol is None
 
-    uri_some_function = f"file://{this_file}#MyOuterClass.MyInnerClass.some_function"
+    uri_some_function = f"file://{pathname2url(this_file)}#MyOuterClass.MyInnerClass.some_function"
     reference_some_function = IR.Reference.from_uri(uri_some_function)
     res_some_function = project.lookup_reference(reference_some_function)
     assert res_some_function is not None
