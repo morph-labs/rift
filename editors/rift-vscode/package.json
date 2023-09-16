@@ -47,7 +47,7 @@
           "type": "string",
           "default": "",
           "scope": "machine",
-          "markdownDescription": "Path to Rift Code Engine executable, if built locally.\n\nFor a virtual env named `venv`, this will be:\n - `{path-to-venv}/bin/rift` on Mac or Linux \n\n - `{path-to-venv}\\Scripts\\rift` on Windows."
+          "markdownDescription": "Path to Rift Code Engine executable, if built locally.\n\nFor a virtual env named `venv`, this should be set to:\n - `{path-to-venv}/bin/rift` on Mac or Linux \n\n - `{path-to-venv}\\Scripts\\rift` on Windows."
         },
         "rift.riftServerPort": {
           "type": "number",

@@ -46,25 +46,6 @@ export const port =
   vscode.workspace.getConfiguration("rift").get<number>("riftServerPort") ||
   7797;
 
-// ref: https://stackoverflow.com/questions/40284523/connect-external-language-server-to-vscode-extension
-
-// https://nodejs.org/api/child_process.html#child_processspawncommand-args-options
-
-/** Creates the ServerOptions for a system in the case that a language server is already running on the given port. */
-function tcpServerOptions(port: number): ServerOptions {
-  const socket = net.connect({
-    port: port,
-    host: "127.0.0.1",
-  });
-  const si: StreamInfo = {
-    reader: socket,
-    writer: socket,
-  };
-  return () => {
-    return Promise.resolve(si);
-  };
-}
-
 const GREEN = vscode.window.createTextEditorDecorationType({
   backgroundColor: "rgba(0,255,0,0.1)",
 });
@@ -203,7 +184,10 @@ export class MorphLanguageClient
   private webviewState = new Store<WebviewState>(DEFAULT_STATE);
   private restartCount = 0;
 
-  constructor(context: vscode.ExtensionContext) {
+  constructor(
+    context: vscode.ExtensionContext,
+    private serverOptions: ServerOptions,
+  ) {
     this.red = { key: "TEMP_VALUE", dispose: () => {} };
     this.green = { key: "TEMP_VALUE", dispose: () => {} };
     this.context = context;
@@ -233,9 +217,12 @@ export class MorphLanguageClient
           "rift.reject",
           (id: string) => this.client?.sendNotification("morph/reject", { id }),
         ),
-        vscode.workspace.onDidChangeConfiguration(
-          this.on_config_change.bind(this),
-        ),
+        vscode.workspace.onDidChangeConfiguration((e) => {
+          if (e.affectsConfiguration("rift.openaiKey")) {
+            this.restart();
+          }
+          this.on_config_change.bind(this);
+        }),
       );
       this.initializeRecentFileObservers();
       this.refreshNonGitIgnoredFiles();
@@ -351,14 +338,13 @@ export class MorphLanguageClient
       return;
     }
 
-    const serverOptions = tcpServerOptions(port);
     const clientOptions: LanguageClientOptions = {
       documentSelector: [{ language: "*" }],
     };
     this.client = new LanguageClient(
       "morph-server",
       "Morph Server",
-      serverOptions,
+      this.serverOptions,
       clientOptions,
     );
     this.client.onDidChangeState(async (e) => {
@@ -382,11 +368,35 @@ export class MorphLanguageClient
       }
     });
     this.client.onNotification("morph/error", async (params: any) => {
+      if (String(params.msg).toLowerCase().includes("api key")) {
+        const apiKey = vscode.workspace
+          .getConfiguration("rift")
+          .get<string>("openaiKey");
+        if (!apiKey) {
+          const key = await vscode.window.showInputBox({
+            title: "Please Enter OpenAI API Key",
+            password: true,
+            ignoreFocusOut: true,
+            placeHolder: "sk-...",
+          });
+          if (key) {
+            vscode.workspace
+              .getConfiguration("rift")
+              .update("openaiKey", key, true);
+            return;
+          }
+        }
+      }
       vscode.window.showErrorMessage(params.msg);
     });
-    console.log("starting client");
-    await this.client.start();
-    console.log("rift-engine started");
+    console.log("server options", this.serverOptions);
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification },
+      async (p) => {
+        p.report({ message: "Rift: Launching server..." });
+        await this.client?.start();
+      },
+    );
     this.create("rift_chat");
   }
 

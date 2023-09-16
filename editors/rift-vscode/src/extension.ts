@@ -7,6 +7,7 @@ import {
   startServerIfAvailable,
 } from "./activation/downloadBuild";
 import { autoBuild, upgradeLocalBuildAsNeeded } from "./activation/localBuild";
+import { ServerOptions } from "vscode-languageclient/node";
 export let chatProvider: WebviewProvider;
 export let logProvider: WebviewProvider;
 
@@ -16,13 +17,13 @@ export async function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "rift" is now active!');
 
   vscode.window
-    .withProgress(
+    .withProgress<ServerOptions>(
       { location: vscode.ProgressLocation.Notification },
-      async (progress) => {
+      async (progress): Promise<ServerOptions> => {
         try {
           await upgradeLocalBuildAsNeeded(progress);
 
-          await downloadAndStartServer(progress, port);
+          return await downloadAndStartServer(progress, port);
         } catch (e) {
           console.error("Error Downloading Server Build", e);
           const resp = await vscode.window.showErrorMessage(
@@ -32,7 +33,8 @@ export async function activate(context: vscode.ExtensionContext) {
           if (resp === "Try Building Locally") {
             try {
               await autoBuild(progress);
-              await startServerIfAvailable(progress, port);
+              const started = await startServerIfAvailable(progress, port);
+              if (started) return started;
             } catch (e) {
               vscode.window.showErrorMessage(
                 `${
@@ -41,22 +43,21 @@ export async function activate(context: vscode.ExtensionContext) {
                 "Close",
               );
             }
-          } else {
-            throw Error("No Server Available");
           }
+          throw Error("No Server Available");
         }
       },
     )
-    .then(() => {
-      onServerAvailable();
+    .then((serverOptions) => {
+      onServerAvailable(serverOptions);
     });
 
-  const onServerAvailable = () => {
+  const onServerAvailable = (serverOptions: ServerOptions) => {
     if (morph_language_client) {
       throw Error("Invalid state - client already exists");
     }
 
-    morph_language_client = new MorphLanguageClient(context);
+    morph_language_client = new MorphLanguageClient(context, serverOptions);
 
     context.subscriptions.push(
       vscode.commands.registerCommand("rift.restart", () => {

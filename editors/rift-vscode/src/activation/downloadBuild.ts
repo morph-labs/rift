@@ -9,9 +9,36 @@ import { mkdir, readdir, rm, stat } from "fs/promises";
 import { finished } from "stream/promises";
 import * as decompress from "decompress";
 import { exec as _exec, spawn } from "child_process";
+import {
+  Executable,
+  ServerOptions,
+  StreamInfo,
+  TransportKind,
+} from "vscode-languageclient/node";
+import * as net from "net";
+
 const exec = util.promisify(_exec);
 
 export const onDeactivate: (() => void)[] = [];
+
+// ref: https://stackoverflow.com/questions/40284523/connect-external-language-server-to-vscode-extension
+
+// https://nodejs.org/api/child_process.html#child_processspawncommand-args-options
+
+/** Creates the ServerOptions for a system in the case that a language server is already running on the given port. */
+function tcpServerOptions(port: number): ServerOptions {
+  const socket = net.connect({
+    port: port,
+    host: "127.0.0.1",
+  });
+  const si: StreamInfo = {
+    reader: socket,
+    writer: socket,
+  };
+  return () => {
+    return Promise.resolve(si);
+  };
+}
 
 const exists = async (p?: string) => {
   try {
@@ -79,9 +106,9 @@ export const isServerRunning = async (port: number) => {
 export const startServerIfAvailable = async (
   progress: vscode.Progress<{ message?: string; increment?: number }>,
   port: number,
-) => {
+): Promise<ServerOptions | undefined> => {
   if (await isServerRunning(port)) {
-    return true;
+    return tcpServerOptions(port);
   }
 
   const customRiftPath = vscode.workspace
@@ -98,44 +125,28 @@ export const startServerIfAvailable = async (
   }
 
   if (binPath && vscode.workspace.getConfiguration("rift").get("autostart")) {
-    progress.report({ message: `Rift: Launching...` });
-    const handle = spawn(binPath, ["--port", String(port)]);
+    const args = ["--port", `${port}`];
+    const transport = { kind: TransportKind.socket, port: port } as const;
 
-    const channel = vscode.window.createOutputChannel("Rift: Server Log");
-    channel.appendLine(`Using server binary at ${binPath} with port ${port}`);
+    const e: Executable = {
+      command: binPath,
+      transport: transport,
+      args: args,
+    };
 
-    handle.stdout.on("data", (msg) => {
-      channel.append(msg.toString());
-    });
-    handle.stderr.on("data", (msg) => {
-      channel.append(msg.toString());
-    });
-
-    onDeactivate.push(() => {
-      handle.kill();
-      channel.dispose();
-    });
-
-    while (!(await tcpPortUsed.check(port))) {
-      console.log("waiting for server to come online...");
-      try {
-        await tcpPortUsed.waitUntilUsed(port, 500, 1000000);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    return true;
+    return e;
   }
-  return false;
+
+  return undefined;
 };
 
 export const downloadAndStartServer = async (
   progress: vscode.Progress<{ message?: string; increment?: number }>,
   port: number,
-): Promise<void> => {
-  if (await startServerIfAvailable(progress, port)) {
-    return;
+): Promise<ServerOptions> => {
+  const available = await startServerIfAvailable(progress, port);
+  if (available) {
+    return available;
   }
 
   if (vscode.workspace.getConfiguration("rift").get("autostart")) {
@@ -187,14 +198,32 @@ export const downloadAndStartServer = async (
         },
       })?.();
     }
-    await startServerIfAvailable(progress, port);
+    const started = await startServerIfAvailable(progress, port);
+    if (started) {
+      return started;
+    }
   } else {
     progress.report({
       message:
         "Rift: AutoStart disabled, waiting for server to be manually started",
     });
+    await waitForPort(port);
+    return tcpServerOptions(port);
   }
+
+  throw Error("Could not download and start prebuilt server.");
 };
+
+export async function waitForPort(port: number) {
+  while (!(await tcpPortUsed.check(port))) {
+    console.log("waiting for server to come online...");
+    try {
+      await tcpPortUsed.waitUntilUsed(port, 500, 1000000);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
 
 function getDefaultInstallProps() {
   const version = getExtensionVersion();
