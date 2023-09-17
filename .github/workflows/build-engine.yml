@@ -11,6 +11,22 @@ on:
   workflow_dispatch:
 
 jobs:
+  vsix:
+    name: "make vsix"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build VSIX
+        run: | 
+          cd editors/rift-vscode
+          npm install @vscode/vsce
+          vsce package -o rift.vsix
+      - uses: actions/upload-artifact@v3
+        with:
+          name: rift.vsix
+          path: ./editors/rift-vscode
+          retention-days: 5
+
   bundle:
     name: "bundle engines"
     defaults:
@@ -62,23 +78,18 @@ jobs:
       run:
         working-directory: editors/rift-vscode
         shell: bash
-    needs: bundle
+    needs: [bundle, vsix]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    permissions:
-      contents: write
     steps:
-      - name: Build VSIX
-        run: | 
-          npm install @vscode/vsce
-          vsce package
       - name: Download Artifacts
         uses: actions/download-artifact@v3
-      - run: for i in rift-*/; do zip -r "${i%/}-${TAG}.zip" "$i"; done
+      - run: |
+          ls
+          for i in rift-*/; do zip -r "${i%/}-${TAG}.zip" "$i"; done
         env: 
           TAG: ${{ github.ref_name }}
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "*.zip,editors/rift-vscode/*.vsix"
+          artifacts: "*.zip,*.vsix"
           prerelease: true
           artifactErrorsFailBuild: true
