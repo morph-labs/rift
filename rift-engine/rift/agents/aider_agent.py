@@ -12,16 +12,20 @@ try:
     import aider.io
     import aider.main
     from aider.coders.base_coder import ExhaustedContextWindow
-    aider_available = True
-except ImportError:
-    logging.exception('aider not available, is git in your path? Installation will continue without aider support.')
 
-try:
-    aider.__author__
-except AttributeError:
-    raise Exception(
-        'Wrong version of `aider` installed. Please try `pip install -e "rift-engine[aider]" --force-reinstall` from the Rift root directory.'
+    try:
+        aider.__author__
+        aider_available = True
+    except AttributeError:
+        raise Exception(
+            'Wrong version of `aider` installed. Please try `pip install -e "rift-engine[aider]" --force-reinstall` from the Rift root directory.'
+        )
+
+except ImportError:
+    print(
+        "aider not available, is git in your path? Installation will continue without aider support."
     )
+
 
 import asyncio
 import logging
@@ -40,6 +44,7 @@ import rift.util.file_diff as file_diff
 from rift.util.TextStream import TextStream
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class AiderRunResult(agent.AgentRunResult):
@@ -86,8 +91,8 @@ class Aider(agent.ThirdPartyAgent):
         :param server: The server where the Aider agent is running.
         :return: An instance of the Aider class.
         """
-        if (not aider_available):
-            raise Exception('aider not available, is git in your path?')
+        if not aider_available:
+            raise Exception("aider not available, is git in your path?")
         state = AiderAgentState(
             params=params,
             messages=[],

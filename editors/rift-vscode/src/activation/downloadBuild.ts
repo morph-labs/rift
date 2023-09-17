@@ -122,6 +122,13 @@ export const tryResolveServerOptions = async (
     binPath = customRiftPath;
   } else if (await exists(binLocation)) {
     binPath = binLocation;
+  } else {
+    throw Error(
+      "unable to locate server build at " +
+        customRiftPath +
+        " or " +
+        binLocation,
+    );
   }
 
   if (binPath && vscode.workspace.getConfiguration("rift").get("autostart")) {
@@ -242,7 +249,12 @@ function getDefaultInstallProps() {
   const bundleID = "rift-" + osName + "-v" + version;
   const bundleLocation = path.join(morphDir, bundleID);
   const zipLocation = bundleLocation + ".zip";
-  const binLocation = path.join(bundleLocation, "core");
+  const name =
+    platformSpecific({
+      windows: "core.exe",
+    }) ?? "core";
+
+  const binLocation = path.join(bundleLocation, name);
 
   return { bundleLocation, zipLocation, version, bundleID, binLocation };
 }
