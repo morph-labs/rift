@@ -122,13 +122,6 @@ export const tryResolveServerOptions = async (
     binPath = customRiftPath;
   } else if (await exists(binLocation)) {
     binPath = binLocation;
-  } else {
-    throw Error(
-      "unable to locate server build at " +
-        customRiftPath +
-        " or " +
-        binLocation,
-    );
   }
 
   if (binPath && vscode.workspace.getConfiguration("rift").get("autostart")) {
