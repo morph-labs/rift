@@ -103,7 +103,7 @@ export const isServerRunning = async (port: number) => {
   return false;
 };
 
-export const startServerIfAvailable = async (
+export const tryResolveServerOptions = async (
   progress: vscode.Progress<{ message?: string; increment?: number }>,
   port: number,
 ): Promise<ServerOptions | undefined> => {
@@ -140,11 +140,11 @@ export const startServerIfAvailable = async (
   return undefined;
 };
 
-export const downloadAndStartServer = async (
+export const forceResolveServerOptions = async (
   progress: vscode.Progress<{ message?: string; increment?: number }>,
   port: number,
 ): Promise<ServerOptions> => {
-  const available = await startServerIfAvailable(progress, port);
+  const available = await tryResolveServerOptions(progress, port);
   if (available) {
     return available;
   }
@@ -198,7 +198,7 @@ export const downloadAndStartServer = async (
         },
       })?.();
     }
-    const started = await startServerIfAvailable(progress, port);
+    const started = await tryResolveServerOptions(progress, port);
     if (started) {
       return started;
     }

@@ -124,6 +124,10 @@
         "title": "Rift: Restart"
       },
       {
+        "command": "rift.build-server",
+        "title": "Rift: Build Server Locally"
+      },
+      {
         "command": "rift.reset_chat",
         "title": "Reset Chat",
         "icon": {

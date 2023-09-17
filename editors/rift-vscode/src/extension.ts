@@ -2,9 +2,9 @@ import * as vscode from "vscode";
 import { port, MorphLanguageClient } from "./client";
 import { WebviewProvider } from "./elements/WebviewProvider";
 import {
-  downloadAndStartServer,
+  forceResolveServerOptions,
   onDeactivate,
-  startServerIfAvailable,
+  tryResolveServerOptions,
 } from "./activation/downloadBuild";
 import { autoBuild, upgradeLocalBuildAsNeeded } from "./activation/localBuild";
 import { ServerOptions } from "vscode-languageclient/node";
@@ -14,45 +14,58 @@ export let logProvider: WebviewProvider;
 let morph_language_client: MorphLanguageClient;
 
 export async function activate(context: vscode.ExtensionContext) {
-  console.log('Congratulations, your extension "rift" is now active!');
+  const buildServer = async (
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+  ) => {
+    try {
+      await autoBuild(progress);
+      const options = await tryResolveServerOptions(progress, port);
+      if (options) {
+        onServerOptionsResolved(options);
+      } else {
+        throw Error("Build failed or not started. Is AutoStart enabled?");
+      }
+    } catch (e) {
+      vscode.window.showErrorMessage(
+        `${
+          (e as any).message
+        }\nEnsure that python3.10 is available and try installing Rift manually: https://www.github.com/morph-labs/rift`,
+        "Close",
+      );
+      throw e;
+    }
+  };
 
-  vscode.window
-    .withProgress<ServerOptions>(
+  vscode.commands.registerCommand("rift.build-server", () => {
+    vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification },
-      async (progress): Promise<ServerOptions> => {
-        try {
-          await upgradeLocalBuildAsNeeded(progress);
-
-          return await downloadAndStartServer(progress, port);
-        } catch (e) {
-          console.error("Error Downloading Server Build", e);
-          const resp = await vscode.window.showErrorMessage(
-            "Error Downloading Server Build: " + e,
-            "Try Building Locally",
-          );
-          if (resp === "Try Building Locally") {
-            try {
-              await autoBuild(progress);
-              const started = await startServerIfAvailable(progress, port);
-              if (started) return started;
-            } catch (e) {
-              vscode.window.showErrorMessage(
-                `${
-                  (e as any).message
-                }\nEnsure that python3.10 is available and try installing Rift manually: https://www.github.com/morph-labs/rift`,
-                "Close",
-              );
-            }
-          }
-          throw Error("No Server Available");
-        }
+      async (progress) => {
+        return buildServer(progress);
       },
-    )
-    .then((serverOptions) => {
-      onServerAvailable(serverOptions);
-    });
+    );
+  });
 
-  const onServerAvailable = (serverOptions: ServerOptions) => {
+  vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification },
+    async (progress) => {
+      try {
+        await upgradeLocalBuildAsNeeded(progress);
+        const options = await forceResolveServerOptions(progress, port);
+        onServerOptionsResolved(options);
+      } catch (e) {
+        console.error("Error Downloading Server Build", e);
+        const resp = await vscode.window.showErrorMessage(
+          "Error Downloading Server Build: " + e,
+          "Try Building Locally",
+        );
+        if (resp === "Try Building Locally") {
+          buildServer(progress);
+        }
+      }
+    },
+  );
+
+  const onServerOptionsResolved = (serverOptions: ServerOptions) => {
     if (morph_language_client) {
       throw Error("Invalid state - client already exists");
     }

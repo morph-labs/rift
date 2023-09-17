@@ -37,7 +37,6 @@ jobs:
              ./venv/bin/pip install -e .
           fi
       - name: "Test"
-        continue-on-error: true
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
              ./venv/Scripts/pytest.exe
@@ -65,10 +64,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      # - name: Verify Versions
-      #   run: node -e "if ('refs/tags/v' + require('./package.json').version !== '${{ github.ref }}') { console.log('::error' + 'Version Mismatch. refs/tags/v' + require('./package.json').version, '${{ github.ref }}'); throw Error('Version Mismatch')} "
-      # - name: Generate Name
-      # run: python3 -c "console.log('PACKAGE_NAME=' + require('./package.json').name + '-v' + require('./package.json').version)" >> $GITHUB_ENV
+      - name: Build VSIX
+        run: | 
+          npm install vsce
+          cd extensions/vscode
+          vsce package
       - name: Download Artifacts
         uses: actions/download-artifact@v3
       - run: for i in rift-*/; do zip -r "${i%/}-${TAG}.zip" "$i"; done
@@ -76,6 +76,6 @@ jobs:
           TAG: ${{ github.ref_name }}
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "*.zip"
+          artifacts: "*.zip,editors/rift-vscode/*.vsix"
           prerelease: true
           artifactErrorsFailBuild: true
