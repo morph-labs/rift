@@ -20,6 +20,7 @@ jobs:
         run: | 
           cd editors/rift-vscode
           npm install --global @vscode/vsce
+          npm i
           vsce package -o rift.vsix
       - uses: actions/upload-artifact@v3
         with:
