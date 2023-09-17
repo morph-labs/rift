@@ -90,6 +90,6 @@ jobs:
           TAG: ${{ github.ref_name }}
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "*.zip,*.vsix"
+          artifacts: "*.zip,rift.vsix/rift.vsix"
           prerelease: true
           artifactErrorsFailBuild: true
