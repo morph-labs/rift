@@ -66,8 +66,8 @@ jobs:
     steps:
       - name: Build VSIX
         run: | 
-          npm install vsce
-          cd extensions/vscode
+          npm install @vscode/vsce
+          cd editors/rift-vscode
           vsce package
       - name: Download Artifacts
         uses: actions/download-artifact@v3
