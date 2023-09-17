@@ -78,6 +78,8 @@ jobs:
     needs: [bundle, vsix]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v3
