@@ -58,6 +58,10 @@ jobs:
 
   release:
     name: "release bundles"
+    defaults:
+      run:
+        working-directory: editors/rift-vscode
+        shell: bash
     needs: bundle
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
@@ -67,7 +71,6 @@ jobs:
       - name: Build VSIX
         run: | 
           npm install @vscode/vsce
-          cd editors/rift-vscode
           vsce package
       - name: Download Artifacts
         uses: actions/download-artifact@v3
