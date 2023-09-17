@@ -75,10 +75,6 @@ jobs:
 
   release:
     name: "release bundles"
-    defaults:
-      run:
-        working-directory: editors/rift-vscode
-        shell: bash
     needs: [bundle, vsix]
     runs-on: ubuntu-latest
     steps:
