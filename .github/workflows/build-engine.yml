@@ -24,7 +24,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: rift.vsix
-          path: ./editors/rift-vscode
+          path: ./editors/rift-vscode/rift.vsix
           retention-days: 5
 
   bundle:
