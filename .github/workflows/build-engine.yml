@@ -19,7 +19,7 @@ jobs:
       - name: Build VSIX
         run: | 
           cd editors/rift-vscode
-          npm install @vscode/vsce
+          npm install --global @vscode/vsce
           vsce package -o rift.vsix
       - uses: actions/upload-artifact@v3
         with:
