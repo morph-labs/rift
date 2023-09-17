@@ -76,6 +76,7 @@ jobs:
   release:
     name: "release bundles"
     needs: [bundle, vsix]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifacts
