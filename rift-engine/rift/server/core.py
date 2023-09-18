@@ -196,4 +196,5 @@ def entrypoint():
 
 if __name__ == "__main__":
     os.environ["SSL_CERT_FILE"] = certifi.where()
+    sys.stdout.reconfigure(encoding="utf-8")
     entrypoint()
