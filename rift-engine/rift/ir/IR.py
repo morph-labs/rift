@@ -1,6 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from pyclbr import Function
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import rift.ir.custom_parsers as custom_parsers
