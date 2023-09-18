@@ -1,4 +1,4 @@
-import { Node } from "@tiptap/core";
+import { Node, mergeAttributes } from "@tiptap/core";
 import { PluginKey } from "@tiptap/pm/state";
 import Suggestion, { SuggestionOptions } from "@tiptap/suggestion";
 
@@ -194,6 +194,7 @@ export const FileChip = Node.create<FileChipOptions>({
       "bg-[var(--vscode-editor-background)]",
       "text-xs",
       "inline-flex",
+      "flex-row-reverse",
       "items-center",
       "h-[1.5rem]",
       "border",
@@ -201,16 +202,18 @@ export const FileChip = Node.create<FileChipOptions>({
       "px-1",
       "rounded",
     );
-    const svg = createFileSvg();
-    svg.classList.add("mr-[2px]");
-    span.append(svg);
     span.append(
       document.createTextNode(
         `${node.attrs.symbolName || node.attrs.fileName}`,
       ),
     );
+    // TipTap cursor logic gets weird when the first element in the node is an svg?
+    // Flex-Reverse magic to fix.
+    const svg = createFileSvg();
+    svg.classList.add("mr-[2px]");
+    span.append(svg);
 
-    return span;
+    return ["span", HTMLAttributes, span];
   },
 
   /**
