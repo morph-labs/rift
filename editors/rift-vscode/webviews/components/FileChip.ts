@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { Node } from "@tiptap/core";
 import { PluginKey } from "@tiptap/pm/state";
 import Suggestion, { SuggestionOptions } from "@tiptap/suggestion";
 
