@@ -48,7 +48,7 @@
 <svelte:window on:keydown={handleKeyDown} />
 
 <div
-  class="absolute bottom-full left-0 pr-2 pl-6 w-full z-20 drop-shadow-[0_-4px_16px_0px_rgba(0,0,0,0.36)]"
+  class="absolute bottom-full left-0 pr-2 pl-6 w-full z-20 drop-shadow-[0_-4px_16px_0px_rgba(0,0,0,0.36)] max-h-64 overflow-auto"
 >
   <div
     class="border border-[var(--vscode-gitDecoration-ignoredResourceForeground)]"
