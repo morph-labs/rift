@@ -106,6 +106,36 @@
                         16
                     ]
                 ]
+            },
+            {
+                "name": "inner_fun",
+                "scope": "outer_fun.",
+                "kind": "Function",
+                "range": [
+                    [
+                        28,
+                        4
+                    ],
+                    [
+                        29,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "outer_fun",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        27,
+                        0
+                    ],
+                    [
+                        29,
+                        12
+                    ]
+                ]
             }
         ]
     }
