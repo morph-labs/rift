@@ -1,6 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from pyclbr import Function
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import rift.ir.custom_parsers as custom_parsers
@@ -190,9 +191,24 @@ class ValueKind(ABC):
 
 
 @dataclass
+class BlockKind(ValueKind):
+    statements: List[Statement]
+
+    def name(self) -> str:
+        return "Block"
+
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   statements: {len(self.statements)}")
+
+    def __str__(self) -> str:
+        return f"{self.name()}[{len(self.statements)}]"
+
+
+@dataclass
 class FunctionKind(ValueKind):
     has_return: bool
     parameters: List[Parameter]
+    body: Optional[BlockKind] = None
     return_type: Optional[Type] = None
 
     def name(self) -> str:
@@ -205,6 +221,8 @@ class FunctionKind(ValueKind):
             lines.append(f"   return_type: {self.return_type}")
         if self.has_return:
             lines.append(f"   has_return: {self.has_return}")
+        if self.body is not None :
+            lines.append(f"   body: {self.body}")
 
 
 @dataclass
@@ -347,7 +365,7 @@ class ValueDeclaration(SymbolInfo):
     def dump(self, lines: List[str]) -> None:
         self.dump_common(self.name, lines)
         if self.body_sub is not None:
-            lines.append(f"   body: {self.body_sub}")
+            lines.append(f"   body_sub: {self.body_sub}")
         self.value_kind.dump(lines)
 
 
@@ -418,6 +436,11 @@ class File:
             if isinstance(symbol, ContainerDeclaration):
                 for statement in symbol.body:
                     dump_statement(statement, indent + 2)
+            elif isinstance(symbol, ValueDeclaration) and isinstance(symbol.value_kind, FunctionKind):
+                body = symbol.value_kind.body
+                if body is not None:
+                    for statement in body.statements:
+                        dump_statement(statement, indent + 2)
 
         def dump_statement(statement: Statement, indent: int) -> None:
             if isinstance(statement, Declaration):
