@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple
 from tree_sitter import Node
 
 from rift.ir.IR import (
+    BlockKind,
     ClassKind,
     Code,
     ContainerDeclaration,
@@ -225,14 +226,19 @@ class DeclarationFinder:
         self.exported = False
         self.has_return = False
 
-    def mk_value_decl(self, id: Node, parents: List[Node], value_kind: ValueKind):
+    def mk_value_decl(self, id: Node | str, parents: List[Node], value_kind: ValueKind):
+        if isinstance(id, str):
+            name: str = id
+        else:
+            name = id.text.decode()
+
         return ValueDeclaration(
             body_sub=self.body_sub,
             code=self.code,
             docstring=self.docstring,
             exported=self.exported,
             language=self.language,
-            name=id.text.decode(),
+            name=name,
             range=(parents[0].start_point, parents[-1].end_point),
             scope=self.scope,
             substring=(parents[0].start_byte, parents[-1].end_byte),
@@ -243,13 +249,17 @@ class DeclarationFinder:
         self,
         id: Node,
         parents: List[Node],
+        body: Optional[BlockKind] = None,
         parameters: List[Parameter] = [],
         return_type: Optional[Type] = None,
     ):
         value_kind = FunctionKind(
-            has_return=self.has_return, parameters=parameters, return_type=return_type
+            body=body, has_return=self.has_return, parameters=parameters, return_type=return_type
         )
         return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
+
+    def mk_body_block(self, parents: List[Node], block_kind: BlockKind):
+        return self.mk_value_decl(id="body", parents=parents, value_kind=block_kind)
 
     def mk_val_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None):
         value_kind = ValKind(type=type)
@@ -377,7 +387,7 @@ class DeclarationFinder:
                 else:
                     separator = "."
                 new_scope = self.scope + name.text.decode() + separator
-                body = process_body(
+                block = parse_block(
                     code=self.code,
                     file=self.file,
                     language=language,
@@ -404,12 +414,12 @@ class DeclarationFinder:
                     self.docstring = docstring_node.text.decode()
 
                 if is_namespace:
-                    declaration = self.mk_namespace_decl(id=name, body=body, parents=[node])
+                    declaration = self.mk_namespace_decl(id=name, body=block, parents=[node])
                 elif is_module:
-                    declaration = self.mk_module_decl(id=name, body=body, parents=[node])
+                    declaration = self.mk_module_decl(id=name, body=block, parents=[node])
                 else:
                     declaration = self.mk_class_decl(
-                        id=name, body=body, parents=[node], superclasses=superclasses
+                        id=name, body=block, parents=[node], superclasses=superclasses
                     )
                 self.file.add_symbol(declaration)
                 return [declaration]
@@ -484,11 +494,35 @@ class DeclarationFinder:
                 if len(stmt.children) > 0 and stmt.children[0].type == "string":
                     docstring_node = stmt.children[0]
                     self.docstring = docstring_node.text.decode()
+            block_kind: Optional[BlockKind] = None
             if body_node is not None:
                 self.has_return = contains_direct_return(body_node)
+            if body_node is not None and id is not None and language == "python":
+                scope_body = self.scope + f"{id.text.decode()}."
+                statements = parse_block(
+                    code=self.code,
+                    file=self.file,
+                    language=language,
+                    node=body_node,
+                    scope=scope_body,
+                )
+                finder = DeclarationFinder(
+                    code=self.code,
+                    file=self.file,
+                    language=language,
+                    node=body_node,
+                    scope=scope_body,
+                )
+                block_kind = BlockKind(statements)
+                body = finder.mk_body_block(parents=[body_node], block_kind=block_kind)
+                self.file.add_symbol(body)
             if id is not None:
                 declaration = self.mk_fun_decl(
-                    id=id, parents=[node], parameters=parameters, return_type=return_type
+                    body=block_kind,
+                    id=id,
+                    parents=[node],
+                    parameters=parameters,
+                    return_type=return_type,
                 )
                 self.file.add_symbol(declaration)
                 return [declaration]
@@ -648,7 +682,7 @@ class DeclarationFinder:
                     if name is not None:
                         new_scope = self.scope + name.text.decode() + "."
                         if body_node is not None:
-                            body = process_body(
+                            block = parse_block(
                                 code=self.code,
                                 file=self.file,
                                 language=language,
@@ -656,8 +690,8 @@ class DeclarationFinder:
                                 scope=new_scope,
                             )
                         else:
-                            body = []
-                        declaration = self.mk_module_decl(id=name, body=body, parents=[node])
+                            block = []
+                        declaration = self.mk_module_decl(id=name, body=block, parents=[node])
                         self.file.add_symbol(declaration)
                         return [declaration]
 
@@ -803,14 +837,14 @@ class DeclarationFinder:
                     print(f"Unexpected module_binding nodes:{len(nodes)}")
                 if id is not None and body is not None:
                     new_scope = self.scope + id.text.decode() + "."
-                    body = process_body(
+                    block = parse_block(
                         code=self.code,
                         file=self.file,
                         language=language,
                         node=body,
                         scope=new_scope,
                     )
-                    declaration = self.mk_module_decl(id=id, body=body, parents=[node])
+                    declaration = self.mk_module_decl(id=id, body=block, parents=[node])
                     self.file.add_symbol(declaration)
                     return [declaration]
                 else:
@@ -889,7 +923,7 @@ class DeclarationFinder:
         return []
 
 
-def process_body(
+def parse_block(
     code: Code, file: File, language: Language, node: Node, scope: Scope
 ) -> List[Statement]:
     statements: List[Statement] = []

@@ -3,27 +3,27 @@ Function: aa
    language: c
    range: ((0, 0), (2, 1))
    substring: (0, 24)
-   body: (9, 24)
+   body_sub: (9, 24)
    return_type: int
 Function: foo
    language: c
    range: ((4, 0), (6, 1))
    substring: (52, 84)
    docstring: /** This is a docstring */
-   body: (71, 84)
+   body_sub: (71, 84)
    parameters: [x:int**]
    return_type: int*
 Function: bb
    language: c
    range: ((8, 0), (10, 1))
    substring: (86, 110)
-   body: (95, 110)
+   body_sub: (95, 110)
    return_type: int
 Function: main
    language: c
    range: ((12, 0), (17, 1))
    substring: (112, 169)
-   body: (123, 169)
+   body_sub: (123, 169)
    return_type: int
 === Symbol Table for test.js ===
 Function: f1
@@ -31,7 +31,7 @@ Function: f1
    range: ((1, 0), (1, 27))
    substring: (22, 49)
    docstring: /** Some docstring */
-   body: (36, 49)
+   body_sub: (36, 49)
    has_return: True
 Function: f2
    language: javascript
@@ -44,7 +44,7 @@ Function: braking
    range: ((7, 4), (9, 5))
    substring: (124, 203)
    scope: Bicycle.
-   body: (146, 203)
+   body_sub: (146, 203)
    return_type: void
 Class: Bicycle
    language: java
@@ -56,7 +56,7 @@ Function: sum
    range: ((14, 4), (17, 5))
    substring: (255, 343)
    scope: Math.
-   body: (291, 343)
+   body_sub: (291, 343)
    parameters: [int a:int, int b:int]
    return_type: int
    has_return: True
@@ -69,7 +69,7 @@ Interface: Animal
    language: java
    range: ((20, 0), (23, 1))
    substring: (347, 451)
-   body: (364, 451)
+   body_sub: (364, 451)
 === Symbol Table for test.ts ===
 TypeDefinition: a
    language: typescript
@@ -79,7 +79,7 @@ Function: ts
    language: typescript
    range: ((1, 0), (1, 56))
    substring: (25, 81)
-   body: (69, 81)
+   body_sub: (69, 81)
    parameters: [x:number, opt?:string]
    return_type: number
    has_return: True
@@ -88,7 +88,7 @@ Function: ts2
    range: ((2, 7), (2, 51))
    substring: (89, 133)
    exported: True
-   body: (120, 133)
+   body_sub: (120, 133)
    return_type: array<number>
    has_return: True
 Function: constructor
@@ -96,13 +96,13 @@ Function: constructor
    range: ((4, 4), (4, 20))
    substring: (155, 171)
    scope: A.
-   body: (169, 171)
+   body_sub: (169, 171)
 Function: load
    language: typescript
    range: ((5, 4), (7, 5))
    substring: (176, 222)
    scope: A.
-   body: (198, 222)
+   body_sub: (198, 222)
    parameters: [v:number]
    has_return: True
 Class: A
@@ -114,7 +114,7 @@ Interface: RunHelperSyncResult
    language: typescript
    range: ((9, 0), (12, 1))
    substring: (225, 290)
-   body: (255, 290)
+   body_sub: (255, 290)
 TypeDefinition: HelperStatus
    language: typescript
    range: ((13, 0), (13, 74))
@@ -124,18 +124,25 @@ Function: tsx
    language: tsx
    range: ((1, 0), (1, 27))
    substring: (23, 50)
-   body: (38, 50)
+   body_sub: (38, 50)
    has_return: True
 === Symbol Table for test.py ===
+Block: body
+   language: python
+   range: ((7, 8), (8, 16))
+   substring: (97, 139)
+   scope: A.py.
+   statements: 2
 Function: py
    language: python
    range: ((6, 4), (8, 16))
    substring: (75, 139)
    scope: A.
    docstring: """This is a docstring"""
-   body: (97, 139)
+   body_sub: (97, 139)
    parameters: [x, y]
    has_return: True
+   body: Block[2]
 Class: A(C,D)
    language: python
    range: ((0, 0), (8, 16))
@@ -144,27 +151,48 @@ Class: A(C,D)
     This is a docstring
     for class A
     """
+Block: body
+   language: python
+   range: ((14, 8), (14, 12))
+   substring: (307, 311)
+   scope: B.insert_code.
+   statements: 1
 Function: insert_code
    language: python
    range: ((11, 4), (14, 12))
    substring: (173, 311)
    scope: B.
-   body: (307, 311)
+   body_sub: (307, 311)
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
+   body: Block[1]
+Block: body
+   language: python
+   range: ((16, 8), (16, 12))
+   substring: (349, 353)
+   scope: B.load.
+   statements: 1
 Function: load
    language: python
    range: ((15, 4), (16, 12))
    substring: (316, 353)
    scope: B.
-   body: (349, 353)
+   body_sub: (349, 353)
    parameters: [self, v]
+   body: Block[1]
+Block: body
+   language: python
+   range: ((19, 12), (19, 16))
+   substring: (406, 410)
+   scope: B.Nested.nested.
+   statements: 1
 Function: nested
    language: python
    range: ((18, 8), (19, 16))
    substring: (380, 410)
    scope: B.Nested.
-   body: (406, 410)
+   body_sub: (406, 410)
+   body: Block[1]
 Class: Nested
    language: python
    range: ((17, 4), (19, 16))
@@ -174,13 +202,40 @@ Class: B
    language: python
    range: ((9, 0), (19, 16))
    substring: (140, 410)
+Block: body
+   language: python
+   range: ((29, 8), (29, 12))
+   substring: (595, 599)
+   scope: outer_fun.inner_fun.
+   statements: 1
+Function: inner_fun
+   language: python
+   range: ((28, 4), (29, 12))
+   substring: (562, 599)
+   scope: outer_fun.
+   body_sub: (595, 599)
+   return_type: None
+   body: Block[1]
+Block: body
+   language: python
+   range: ((28, 4), (29, 12))
+   substring: (562, 599)
+   scope: outer_fun.
+   statements: 1
+Function: outer_fun
+   language: python
+   range: ((27, 0), (29, 12))
+   substring: (533, 599)
+   body_sub: (562, 599)
+   return_type: None
+   body: Block[1]
 === Symbol Table for test.cpp ===
 Function: add
    language: cpp
    range: ((2, 4), (2, 43))
    substring: (32, 71)
    scope: namespace_name::
-   body: (69, 71)
+   body_sub: (69, 71)
    parameters: [someRef:int&, somePtr:int*]
    return_type: void
 Function: print
@@ -204,7 +259,7 @@ Function: sum
    range: ((6, 8), (10, 9))
    substring: (110, 215)
    scope: SampleNamespace::SampleClass.
-   body: (149, 215)
+   body_sub: (149, 215)
    parameters: [int a:int, int b:int]
    return_type: int
    has_return: True
@@ -223,19 +278,19 @@ Interface: IEquatable
    language: c_sharp
    range: ((14, 0), (17, 1))
    substring: (225, 276)
-   body: (249, 276)
+   body_sub: (249, 276)
 === Symbol Table for test.ml ===
 Function: divide
    language: ocaml
    range: ((0, 0), (0, 28))
    substring: (0, 28)
-   body: (21, 28)
+   body_sub: (21, 28)
    parameters: [x:int, y]
 Function: callback
    language: ocaml
    range: ((1, 0), (1, 27))
    substring: (29, 56)
-   body: (52, 56)
+   body_sub: (52, 56)
    parameters: [():unit]
    return_type: unit
 Function: bump
@@ -243,14 +298,14 @@ Function: bump
    range: ((3, 4), (3, 37))
    substring: (79, 112)
    scope: M.
-   body: (102, 112)
+   body_sub: (102, 112)
    parameters: [?step:typeof(1), x]
 Function: hline
    language: ocaml
    range: ((4, 4), (4, 42))
    substring: (117, 155)
    scope: M.
-   body: (142, 155)
+   body_sub: (142, 155)
    parameters: [~x, ~x, ~y]
 Module: M
    language: ocaml
@@ -261,14 +316,14 @@ Function: with_named_args
    range: ((7, 4), (7, 81))
    substring: (182, 259)
    scope: N.
-   body: (234, 259)
+   body_sub: (234, 259)
    parameters: [~named_arg1:int, ?named_arg2]
 Function: f1
    language: ocaml
    range: ((9, 4), (9, 34))
    substring: (265, 295)
    scope: N.
-   body: (290, 295)
+   body_sub: (290, 295)
    parameters: [x:int, x:int]
    return_type: int
 Function: f2
@@ -276,7 +331,7 @@ Function: f2
    range: ((10, 4), (10, 30))
    substring: (300, 326)
    scope: N.
-   body: (321, 326)
+   body_sub: (321, 326)
    parameters: [x:int, x:int]
    return_type: int
 Value: v1
@@ -284,13 +339,13 @@ Value: v1
    range: ((12, 4), (12, 14))
    substring: (332, 342)
    scope: N.
-   body: (339, 342)
+   body_sub: (339, 342)
 Value: v2
    language: ocaml
    range: ((13, 4), (13, 18))
    substring: (347, 361)
    scope: N.
-   body: (358, 361)
+   body_sub: (358, 361)
    type: int
 Module: N
    language: ocaml
@@ -301,38 +356,38 @@ Function: sum
    language: ruby
    range: ((0, 0), (3, 11))
    substring: (0, 77)
-   body: (26, 77)
+   body_sub: (26, 77)
    parameters: [a, b]
 Function: output
    language: ruby
    range: ((5, 8), (7, 11))
    substring: (87, 134)
-   body: (110, 134)
+   body_sub: (110, 134)
 Function: greetings
    language: ruby
    range: ((9, 8), (13, 11))
    substring: (144, 220)
-   body: (164, 220)
+   body_sub: (164, 220)
    parameters: [a]
 Function: swap
    language: ruby
    range: ((15, 8), (20, 11))
    substring: (230, 340)
-   body: (257, 340)
+   body_sub: (257, 340)
    parameters: [a, b]
 Function: initialize
    language: ruby
    range: ((26, 12), (29, 15))
    substring: (461, 558)
    scope: Person::
-   body: (503, 558)
+   body_sub: (503, 558)
    parameters: [name, age]
 Function: introduce
    language: ruby
    range: ((31, 12), (33, 15))
    substring: (572, 668)
    scope: Person::
-   body: (602, 668)
+   body_sub: (602, 668)
 Class: Person
    language: ruby
    range: ((23, 8), (34, 11))
@@ -343,7 +398,7 @@ Function: cream?
    range: ((37, 12), (39, 15))
    substring: (715, 762)
    scope: Cream::
-   body: (742, 762)
+   body_sub: (742, 762)
 Module: Cream
    language: ruby
    range: ((36, 8), (40, 11))
@@ -353,7 +408,7 @@ Function: pour
    range: ((44, 16), (48, 19))
    substring: (833, 987)
    scope: Foo::Bar::
-   body: (881, 987)
+   body_sub: (881, 987)
    parameters: [container, liquid]
 Class: Bar
    language: ruby
@@ -401,6 +456,8 @@ File: test.py
     async def load(self, v):
     class Nested:
       def nested():
+  def outer_fun() -> None:
+    def inner_fun() -> None:
 File: test.cpp
   namespace namespace_name
     void add(int& someRef, int* somePtr)
