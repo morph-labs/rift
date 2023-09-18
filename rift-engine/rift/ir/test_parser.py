@@ -108,6 +108,10 @@ class Tests:
         import foo.bar.baz as fbb
         from foo.bar import baz
         from typing import Iterable, Union
+
+        def outer_fun() -> None:
+            def inner_fun() -> None:
+                pass
     """
         )
         .lstrip()
