@@ -6,7 +6,7 @@ import rift.ir.IR as IR
 
 @dataclass
 class FunctionMissingDocstring:
-    function_declaration: IR.ValueDeclaration
+    function_declaration: IR.Symbol
 
     def __str__(self) -> str:
         # let agent generate doc string for function by reading the function code
