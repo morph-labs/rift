@@ -6,6 +6,9 @@ block_cipher = None
 
 added_files = [
          ('vendor/tree-sitter-rescript/src', 'vendor/tree-sitter-rescript/src' ),
+         (get_package_paths('mentat')[1] + '/default_config.json', 'mentat/'),
+         (get_package_paths('gpt_engineer')[1] + '/preprompts', 'gpt_engineer/preprompts'),
+         (get_package_paths('langchain')[1] + '/chains/llm_summarization_checker/prompts', 'langchain//chains/llm_summarization_checker/prompts'),
          (get_package_paths('gpt4all')[1] + '/llmodel_DO_NOT_MODIFY/build', 'gpt4all/llmodel_DO_NOT_MODIFY/build'),
          (get_package_paths('tree_sitter_languages')[1], 'tree_sitter_languages'),
           # hack to touch "__init__.pyc" as Language#build_library() wants it to exist to check its mtime

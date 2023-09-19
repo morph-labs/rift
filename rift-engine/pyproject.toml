@@ -26,7 +26,7 @@ dependencies = [
   "art",
   "tree_sitter",
   "tree_sitter_languages",
-  "gpt-engineer @ git+https://github.com/morph-labs/gpt-engineer",
+  "gpt-engineer @ git+https://github.com/morph-labs/gpt-engineer@jesse/patch",
   "aider-chat @ git+https://github.com/morph-labs/aider",
   "smol_dev @ git+https://github.com/morph-labs/smol_dev",
   "mentat-ai @ git+https://www.github.com/morph-labs/mentat",

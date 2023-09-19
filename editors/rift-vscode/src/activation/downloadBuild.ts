@@ -227,7 +227,7 @@ export async function waitForPort(port: number) {
 
 function getDefaultInstallProps() {
   const version = getExtensionVersion();
-  const osName =
+  let osName =
     process.platform === "darwin"
       ? "macOS"
       : process.platform === "linux"
@@ -237,6 +237,10 @@ function getDefaultInstallProps() {
       : "unknown";
   if (osName === "unknown") {
     throw Error("bad os.");
+  }
+
+  if (osName === "macOS" && process.arch === "arm64") {
+    osName += "-arm64";
   }
 
   const bundleID = "rift-" + osName + "-v" + version;
