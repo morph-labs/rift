@@ -7,8 +7,6 @@ from rift.ir.IR import (
     BlockKind,
     ClassKind,
     Code,
-    ContainerDeclaration,
-    ContainerKind,
     Declaration,
     File,
     FunctionKind,
@@ -23,10 +21,9 @@ from rift.ir.IR import (
     Statement,
     Substring,
     SymbolInfo,
+    SymbolKind,
     Type,
     TypeDefinitionKind,
-    ValKind,
-    ValueDeclaration,
     ValueKind,
 )
 
@@ -226,13 +223,13 @@ class DeclarationFinder:
         self.exported = False
         self.has_return = False
 
-    def mk_value_decl(self, id: Node | str, parents: List[Node], value_kind: ValueKind):
+    def mk_value_decl(self, id: Node | str, parents: List[Node], value_kind: SymbolKind):
         if isinstance(id, str):
             name: str = id
         else:
             name = id.text.decode()
 
-        return ValueDeclaration(
+        return SymbolInfo(
             body_sub=self.body_sub,
             code=self.code,
             docstring_sub=self.docstring_sub,
@@ -242,7 +239,7 @@ class DeclarationFinder:
             range=(parents[0].start_point, parents[-1].end_point),
             scope=self.scope,
             substring=(parents[0].start_byte, parents[-1].end_byte),
-            value_kind=value_kind,
+            symbol_kind=value_kind,
         )
 
     def mk_fun_decl(
@@ -262,7 +259,7 @@ class DeclarationFinder:
         return self.mk_value_decl(id="body", parents=parents, value_kind=block_kind)
 
     def mk_val_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None):
-        value_kind = ValKind(type=type)
+        value_kind = ValueKind(type=type)
         return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
 
     def mk_type_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None):
@@ -274,10 +271,10 @@ class DeclarationFinder:
         return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
 
     def mk_container_decl(
-        self, id: Node, parents: List[Node], body: List[Statement], container_kind: ContainerKind
+        self, id: Node, parents: List[Node], body: List[Statement], container_kind: SymbolKind
     ):
-        return ContainerDeclaration(
-            container_kind=container_kind,
+        return SymbolInfo(
+            symbol_kind=container_kind,
             body=body,
             body_sub=self.body_sub,
             code=self.code,
@@ -743,7 +740,7 @@ class DeclarationFinder:
 
             def parse_res_let_binding(
                 nodes: List[Node], parents: List[Node]
-            ) -> Optional[ValueDeclaration]:
+            ) -> Optional[SymbolInfo]:
                 id = None
                 exp = None
                 typ = None

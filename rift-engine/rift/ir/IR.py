@@ -1,7 +1,6 @@
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pyclbr import Function
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import rift.ir.custom_parsers as custom_parsers
@@ -179,8 +178,8 @@ class Parameter:
 
 
 @dataclass
-class ValueKind(ABC):
-    """Abstract class for value kinds."""
+class SymbolKind(ABC):
+    """Abstract class for symbol kinds."""
 
     @abstractmethod
     def name(self) -> str:
@@ -189,9 +188,12 @@ class ValueKind(ABC):
     def dump(self, lines: List[str]) -> None:
         pass
 
+    def signature(self) -> Optional[str]:
+        return None
+
 
 @dataclass
-class BlockKind(ValueKind):
+class BlockKind(SymbolKind):
     statements: List[Statement]
 
     def name(self) -> str:
@@ -205,7 +207,7 @@ class BlockKind(ValueKind):
 
 
 @dataclass
-class FunctionKind(ValueKind):
+class FunctionKind(SymbolKind):
     has_return: bool
     parameters: List[Parameter]
     body: Optional[BlockKind] = None
@@ -221,12 +223,12 @@ class FunctionKind(ValueKind):
             lines.append(f"   return_type: {self.return_type}")
         if self.has_return:
             lines.append(f"   has_return: {self.has_return}")
-        if self.body is not None :
+        if self.body is not None:
             lines.append(f"   body: {self.body}")
 
 
 @dataclass
-class ValKind(ValueKind):
+class ValueKind(SymbolKind):
     type: Optional[Type] = None
 
     def name(self) -> str:
@@ -238,7 +240,7 @@ class ValKind(ValueKind):
 
 
 @dataclass
-class TypeDefinitionKind(ValueKind):
+class TypeDefinitionKind(SymbolKind):
     type: Optional[Type] = None
 
     def name(self) -> str:
@@ -256,25 +258,13 @@ class TypeDefinitionKind(ValueKind):
 
 
 @dataclass
-class InterfaceKind(ValueKind):
+class InterfaceKind(SymbolKind):
     def name(self) -> str:
         return "Interface"
 
 
 @dataclass
-class ContainerKind(ABC):
-    """Abstract class for container kinds."""
-
-    @abstractmethod
-    def name(self) -> str:
-        raise NotImplementedError
-
-    def signature(self) -> Optional[str]:
-        return None
-
-
-@dataclass
-class ClassKind(ContainerKind):
+class ClassKind(SymbolKind):
     superclasses: Optional[str]
 
     def name(self) -> str:
@@ -286,20 +276,20 @@ class ClassKind(ContainerKind):
 
 
 @dataclass
-class NamespaceKind(ContainerKind):
+class NamespaceKind(SymbolKind):
     def name(self) -> str:
         return "Namespace"
 
 
 @dataclass
-class ModuleKind(ContainerKind):
+class ModuleKind(SymbolKind):
     def name(self) -> str:
         return "Module"
 
 
 @dataclass
-class SymbolInfo(ABC):
-    """Abstract class for symbol information."""
+class SymbolInfo:
+    """Class for symbol information."""
 
     body_sub: Optional[Substring]
     code: Code
@@ -310,6 +300,8 @@ class SymbolInfo(ABC):
     range: Range
     scope: Scope
     substring: Substring
+    symbol_kind: SymbolKind
+    body: List[Statement] = field(default_factory=list)
 
     # return the substring of the document that corresponds to this symbol info
     def get_substring(self) -> bytes:
@@ -335,11 +327,12 @@ class SymbolInfo(ABC):
             start, end = self.docstring_sub
             return self.code.bytes[start:end].decode()
 
-    @abstractmethod
     def dump(self, lines: List[str]) -> None:
-        raise NotImplementedError
-
-    def dump_common(self, id: str, lines: List[str]) -> None:
+        signature = self.symbol_kind.signature()
+        if signature is not None:
+            id = self.name + signature
+        else:
+            id = self.name
         lines.append(
             f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
         )
@@ -349,41 +342,12 @@ class SymbolInfo(ABC):
             lines.append(f"   docstring: {self.docstring}")
         if self.exported:
             lines.append(f"   exported: {self.exported}")
-
-    @abstractmethod
-    def kind(self) -> str:
-        raise NotImplementedError
-
-
-@dataclass
-class ValueDeclaration(SymbolInfo):
-    value_kind: ValueKind
-
-    def kind(self) -> str:
-        return self.value_kind.name()
-
-    def dump(self, lines: List[str]) -> None:
-        self.dump_common(self.name, lines)
         if self.body_sub is not None:
             lines.append(f"   body_sub: {self.body_sub}")
-        self.value_kind.dump(lines)
-
-
-@dataclass
-class ContainerDeclaration(SymbolInfo):
-    body: List[Statement]
-    container_kind: ContainerKind
+        self.symbol_kind.dump(lines)
 
     def kind(self) -> str:
-        return self.container_kind.name()
-
-    def dump(self, lines: List[str]) -> None:
-        signature = self.container_kind.signature()
-        if signature is not None:
-            id = self.name + signature
-        else:
-            id = self.name
-        self.dump_common(id, lines)
+        return self.symbol_kind.name()
 
 
 @dataclass
@@ -415,11 +379,11 @@ class File:
     def add_import(self, import_: Import) -> None:
         self._imports.append(import_)
 
-    def get_function_declarations(self) -> List[ValueDeclaration]:
+    def get_function_declarations(self) -> List[SymbolInfo]:
         return [
             symbol
             for symbol in self._symbol_table.values()
-            if isinstance(symbol, ValueDeclaration) and isinstance(symbol.value_kind, FunctionKind)
+            if isinstance(symbol.symbol_kind, FunctionKind)
         ]
 
     def dump_symbol_table(self, lines: List[str]) -> None:
@@ -433,11 +397,10 @@ class File:
             # indent the declaration
             decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
             lines.append(f"{' ' * indent}{decl_without_body}")
-            if isinstance(symbol, ContainerDeclaration):
-                for statement in symbol.body:
-                    dump_statement(statement, indent + 2)
-            elif isinstance(symbol, ValueDeclaration) and isinstance(symbol.value_kind, FunctionKind):
-                body = symbol.value_kind.body
+            for statement in symbol.body:
+                dump_statement(statement, indent + 2)
+            if isinstance(symbol.symbol_kind, FunctionKind):
+                body = symbol.symbol_kind.body
                 if body is not None:
                     for statement in body.statements:
                         dump_statement(statement, indent + 2)
@@ -456,9 +419,8 @@ class File:
         def dump_symbol(symbol: SymbolInfo) -> None:
             decl_without_body = symbol.get_substring_without_body().decode()
             elements.append(decl_without_body)
-            if isinstance(symbol, ContainerDeclaration):
-                for statement in symbol.body:
-                    dump_statement(statement)
+            for statement in symbol.body:
+                dump_statement(statement)
 
         def dump_statement(statement: Statement) -> None:
             if isinstance(statement, Declaration):
