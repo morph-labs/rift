@@ -59,7 +59,7 @@ class AgentTask:
                 else {}
             )
             # new thread, openai.api_key may be unset?
-            openai.api_key = os.environ["OPENAI_API_KEY"]
+            openai.api_key = os.environ.get("OPENAI_API_KEY", "")
             self._task: asyncio.Task = asyncio.create_task(self.task(*args, **kwargs))
             if self.done_callback is not None:
                 self._task.add_done_callback(self.done_callback)
