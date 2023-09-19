@@ -188,7 +188,7 @@ class MissingDocStringPrompt:
 class FileProcess:
     file_missing_docstrings: FileMissingDocstrings
     edits: List[IR.CodeEdit] = field(default_factory=list)
-    updated_functions: List[IR.ValueDeclaration] = field(default_factory=list)
+    updated_functions: List[IR.Symbol] = field(default_factory=list)
     file_change: Optional[file_diff.FileChange] = None
     new_num_missing: Optional[int] = None
 
@@ -219,7 +219,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
         language: IR.Language,
         functions_missing_docstrings: List[FunctionMissingDocstring],
         response: str,
-    ) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
+    ) -> Tuple[List[IR.CodeEdit], List[IR.Symbol]]:
         if self.debug:
             logger.info(f"response: {response}")
         code_blocks = extract_blocks_from_response(response)
@@ -245,7 +245,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
         document: IR.Code,
         language: IR.Language,
         functions_missing_docstrings: List[FunctionMissingDocstring],
-    ) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
+    ) -> Tuple[List[IR.CodeEdit], List[IR.Symbol]]:
         prompt = MissingDocStringPrompt.create_prompt_for_file(
             language=language,
             functions_missing_docstrings=functions_missing_docstrings,

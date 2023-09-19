@@ -291,6 +291,7 @@ class ModuleKind(SymbolKind):
 class Symbol:
     """Class for symbol information."""
 
+    body: List[Statement]
     body_sub: Optional[Substring]
     code: Code
     docstring_sub: Optional[Substring]
@@ -301,7 +302,6 @@ class Symbol:
     scope: Scope
     substring: Substring
     symbol_kind: SymbolKind
-    body: List[Statement] = field(default_factory=list)
 
     # return the substring of the document that corresponds to this symbol info
     def get_substring(self) -> bytes:
