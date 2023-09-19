@@ -130,7 +130,7 @@ def get_parameters(language: Language, node: Node) -> List[Parameter]:
                     type = parse_type(language, type_node)
                 name = child.text.decode()
                 parameters.append(Parameter(name=name, type=type))
-        elif child.type == "required_parameter" or child.type == "optional_parameter":
+        elif child.type in ["required_parameter", "optional_parameter"]:
             name = ""
             pattern_node = child.child_by_field_name("pattern")
             if pattern_node is not None:
@@ -142,6 +142,13 @@ def get_parameters(language: Language, node: Node) -> List[Parameter]:
             parameters.append(
                 Parameter(name=name, type=type, optional=child.type == "optional_parameter")
             )
+        elif child.type in ["formal_parameter", "parameter"]:
+            type: Optional[Type] = None
+            type_node = child.child_by_field_name("type")
+            if type_node is not None:
+                type = parse_type(language, type_node)
+            name = child.text.decode()
+            parameters.append(Parameter(name=name, type=type))
     return parameters
 
 
@@ -330,7 +337,7 @@ class DeclarationFinder:
             (node.type in ["class_specifier"] and language in ["c", "cpp"])
             or (
                 node.type in ["class_declaration"]
-                and language in ["javascript", "tsx", "typescript", "c_sharp"]
+                and language in ["javascript", "tsx", "typescript", "c_sharp", "java"]
             )
             or (node.type in ["class_definition"] and language in ["python"])
             or (node.type in ["namespace_definition"] and language in ["cpp"])
@@ -368,7 +375,11 @@ class DeclarationFinder:
                     if len(stmt.children) > 0 and stmt.children[0].type == "string":
                         docstring_node = stmt.children[0]
                         self.docstring = docstring_node.text.decode()
-                elif node.prev_sibling is not None and node.prev_sibling.type == "comment":
+                elif node.prev_sibling is not None and node.prev_sibling.type in [
+                    "comment",
+                    "line_comment",
+                    "block_comment",
+                ]:
                     # parse class comments before class definition
                     docstring_node = node.prev_sibling
                     self.docstring = docstring_node.text.decode()
@@ -427,7 +438,7 @@ class DeclarationFinder:
                 and language in ["javascript", "tsx", "typescript"]
             )
             or (node.type in ["function_definition"] and language in ["python"])
-            or (node.type in ["method_declaration"] and language in ["c_sharp"])
+            or (node.type in ["method_declaration"] and language in ["c_sharp", "java"])
             or (node.type in ["method"] and language in ["ruby"])
         ):
             id: Optional[Node] = None
@@ -439,7 +450,7 @@ class DeclarationFinder:
             if parameters_node is not None:
                 parameters = get_parameters(language=language, node=parameters_node)
             return_type: Optional[Type] = None
-            if language == "c_sharp":
+            if language in ["c_sharp", "java"]:
                 return_type_node = node.child_by_field_name("type")
             else:
                 return_type_node = node.child_by_field_name("return_type")
@@ -495,6 +506,7 @@ class DeclarationFinder:
             "typescript",
             "tsx",
             "c_sharp",
+            "java",
         ]:
             id: Optional[Node] = node.child_by_field_name("name")
             if id is not None:
