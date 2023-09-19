@@ -302,7 +302,6 @@ class Symbol:
     scope: Scope
     substring: Substring
     symbol_kind: SymbolKind
-    body: List[Statement] = field(default_factory=list)
 
     # return the substring of the document that corresponds to this symbol info
     def get_substring(self) -> bytes:
