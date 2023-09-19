@@ -8,7 +8,17 @@ from urllib.request import url2pathname
 import rift.ir.custom_parsers as custom_parsers
 
 Language = Literal[
-    "c", "cpp", "c_sharp", "javascript", "ocaml", "python", "rescript", "typescript", "tsx", "ruby"
+    "c",
+    "cpp",
+    "c_sharp",
+    "java",
+    "javascript",
+    "ocaml",
+    "python",
+    "rescript",
+    "typescript",
+    "tsx",
+    "ruby",
 ]
 # e.g. ("A", "B", "foo") for function foo inside class B inside class A
 QualifiedId = str
@@ -459,6 +469,8 @@ def language_from_file_extension(file_path: str) -> Optional[Language]:
         return "c_sharp"
     elif file_path.endswith(".js"):
         return "javascript"
+    elif file_path.endswith(".java"):
+        return "java"
     elif file_path.endswith(".ml"):
         return "ocaml"
     elif file_path.endswith(".py"):

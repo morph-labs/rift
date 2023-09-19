@@ -38,6 +38,38 @@ Function: f2
    range: ((3, 0), (3, 18))
    substring: (93, 111)
    docstring: /** Some docstring on an arrow function */
+=== Symbol Table for test.java ===
+Function: braking
+   language: java
+   range: ((7, 4), (9, 5))
+   substring: (124, 203)
+   scope: Bicycle.
+   body: (146, 203)
+   return_type: void
+Class: Bicycle
+   language: java
+   range: ((1, 0), (10, 1))
+   substring: (21, 205)
+   docstring: // This is docstring
+Function: sum
+   language: java
+   range: ((14, 4), (17, 5))
+   substring: (255, 343)
+   scope: Math.
+   body: (291, 343)
+   parameters: [int a:int, int b:int]
+   return_type: int
+   has_return: True
+Class: Math
+   language: java
+   range: ((13, 0), (18, 1))
+   substring: (231, 345)
+   docstring: /* This is docstring */
+Interface: Animal
+   language: java
+   range: ((20, 0), (23, 1))
+   substring: (347, 451)
+   body: (364, 451)
 === Symbol Table for test.ts ===
 Type: a
    language: typescript
@@ -170,27 +202,28 @@ Namespace: namespace_name
 Function: sum
    language: c_sharp
    range: ((6, 8), (10, 9))
-   substring: (110, 214)
+   substring: (110, 215)
    scope: SampleNamespace::SampleClass.
-   body: (149, 214)
+   body: (149, 215)
+   parameters: [int a:int, int b:int]
    return_type: int
    has_return: True
 Class: SampleClass
    language: c_sharp
    range: ((4, 4), (11, 5))
-   substring: (78, 220)
+   substring: (78, 221)
    scope: SampleNamespace::
    docstring: // This is docstring
 Namespace: SampleNamespace
    language: c_sharp
    range: ((1, 0), (12, 1))
-   substring: (21, 222)
+   substring: (21, 223)
    docstring: // This is docstring
 Interface: IEquatable
    language: c_sharp
    range: ((14, 0), (17, 1))
-   substring: (224, 275)
-   body: (248, 275)
+   substring: (225, 276)
+   body: (249, 276)
 === Symbol Table for test.ml ===
 Function: divide
    language: ocaml
@@ -341,6 +374,12 @@ File: test.c
 File: test.js
   function f1()
   let f2 = x => x+1;
+File: test.java
+  public class Bicycle
+    public void braking()
+  public class Math
+    public static int sum(int a, int b)
+  interface Animal
 File: test.ts
   type a = readonly b[][];
   function ts(x:number, opt?:string) : number
