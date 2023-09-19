@@ -1,7 +1,6 @@
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pyclbr import Function
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import rift.ir.custom_parsers as custom_parsers
@@ -303,6 +302,7 @@ class Symbol:
     scope: Scope
     substring: Substring
     symbol_kind: SymbolKind
+    body: List[Statement] = field(default_factory=list)
 
     # return the substring of the document that corresponds to this symbol info
     def get_substring(self) -> bytes:
