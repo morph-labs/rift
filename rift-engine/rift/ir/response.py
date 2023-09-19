@@ -77,16 +77,16 @@ def replace_functions_in_document(
     ir_blocks: IR.File,
     replace: Replace,
     filter_function_ids: Optional[List[IR.QualifiedId]] = None,
-) -> Tuple[List[IR.CodeEdit], List[IR.SymbolInfo]]:
+) -> Tuple[List[IR.CodeEdit], List[IR.Symbol]]:
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
     """
     function_declarations_in_document: List[
-        IR.SymbolInfo
+        IR.Symbol
     ] = ir_doc.get_function_declarations()
 
     code_edits: List[IR.CodeEdit] = []
-    updated_functions: List[IR.SymbolInfo] = []
+    updated_functions: List[IR.Symbol] = []
 
     for function_declaration in function_declarations_in_document:
         function_in_blocks_ = ir_blocks.search_symbol(function_declaration.name)
@@ -173,7 +173,7 @@ def replace_functions_in_document(
 
 
 def update_typing_imports(
-    code: IR.Code, language: IR.Language, updated_functions: List[IR.SymbolInfo]
+    code: IR.Code, language: IR.Language, updated_functions: List[IR.Symbol]
 ) -> Optional[IR.CodeEdit]:
     file = parse_code_blocks(code_blocks=[code], language=language)
     typing_import = file.search_module_import("typing")
@@ -208,7 +208,7 @@ def replace_functions_from_code_blocks(
     language: IR.Language,
     replace: Replace,
     filter_function_ids: Optional[List[IR.QualifiedId]] = None,
-) -> Tuple[List[IR.CodeEdit], List[IR.SymbolInfo]]:
+) -> Tuple[List[IR.CodeEdit], List[IR.Symbol]]:
     """
     Generates a new document by replacing functions in the original document with the corresponding functions
     from the code blocks.
