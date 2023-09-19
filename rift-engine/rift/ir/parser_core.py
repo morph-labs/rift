@@ -20,7 +20,7 @@ from rift.ir.IR import (
     Scope,
     Statement,
     Substring,
-    SymbolInfo,
+    Symbol,
     SymbolKind,
     Type,
     TypeDefinitionKind,
@@ -229,7 +229,7 @@ class DeclarationFinder:
         else:
             name = id.text.decode()
 
-        return SymbolInfo(
+        return Symbol(
             body_sub=self.body_sub,
             code=self.code,
             docstring=self.docstring,
@@ -273,7 +273,7 @@ class DeclarationFinder:
     def mk_container_decl(
         self, id: Node, parents: List[Node], body: List[Statement], container_kind: SymbolKind
     ):
-        return SymbolInfo(
+        return Symbol(
             symbol_kind=container_kind,
             body=body,
             body_sub=self.body_sub,
@@ -348,7 +348,7 @@ class DeclarationFinder:
                 self.body_sub = (body_node.start_byte, body_node.end_byte)
             return body_node
 
-    def find_declarations(self) -> List[SymbolInfo]:
+    def find_declarations(self) -> List[Symbol]:
         previous_node = self.node.prev_sibling
         if previous_node is not None and previous_node.type == "comment":
             docstring = previous_node.text.decode()
@@ -639,7 +639,7 @@ class DeclarationFinder:
                         inner_parameter.type = type
                         parameters.append(inner_parameter)
 
-            declarations: List[SymbolInfo] = []
+            declarations: List[Symbol] = []
             for child in node.children:
                 if child.type == "let_binding":
                     return_type, _ = self.process_ocaml_body(child)
@@ -740,7 +740,7 @@ class DeclarationFinder:
 
             def parse_res_let_binding(
                 nodes: List[Node], parents: List[Node]
-            ) -> Optional[SymbolInfo]:
+            ) -> Optional[Symbol]:
                 id = None
                 exp = None
                 typ = None
@@ -792,7 +792,7 @@ class DeclarationFinder:
                     self.file.add_symbol(declaration)
                     return declaration
 
-            declarations: List[SymbolInfo] = []
+            declarations: List[Symbol] = []
             for child in node.children:
                 if child.type == "let_binding":
                     parents = [n for n in (child.prev_sibling, child) if n]
@@ -810,7 +810,7 @@ class DeclarationFinder:
 
         elif node.type == "module_declaration" and language == "rescript":
 
-            def parse_module_binding(nodes: List[Node]) -> List[SymbolInfo]:
+            def parse_module_binding(nodes: List[Node]) -> List[Symbol]:
                 id = None
                 body = None
                 if (

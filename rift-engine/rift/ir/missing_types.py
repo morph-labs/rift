@@ -8,7 +8,7 @@ import rift.ir.parser as parser
 
 @dataclass
 class MissingType:
-    function_declaration: IR.SymbolInfo
+    function_declaration: IR.Symbol
     parameters: List[str] = field(default_factory=list)
     return_type: bool = False
 
