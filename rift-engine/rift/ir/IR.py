@@ -7,7 +7,17 @@ from urllib.parse import urlparse
 import rift.ir.custom_parsers as custom_parsers
 
 Language = Literal[
-    "c", "cpp", "c_sharp", "java", "javascript", "ocaml", "python", "rescript", "typescript", "tsx", "ruby"
+    "c",
+    "cpp",
+    "c_sharp",
+    "java",
+    "javascript",
+    "ocaml",
+    "python",
+    "rescript",
+    "typescript",
+    "tsx",
+    "ruby",
 ]
 # e.g. ("A", "B", "foo") for function foo inside class B inside class A
 QualifiedId = str
@@ -464,8 +474,8 @@ def language_from_file_extension(file_path: str) -> Optional[Language]:
         return "ocaml"
     elif file_path.endswith(".py"):
         return "python"
-    # elif file_path.endswith(".res"):
-    #     return "rescript"
+    elif file_path.endswith(".res") and custom_parsers.active:
+        return "rescript"
     elif file_path.endswith(".ts"):
         return "typescript"
     elif file_path.endswith(".tsx"):

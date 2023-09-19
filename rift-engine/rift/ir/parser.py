@@ -10,11 +10,11 @@ import rift.ir.parser_core as parser_core
 
 
 def get_parser(language: IR.Language) -> Parser:
-    # if language == "rescript":
-    #     parser = custom_parser.parser
-    #     parser.set_language(custom_parser.ReScript)
-    #     return parser
-    # else:
+    if language == "rescript" and custom_parser.active:
+        parser = custom_parser.parser
+        parser.set_language(custom_parser.ReScript)
+        return parser
+    else:
         return get_tree_sitter_parser(language)
 
 
