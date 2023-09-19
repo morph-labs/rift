@@ -28,7 +28,7 @@ def get_symbol_completions_raw(project: IR.Project) -> List[Dict[str, Symbol]]:
     for file_ir in project.get_files():
         symbols: List[Symbol] = []
         for symbol_info in file_ir.search_symbol(lambda _: True):
-            if isinstance(symbol_info, IR.ValueDeclaration) and isinstance(symbol_info.value_kind, IR.BlockKind):
+            if isinstance(symbol_info.symbol_kind, IR.BlockKind):
                 continue # don't emit completions for blocks at the moment
             symbol = Symbol(
                 symbol_info.name, symbol_info.scope, symbol_info.kind(), symbol_info.range

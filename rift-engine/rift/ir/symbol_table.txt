@@ -51,6 +51,7 @@ Class: Bicycle
    range: ((1, 0), (10, 1))
    substring: (21, 205)
    docstring: // This is docstring
+   body_sub: (42, 205)
 Function: sum
    language: java
    range: ((14, 4), (17, 5))
@@ -65,6 +66,7 @@ Class: Math
    range: ((13, 0), (18, 1))
    substring: (231, 345)
    docstring: /* This is docstring */
+   body_sub: (249, 345)
 Interface: Animal
    language: java
    range: ((20, 0), (23, 1))
@@ -110,6 +112,7 @@ Class: A
    range: ((3, 7), (8, 1))
    substring: (141, 224)
    exported: True
+   body_sub: (149, 224)
 Interface: RunHelperSyncResult
    language: typescript
    range: ((9, 0), (12, 1))
@@ -151,6 +154,7 @@ Class: A(C,D)
     This is a docstring
     for class A
     """
+   body_sub: (18, 139)
 Block: body
    language: python
    range: ((14, 8), (14, 12))
@@ -198,10 +202,12 @@ Class: Nested
    range: ((17, 4), (19, 16))
    substring: (358, 410)
    scope: B.
+   body_sub: (380, 410)
 Class: B
    language: python
    range: ((9, 0), (19, 16))
    substring: (140, 410)
+   body_sub: (153, 410)
 Block: body
    language: python
    range: ((29, 8), (29, 12))
@@ -249,10 +255,12 @@ Class: student
    range: ((3, 4), (6, 5))
    substring: (76, 139)
    scope: namespace_name::
+   body_sub: (90, 139)
 Namespace: namespace_name
    language: cpp
    range: ((0, 0), (7, 1))
    substring: (0, 142)
+   body_sub: (26, 142)
 === Symbol Table for test.cs ===
 Function: sum
    language: c_sharp
@@ -269,11 +277,13 @@ Class: SampleClass
    substring: (78, 221)
    scope: SampleNamespace::
    docstring: // This is docstring
+   body_sub: (100, 221)
 Namespace: SampleNamespace
    language: c_sharp
    range: ((1, 0), (12, 1))
    substring: (21, 223)
    docstring: // This is docstring
+   body_sub: (47, 223)
 Interface: IEquatable
    language: c_sharp
    range: ((14, 0), (17, 1))
@@ -311,6 +321,7 @@ Module: M
    language: ocaml
    range: ((2, 0), (5, 3))
    substring: (57, 159)
+   body_sub: (66, 159)
 Function: with_named_args
    language: ocaml
    range: ((7, 4), (7, 81))
@@ -351,6 +362,7 @@ Module: N
    language: ocaml
    range: ((6, 0), (14, 3))
    substring: (160, 365)
+   body_sub: (169, 365)
 === Symbol Table for test.rb ===
 Function: sum
    language: ruby
@@ -393,6 +405,7 @@ Class: Person
    range: ((23, 8), (34, 11))
    substring: (397, 680)
    docstring: # This is a docstring for class Person
+   body_sub: (422, 680)
 Function: cream?
    language: ruby
    range: ((37, 12), (39, 15))
@@ -403,6 +416,7 @@ Module: Cream
    language: ruby
    range: ((36, 8), (40, 11))
    substring: (690, 774)
+   body_sub: (715, 774)
 Function: pour
    language: ruby
    range: ((44, 16), (48, 19))
@@ -415,10 +429,12 @@ Class: Bar
    range: ((43, 12), (49, 15))
    substring: (807, 1003)
    scope: Foo::
+   body_sub: (833, 1003)
 Module: Foo
    language: ruby
    range: ((42, 8), (50, 11))
    substring: (784, 1015)
+   body_sub: (807, 1015)
 
 === Project Map ===
 File: test.c
