@@ -71,7 +71,7 @@ class Statement:
 
 @dataclass
 class Declaration(Statement):
-    symbols: List["SymbolInfo"]
+    symbols: List["Symbol"]
 
 
 @dataclass
@@ -290,7 +290,7 @@ class ModuleKind(SymbolKind):
 
 
 @dataclass
-class SymbolInfo:
+class Symbol:
     """Class for symbol information."""
 
     body_sub: Optional[Substring]
@@ -349,12 +349,12 @@ class File:
     path: str  # path of the file relative to the root directory
     statements: List[Statement] = field(default_factory=list)
     _imports: List[Import] = field(default_factory=list)
-    _symbol_table: Dict[QualifiedId, SymbolInfo] = field(default_factory=dict)
+    _symbol_table: Dict[QualifiedId, Symbol] = field(default_factory=dict)
 
-    def lookup_symbol(self, qid: QualifiedId) -> Optional[SymbolInfo]:
+    def lookup_symbol(self, qid: QualifiedId) -> Optional[Symbol]:
         return self._symbol_table.get(qid)
 
-    def search_symbol(self, name: Union[str, Callable[[str], bool]]) -> List[SymbolInfo]:
+    def search_symbol(self, name: Union[str, Callable[[str], bool]]) -> List[Symbol]:
         if callable(name):
             name_filter = name
             return [symbol for symbol in self._symbol_table.values() if name_filter(symbol.name)]
@@ -367,13 +367,13 @@ class File:
                 return import_
         return None
 
-    def add_symbol(self, symbol: SymbolInfo) -> None:
+    def add_symbol(self, symbol: Symbol) -> None:
         self._symbol_table[symbol.get_qualified_id()] = symbol
 
     def add_import(self, import_: Import) -> None:
         self._imports.append(import_)
 
-    def get_function_declarations(self) -> List[SymbolInfo]:
+    def get_function_declarations(self) -> List[Symbol]:
         return [
             symbol
             for symbol in self._symbol_table.values()
@@ -386,7 +386,7 @@ class File:
             d.dump(lines)
 
     def dump_map(self, indent: int, lines: List[str]) -> None:
-        def dump_symbol(symbol: SymbolInfo, indent: int) -> None:
+        def dump_symbol(symbol: Symbol, indent: int) -> None:
             decl_without_body = symbol.get_substring_without_body().decode().strip()
             # indent the declaration
             decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
@@ -410,7 +410,7 @@ class File:
             dump_statement(statement, indent)
 
     def dump_elements(self, elements: List[str]) -> None:
-        def dump_symbol(symbol: SymbolInfo) -> None:
+        def dump_symbol(symbol: Symbol) -> None:
             decl_without_body = symbol.get_substring_without_body().decode()
             elements.append(decl_without_body)
             for statement in symbol.body:
@@ -460,7 +460,7 @@ class Reference:
 @dataclass
 class ResolvedReference:
     file: File
-    symbol: Optional[SymbolInfo] = None
+    symbol: Optional[Symbol] = None
 
 
 @dataclass

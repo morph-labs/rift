@@ -145,7 +145,7 @@ class MissingTypePrompt:
 class FileProcess:
     file_missing_types: FileMissingTypes
     edits: List[IR.CodeEdit] = field(default_factory=list)
-    updated_functions: List[IR.SymbolInfo] = field(default_factory=list)
+    updated_functions: List[IR.Symbol] = field(default_factory=list)
     file_change: Optional[file_diff.FileChange] = None
     new_num_missing: Optional[int] = None
 
@@ -205,7 +205,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
         language: IR.Language,
         missing_types: List[MissingType],
         response: str,
-    ) -> Tuple[List[IR.CodeEdit], List[IR.SymbolInfo]]:
+    ) -> Tuple[List[IR.CodeEdit], List[IR.Symbol]]:
         if self.debug:
             logger.info(f"response:\n{response}\n")
         code_blocks = extract_blocks_from_response(response)
@@ -222,7 +222,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
 
     async def code_edits_for_missing_files(
         self, document: IR.Code, language: IR.Language, missing_types: List[MissingType]
-    ) -> Tuple[List[IR.CodeEdit], List[IR.SymbolInfo]]:
+    ) -> Tuple[List[IR.CodeEdit], List[IR.Symbol]]:
         prompt = MissingTypePrompt.create_prompt_for_file(
             language=language, missing_types=missing_types
         )
