@@ -223,13 +223,19 @@ class DeclarationFinder:
         self.exported = False
         self.has_return = False
 
-    def mk_value_decl(self, id: Node | str, parents: List[Node], value_kind: SymbolKind):
+    def mk_symbol_decl(
+        self,
+        id: Node | str,
+        parents: List[Node],
+        symbol_kind: SymbolKind,
+        body: List[Statement] = [],
+    ) -> Symbol:
         if isinstance(id, str):
             name: str = id
         else:
             name = id.text.decode()
-
         return Symbol(
+            body=body,
             body_sub=self.body_sub,
             code=self.code,
             docstring=self.docstring,
@@ -239,7 +245,7 @@ class DeclarationFinder:
             range=(parents[0].start_point, parents[-1].end_point),
             scope=self.scope,
             substring=(parents[0].start_byte, parents[-1].end_byte),
-            symbol_kind=value_kind,
+            symbol_kind=symbol_kind,
         )
 
     def mk_fun_decl(
@@ -249,63 +255,40 @@ class DeclarationFinder:
         body: Optional[BlockKind] = None,
         parameters: List[Parameter] = [],
         return_type: Optional[Type] = None,
-    ):
-        value_kind = FunctionKind(
+    ) -> Symbol:
+        symbol_kind = FunctionKind(
             body=body, has_return=self.has_return, parameters=parameters, return_type=return_type
         )
-        return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
+        return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
 
-    def mk_body_block(self, parents: List[Node], block_kind: BlockKind):
-        return self.mk_value_decl(id="body", parents=parents, value_kind=block_kind)
+    def mk_body_block(self, parents: List[Node], block_kind: BlockKind) -> Symbol:
+        return self.mk_symbol_decl(id="body", parents=parents, symbol_kind=block_kind)
 
-    def mk_val_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None):
-        value_kind = ValueKind(type=type)
-        return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
+    def mk_val_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None) -> Symbol:
+        symbol_kind = ValueKind(type=type)
+        return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
 
-    def mk_type_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None):
-        value_kind = TypeDefinitionKind(type)
-        return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
+    def mk_type_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None) -> Symbol:
+        symbol_kind = TypeDefinitionKind(type)
+        return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
 
-    def mk_interface_decl(self, id: Node, parents: List[Node]):
-        value_kind = InterfaceKind()
-        return self.mk_value_decl(id=id, parents=parents, value_kind=value_kind)
-
-    def mk_container_decl(
-        self, id: Node, parents: List[Node], body: List[Statement], container_kind: SymbolKind
-    ):
-        return Symbol(
-            symbol_kind=container_kind,
-            body=body,
-            body_sub=self.body_sub,
-            code=self.code,
-            docstring=self.docstring,
-            exported=self.exported,
-            language=self.language,
-            name=id.text.decode(),
-            range=(parents[0].start_point, parents[-1].end_point),
-            scope=self.scope,
-            substring=(parents[0].start_byte, parents[-1].end_byte),
-        )
+    def mk_interface_decl(self, id: Node, parents: List[Node]) -> Symbol:
+        symbol_kind = InterfaceKind()
+        return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
 
     def mk_class_decl(
         self, id: Node, body: List[Statement], parents: List[Node], superclasses: Optional[str]
-    ):
-        container_kind = ClassKind(superclasses=superclasses)
-        return self.mk_container_decl(
-            id=id, body=body, container_kind=container_kind, parents=parents
-        )
+    ) -> Symbol:
+        symbol_kind = ClassKind(superclasses=superclasses)
+        return self.mk_symbol_decl(id=id, body=body, symbol_kind=symbol_kind, parents=parents)
 
-    def mk_namespace_decl(self, id: Node, body: List[Statement], parents: List[Node]):
-        container_kind = NamespaceKind()
-        return self.mk_container_decl(
-            id=id, body=body, container_kind=container_kind, parents=parents
-        )
+    def mk_namespace_decl(self, id: Node, body: List[Statement], parents: List[Node]) -> Symbol:
+        symbol_kind = NamespaceKind()
+        return self.mk_symbol_decl(id=id, body=body, symbol_kind=symbol_kind, parents=parents)
 
-    def mk_module_decl(self, id: Node, body: List[Statement], parents: List[Node]):
-        container_kind = ModuleKind()
-        return self.mk_container_decl(
-            id=id, body=body, container_kind=container_kind, parents=parents
-        )
+    def mk_module_decl(self, id: Node, body: List[Statement], parents: List[Node]) -> Symbol:
+        symbol_kind = ModuleKind()
+        return self.mk_symbol_decl(id=id, body=body, symbol_kind=symbol_kind, parents=parents)
 
     def process_ocaml_body(self, n: Node) -> Tuple[Optional[Type], Optional[Node]]:
         type = None
@@ -738,9 +721,7 @@ class DeclarationFinder:
                         if self.body_sub is not None:
                             self.body_sub = (nodes[-2].start_byte, self.body_sub[1])
 
-            def parse_res_let_binding(
-                nodes: List[Node], parents: List[Node]
-            ) -> Optional[Symbol]:
+            def parse_res_let_binding(nodes: List[Node], parents: List[Node]) -> Optional[Symbol]:
                 id = None
                 exp = None
                 typ = None
