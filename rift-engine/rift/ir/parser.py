@@ -22,9 +22,9 @@ def parse_code_block(file: IR.File, code: IR.Code, language: IR.Language) -> Non
     parser = get_parser(language)
     tree = parser.parse(code.bytes)
     for node in tree.root_node.children:
-        statement = parser_core.process_statement(
+        statement = parser_core.SymbolParser(
             code=code, file=file, language=language, node=node, scope=""
-        )
+        ).parse_statement()
         file.statements.append(statement)
 
 
