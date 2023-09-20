@@ -66,7 +66,7 @@ def get_typing_names_from_types(types: List[IR.Type]) -> Set[str]:
         names = names.union(new_names)
     return names
 
-Replace = Enum('Replace', ['ALL', 'SIGNATURE'])
+Replace = Enum('Replace', ['ALL', 'DOC', 'SIGNATURE'])
 
 def replace_functions_in_document(
     ir_doc: IR.File,
@@ -102,6 +102,9 @@ def replace_functions_in_document(
             if replace == Replace.ALL:
                 substring = function_declaration.substring
                 new_bytes = function_in_blocks.get_substring()
+            elif replace == Replace.DOC:
+                substring = function_declaration.docstring_substring
+                new_bytes = function_in_blocks.docstring.get_substring()
             else:
                 new_function_text = function_in_blocks.get_substring_without_body()
                 logger.info(f"{new_function_text=}")

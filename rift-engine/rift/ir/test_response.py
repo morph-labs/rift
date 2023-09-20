@@ -3,6 +3,7 @@ import os
 from textwrap import dedent
 
 import rift.ir.IR as IR
+from rift.ir.missing_doc_strings import functions_missing_doc_strings_in_file
 import rift.ir.parser as parser
 import rift.ir.response as response
 from rift.ir.missing_types import functions_missing_types_in_file
@@ -123,6 +124,37 @@ class Test:
         .encode("utf-8")
     )
 
+    code4 = (
+        dedent(
+            """
+        class TestAddDocs:
+            def dump_elements(self, elements: List[str]) -> None:
+                def dump_symbol(symbol: SymbolInfo) -> None:
+                    decl_without_body = symbol.get_substring_without_body().decode()
+                    elements.append(decl_without_body)
+                    if isinstance(symbol, ContainerDeclaration):
+                        for statement in symbol.body:
+                            dump_statement(statement)
+
+                def dump_statement(statement: Statement) -> None:
+                    if isinstance(statement, Declaration):
+                        for symbol in statement.symbols:
+                            dump_symbol(symbol)
+                    else:
+                        pass
+
+                for statement in self.statements:
+                    dump_statement(statement)
+
+                from typing import Tuple
+                def foo() -> None:
+                    print("Hello world!")
+        """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
+
     response3 = dedent(
         """
         Here are the required changes:
@@ -138,6 +170,25 @@ class Test:
                        
         def foo() -> string:
             print("This should be ignored as the return type was not missing")
+        ```
+
+        Some other thoutghts:
+        - this
+        
+        """
+    ).lstrip()
+
+    response4 = dedent(
+        """
+        Here are the required changes:
+
+        ```
+        def dump_elements():
+            \"\"\"
+            The doc comment for dump_elements
+            Spans multiple lines
+            \"\"\"
+            ...
         ```
 
         Some other thoutghts:
@@ -198,6 +249,23 @@ def test_response():
 
     new_document3 = document3.apply_edits(edits3)
     new_test_output += f"\n\nNew document3:\n```\n{new_document3}```"
+
+    code_blocks4 = response.extract_blocks_from_response(Test.response4)
+    file = IR.File("response4")
+    parser.parse_code_block(file, IR.Code(Test.code4), language)
+    missing_docs = functions_missing_doc_strings_in_file(file)
+    filter_function_ids = [md.function_declaration.get_qualified_id() for md in missing_docs]
+    document4 = IR.Code(Test.code4)
+    edits4, updated_functions = response.replace_functions_from_code_blocks(
+        code_blocks=code_blocks4,
+        document=document4,
+        filter_function_ids=filter_function_ids,
+        language=language,
+        replace=response.Replace.DOC,
+    )
+
+    new_document4 = document4.apply_edits(edits4)
+    new_test_output += f"\n\nNew document4:\n```\n{new_document4}```"
 
     if new_test_output != old_test_output:
         diff = difflib.unified_diff(
