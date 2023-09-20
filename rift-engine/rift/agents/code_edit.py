@@ -1,3 +1,5 @@
+import os
+import jsonlines as jsl
 import asyncio
 import logging
 from asyncio import Future
@@ -91,6 +93,8 @@ class CodeEditAgent(Agent):
 
     async def run(self) -> AgentRunResult:  # main entry point
         try:
+            self.RESPONSE = ""
+            self.dp = dict()
             self.DIFF = None
             self.RANGE = None
 
@@ -116,6 +120,9 @@ class CodeEditAgent(Agent):
                 urtext = self.state.document.text
                 uroffset_start = self.state.document.position_to_offset(self.state.selection.first)
                 uroffset_end = self.state.document.position_to_offset(self.state.selection.second)
+                self.dp["before_region"] = urtext[:uroffset_start]
+                self.dp["region"] = urtext[uroffset_start:uroffset_end]
+                self.dp["after_region"] = urtext[uroffset_end:]
 
             while True:
                 try:
@@ -125,6 +132,7 @@ class CodeEditAgent(Agent):
                     instructionPrompt: Optional[str] = await get_user_response_t.run()
                     if not instructionPrompt:
                         break
+                    self.dp["instruction"] = instructionPrompt
                     documents = resolve_inline_uris(instructionPrompt, self.server)
                     self.server.register_change_callback(self.on_change, self.state.document.uri)
                     from diff_match_patch import diff_match_patch
@@ -149,6 +157,7 @@ class CodeEditAgent(Agent):
                         try:
                             async for delta in response_stream:
                                 response += delta
+                                self.RESPONSE += delta
                                 await self.send_progress(CodeEditProgress(response=response))
                         except Exception as e:
                             logger.info(f"RESPONSE EXCEPTION: {e}")
@@ -161,7 +170,11 @@ class CodeEditAgent(Agent):
 
                     async def gather_thoughts():
                         async for delta in edit_code_result.thoughts:
-                            response_stream.feed_data(delta)                        
+                            response_stream.feed_data(delta)
+
+                    async def gather_plan():
+                        async for delta in edit_code_result.plan:
+                            response_stream.feed_data(delta)
 
                     async def cleanup():
                         response_stream.feed_eof()
@@ -272,7 +285,7 @@ class CodeEditAgent(Agent):
 
                     async def generate_code():
                         # async def watch_event():
-                        #     if edit_code_result.event:                            
+                        #     if edit_code_result.event:
                         #         while True:
                         #             # logger.info(f"{edit_code_result.event=}")
                         #             if edit_code_result.event.is_set():
@@ -295,7 +308,8 @@ class CodeEditAgent(Agent):
                                 else:
                                     await send_diff(x)
 
-                        diff_queue_task = asyncio.create_task(_watch_queue())                        
+                        diff_queue_task = asyncio.create_task(_watch_queue())
+                        response_stream.feed_data("\n```\n")
                         while True:
                             if after.at_eof():
                                 break
@@ -305,6 +319,7 @@ class CodeEditAgent(Agent):
                             if line_flag:
                                 all_deltas.append("\n")
                             async for delta in before:
+                                response_stream.feed_data(delta)
                                 if not flag:
                                     flag = True
                                 all_deltas.append(delta)
@@ -317,9 +332,11 @@ class CodeEditAgent(Agent):
                             await diff_queue.put("".join(all_deltas))
                         await diff_queue.put(None)
                         await diff_queue_task
+                        response_stream.feed_data("\n```\n")
 
                         # asyncio.create_task(send_diff("".join(all_deltas)))
 
+                    await asyncio.create_task(gather_plan())
                     await self.add_task("Generate code", generate_code).run()
                     await gather_thoughts()
                     t = asyncio.create_task(cleanup())
@@ -425,9 +442,23 @@ class CodeEditAgent(Agent):
 
     async def accept(self) -> None:
         logger.info(f"{self} user accepted result")
+        self.dp["completion"] = self.RESPONSE
+
+        with jsl.open(
+            os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                "code_edit_log.jsonl",
+            ),
+            "a",
+        ) as f:
+            f.write(self.dp)
+
+        accepted_diff_text = self.accepted_diff_text(self.DIFF)
 
         await self.server.apply_range_edit(
-            self.state.document.uri, self.RANGE, self.accepted_diff_text(self.DIFF)
+            self.state.document.uri,
+            self.RANGE,
+            accepted_diff_text,
         )
         # if self.task.status not in ["error", "done"]:
         #     logger.error(f"cannot accept status {self.task.status}")
