@@ -6,7 +6,6 @@ import time
 from concurrent import futures
 from dataclasses import dataclass, field
 from typing import ClassVar, List, Optional, Type
-from urllib.request import url2pathname
 
 logger = logging.getLogger(__name__)
 
