@@ -321,7 +321,6 @@ class Symbol:
             body_start, _body_end = self.body_sub
             return self.code.bytes[start:body_start]
         
-    # add a docstring computed property
     @property
     def docstring(self) -> Optional[str]:
         if self.docstring_sub is None:
