@@ -296,7 +296,7 @@ class Symbol:
     body: List[Statement]
     body_sub: Optional[Substring]
     code: Code
-    docstring: str
+    docstring_sub: Optional[Substring]
     exported: bool
     language: Language
     name: str
@@ -320,6 +320,15 @@ class Symbol:
             start, _end = self.substring
             body_start, _body_end = self.body_sub
             return self.code.bytes[start:body_start]
+        
+    # add a docstring computed property
+    @property
+    def docstring(self) -> Optional[str]:
+        if self.docstring_sub is None:
+            return None
+        else:
+            start, end = self.docstring_sub
+            return self.code.bytes[start:end].decode()
 
     def dump(self, lines: List[str]) -> None:
         signature = self.symbol_kind.signature()
@@ -332,7 +341,7 @@ class Symbol:
         )
         if self.scope != "":
             lines.append(f"   scope: {self.scope}")
-        if self.docstring != "":
+        if self.docstring_sub is not None:
             lines.append(f"   docstring: {self.docstring}")
         if self.exported:
             lines.append(f"   exported: {self.exported}")

@@ -219,7 +219,7 @@ class DeclarationFinder:
         self.scope = scope
 
         self.body_sub: Optional[Substring] = None
-        self.docstring = ""
+        self.docstring_sub: Optional[Substring] = None
         self.exported = False
         self.has_return = False
 
@@ -238,7 +238,7 @@ class DeclarationFinder:
             body=body,
             body_sub=self.body_sub,
             code=self.code,
-            docstring=self.docstring,
+            docstring_sub=self.docstring_sub,
             exported=self.exported,
             language=self.language,
             name=name,
@@ -336,7 +336,7 @@ class DeclarationFinder:
         if previous_node is not None and previous_node.type == "comment":
             docstring = previous_node.text.decode()
             if docstring.startswith("/**"):
-                self.docstring = docstring
+                self.docstring_sub = (previous_node.start_byte, previous_node.end_byte)
 
         node = self.node
         language = self.language
@@ -374,7 +374,7 @@ class DeclarationFinder:
                     node=body_node,
                     scope=new_scope,
                 )
-                self.docstring = ""
+                self.docstring_sub
                 # see if the first child is a string expression statements, and if so, use it as the docstring
                 if (
                     body_node.child_count > 0
@@ -383,7 +383,7 @@ class DeclarationFinder:
                     stmt = body_node.children[0]
                     if len(stmt.children) > 0 and stmt.children[0].type == "string":
                         docstring_node = stmt.children[0]
-                        self.docstring = docstring_node.text.decode()
+                        self.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
                 elif node.prev_sibling is not None and node.prev_sibling.type in [
                     "comment",
                     "line_comment",
@@ -391,7 +391,7 @@ class DeclarationFinder:
                 ]:
                     # parse class comments before class definition
                     docstring_node = node.prev_sibling
-                    self.docstring = docstring_node.text.decode()
+                    self.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
 
                 if is_namespace:
                     declaration = self.mk_namespace_decl(id=name, body=block, parents=[node])
@@ -473,7 +473,7 @@ class DeclarationFinder:
                 stmt = body_node.children[0]
                 if len(stmt.children) > 0 and stmt.children[0].type == "string":
                     docstring_node = stmt.children[0]
-                    self.docstring = docstring_node.text.decode()
+                    self.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
             block_kind: Optional[BlockKind] = None
             if body_node is not None:
                 self.has_return = contains_direct_return(body_node)
