@@ -1,7 +1,10 @@
+import logging
 import os
 import re
 from concurrent import futures
+from urllib.request import url2pathname
 
+aider_available = False
 try:
     import aider
     import aider.coders
@@ -9,17 +12,20 @@ try:
     import aider.io
     import aider.main
     from aider.coders.base_coder import ExhaustedContextWindow
+
+    try:
+        aider.__author__
+        aider_available = True
+    except AttributeError:
+        raise Exception(
+            'Wrong version of `aider` installed. Please try `pip install -e "rift-engine[aider]" --force-reinstall` from the Rift root directory.'
+        )
+
 except ImportError:
-    raise Exception(
-        '`aider` not found. Try `pip install -e "rift-engine[aider]"` from the Rift root directory.'
+    print(
+        "aider not available, is git in your path? Installation will continue without aider support."
     )
 
-try:
-    aider.__author__
-except AttributeError:
-    raise Exception(
-        'Wrong version of `aider` installed. Please try `pip install -e "rift-engine[aider]" --force-reinstall` from the Rift root directory.'
-    )
 
 import asyncio
 import logging
@@ -85,6 +91,8 @@ class Aider(agent.ThirdPartyAgent):
         :param server: The server where the Aider agent is running.
         :return: An instance of the Aider class.
         """
+        if not aider_available:
+            raise Exception("aider not available, is git in your path?")
         state = AiderAgentState(
             params=params,
             messages=[],
@@ -171,6 +179,7 @@ class Aider(agent.ThirdPartyAgent):
 
                 def refactor_uri_match(resp):
                     def process_path(path):
+                        path = url2pathname(path)
                         relative_path = os.path.relpath(path, self.state.params.workspaceFolderPath)
                         if not resp.startswith("/add"):  # /add does not like a quoted path
                             relative_path = f"`{relative_path}`"

@@ -1,0 +1,95 @@
+name: build portable rift engine bundles
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    tags:
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+  workflow_dispatch:
+
+jobs:
+  vsix:
+    name: "make vsix"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build VSIX
+        run: | 
+          cd editors/rift-vscode
+          npm install --global @vscode/vsce
+          npm i
+          vsce package -o rift.vsix
+      - uses: actions/upload-artifact@v3
+        with:
+          name: rift.vsix
+          path: ./editors/rift-vscode/rift.vsix
+          retention-days: 5
+
+  bundle:
+    name: "bundle engines"
+    defaults:
+      run:
+        working-directory: rift-engine
+        shell: bash
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: "pip" # caching pip dependencies
+      - run: python3 -m venv venv
+      - name: "Install"
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+             ./venv/Scripts/pip.exe install -e .
+          else
+             ./venv/bin/pip install -e .
+          fi
+      - name: "Test"
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+             ./venv/Scripts/pytest.exe
+          else
+             ./venv/bin/pytest
+          fi
+      - name: "Bundle"
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+             ./venv/Scripts/pyinstaller.exe rift.spec
+          else
+             ./venv/bin/pyinstaller rift.spec
+          fi
+      - uses: actions/upload-artifact@v3
+        with:
+          name: rift-${{ runner.os }}
+          path: ./rift-engine/dist/rift
+          retention-days: 5
+
+  release:
+    name: "release bundles"
+    needs: [bundle, vsix]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+      - run: |
+          ls
+          for i in rift-*/; do zip -r "${i%/}-${TAG}.zip" "$i"; done
+        env: 
+          TAG: ${{ github.ref_name }}
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "*.zip,rift.vsix/rift.vsix"
+          prerelease: true
+          artifactErrorsFailBuild: true

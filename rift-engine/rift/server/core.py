@@ -1,8 +1,11 @@
 import asyncio
 import logging
+import os
 import sys
 import time
 from typing import Literal, Optional, Union
+
+import certifi
 
 from rift.__about__ import __version__
 from rift.rpc.io_transport import AsyncStreamTransport, create_pipe_streams
@@ -192,4 +195,6 @@ def entrypoint():
 
 
 if __name__ == "__main__":
+    os.environ["SSL_CERT_FILE"] = certifi.where()
+    sys.stdout.reconfigure(encoding="utf-8")
     entrypoint()
