@@ -2,7 +2,7 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 from urllib.request import url2pathname
 
 import rift.ir.custom_parsers as custom_parsers
@@ -406,7 +406,8 @@ class Reference:
     def from_uri(uri: str) -> "Reference":
         parsed = urlparse(uri)
         qualified_id = parsed.fragment if parsed.fragment != "" else None
-        return Reference(file_path=url2pathname(parsed.path), qualified_id=qualified_id)
+        file_path = url2pathname(unquote(parsed.path)) # Work around bug: https://github.com/scikit-hep/uproot5/issues/325#issue-850683423
+        return Reference(file_path=file_path, qualified_id=qualified_id)
 
 
 @dataclass
