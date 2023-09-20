@@ -34,6 +34,7 @@ from rift.llm.abstract import (
     EditCodeResult,
     InsertCodeResult,
 )
+
 from rift.llm.openai_types import (
     ChatCompletionChunk,
     ChatCompletionRequest,
@@ -55,61 +56,8 @@ O = TypeVar("O", bound=BaseModel)
 
 import transformers
 
-@dataclass
-class SourceCodeFileWithRegion:
-    """
-    Datastructure for a training datapoint (inference if the completion is None)
-
-    Represents a file that has been split into a region, the parts before/after the region, a natural language instruction, and a completion.
-    """
-
-    # The text before the region
-    before_region: str
-
-    # The text in the region
-    region: str
-
-    # The text after the region
-    after_region: str
-
-    # A natural language instruction for completing the task
-    instruction: Optional[str] = None
-
-    # The completion of the task
-    completion: Optional[str] = None
-
-    def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
-        """
-        Formats the source code file with region into a string that can be used for code completion.
-
-        The function takes in three arguments:
-            - `before_cursor`: The text to display before the cursor. Defaults to "PREFIX".
-            - `after_cursor`: The text to display after the cursor. Defaults to "SUFFIX".
-            - `latest_region`: The latest region of code. If not provided, it defaults to the region in this object.
-        """
-        formatted = (
-            f"[PREFIX]\n{self.before_region}\n[/PREFIX]\n"
-            f"[REGION]\n{latest_region or self.region}\n[/REGION]\n"
-            f"[SUFFIX]\n{self.after_region}\n[/SUFFIX]"
-        )
-        return formatted
-
-    def get_prompt(self):
-        """
-        Generates a prompt for code completion based on the instruction and region in this object.
-
-        The function returns a string that includes:
-            - "Please generate code completing the task which will replace the below region."
-            - The natural language instruction from this object's `instruction` attribute.
-            - The formatted source code file with region, using the latest region if not provided in this object's `region` attribute.
-        """
-        assert self.instruction, "instruction not set"
-        result = (
-            f"### INSTRUCTIONS\n\nPlease generate code completing the task which will replace the below region.\nTask: {self.instruction}\n\n"
-            + self.format()
-            + ("\n\n### RESPONSE\n\n")
-        )
-        return result
+from rift_code_index.prompts import SourceCodeFileWithRegion
+from rift_code_index.manyllama import ManyLlamaClient
 
 
 ENCODER = transformers.AutoTokenizer.from_pretrained("TheBloke/CodeLlama-7B-Instruct-fp16")
@@ -407,12 +355,15 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
     def __str__(self):
         return f"{self.__class__.__name__} {self.model_path}"
 
-    @cached_property
-    def model(self) -> Llama:
-        return Llama(
-            model_path=self.model_path,
-            n_ctx=MAX_CONTEXT_SIZE,
-        )
+    # @cached_property
+    @property
+    def model(self) -> Any:
+        return ManyLlamaClient(url=os.environ.get["NROK_ENDPOINT"])
+    # def model(self) -> Llama:
+    #     return Llama(
+    #         model_path=self.model_path,
+    #         n_ctx=MAX_CONTEXT_SIZE,
+    #     )
 
     async def handle_error(self, resp: aiohttp.ClientResponse):
         # status_code = resp.status
@@ -523,14 +474,29 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
             asyncio.run_coroutine_threadsafe(feed_data(chunk_str), loop=loop)
 
         def worker():
-            for chunk in self.model.create_completion(
-                prompt=prompt,
-                temperature=0.1,
-                max_tokens=MAX_LEN_SAMPLED_COMPLETION,
-                stream=True,
-                mirostat_mode=2,
-            ):
-                _send_chunk(chunk["choices"][0]["text"])
+            import time
+            response = asyncio.run(self.model.create_completion(
+                prompt=prompt, temperature=0.1,
+                max_tokens=0,
+                stream=False,
+                mirostat_mode=0,
+                top_p=0.60,
+                top_k=128,
+            ))
+            print(f"{response=}")
+            for c in response:
+                time.sleep(0.0001)
+                _send_chunk(c)
+            # for chunk in self.model.create_completion(
+            #     prompt=prompt,
+            #     temperature=0.1,
+            #     max_tokens=MAX_LEN_SAMPLED_COMPLETION,
+            #     stream=True,
+            #     mirostat_mode=2,
+            #     top_p=0.99,
+            #     top_k=64,
+            # ):
+                # _send_chunk(chunk["choices"][0]["text"])
             completion_stream.feed_eof()
 
         fut = asyncio.get_event_loop().run_in_executor(None, worker)
@@ -719,7 +685,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
             instruction=goal
         )
 
-        prompt = pre_prompt.get_prompt()
+        prompt = pre_prompt.get_prompt(train=True)
         logger.info(f"{prompt=}")
         stream = TextStream.from_aiter(
             self.completion(prompt, stream=True)
