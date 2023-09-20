@@ -13,15 +13,23 @@
   let textarea: HTMLDivElement; //used to be a textarea
   let editor: Editor | undefined;
 
+  function rawTextToLiteralHTML(raw: string): string {
+    const p = document.createElement("p");
+    p.innerText = raw.trim();
+    return p.innerHTML;
+  }
+
   function parseProseMirrorHTMLfromMessageContent(message: string) {
+    const literalHTML = rawTextToLiteralHTML(message);
     const regex = /\[(.*?)\]\((.*?)\)/g;
-    return message.replace(regex, (match, uri, path) => {
+    const chipped = literalHTML.replace(regex, (match, uri, path) => {
       const filename: string = path.split("/").pop();
       const symbolname = filename.includes("#")
         ? filename.slice(filename.indexOf("#") + 1)
         : "";
       return `<span data-type="filechip" data-fullpath="${path}" data-filename="${filename}" data-symbolname="${symbolname}"></span>`;
     });
+    return chipped;
   }
 
   const editorContent = parseProseMirrorHTMLfromMessageContent(value);
