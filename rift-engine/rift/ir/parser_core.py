@@ -210,7 +210,7 @@ def contains_direct_return(body: Node):
     return False
 
 
-class DeclarationFinder:
+class SymbolParser:
     def __init__(self, code: Code, file: File, language: Language, node: Node, scope: Scope):
         self.code = code
         self.file = file
@@ -407,7 +407,7 @@ class DeclarationFinder:
         elif node.type in ["decorated_definition"] and language == "python":  # python decorator
             defitinion = node.child_by_field_name("definition")
             if defitinion is not None:
-                finder = DeclarationFinder(
+                finder = SymbolParser(
                     code=self.code,
                     file=self.file,
                     language=language,
@@ -486,7 +486,7 @@ class DeclarationFinder:
                     node=body_node,
                     scope=scope_body,
                 )
-                finder = DeclarationFinder(
+                finder = SymbolParser(
                     code=self.code,
                     file=self.file,
                     language=language,
@@ -933,7 +933,7 @@ def find_import(node: Node) -> Optional[Import]:
 def process_statement(
     code: Code, file: File, language: Language, node: Node, scope: Scope
 ) -> Statement:
-    finder = DeclarationFinder(code=code, file=file, language=language, node=node, scope=scope)
+    finder = SymbolParser(code=code, file=file, language=language, node=node, scope=scope)
     declarations = finder.find_declarations()
     if declarations != []:
         return Declaration(type=node.type, symbols=declarations)
