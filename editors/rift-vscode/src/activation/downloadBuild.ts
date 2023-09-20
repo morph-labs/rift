@@ -214,7 +214,7 @@ export const forceResolveServerOptions = async (
   throw Error("Could not download and start prebuilt server.");
 };
 
-export async function waitForPort(port: number) {
+async function waitForPort(port: number) {
   while (!(await tcpPortUsed.check(port))) {
     console.log("waiting for server to come online...");
     try {
