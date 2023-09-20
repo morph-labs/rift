@@ -4,6 +4,9 @@ from typing import List, Optional, Set, Tuple
 import rift.ir.IR as IR
 import rift.ir.parser as parser
 import rift.ir.python_typing as python_typing
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def extract_blocks_from_response(response: str) -> List[IR.Code]:
@@ -84,7 +87,9 @@ def replace_functions_in_document(
         function_in_blocks = None
         if len(function_in_blocks_) == 1:
             f0 = function_in_blocks_[0]
-            if isinstance(f0, IR.ValueDeclaration) and isinstance(f0.value_kind, IR.FunctionKind):
+            if isinstance(f0, IR.ValueDeclaration) and isinstance(
+                f0.value_kind, IR.FunctionKind
+            ):
                 function_in_blocks = f0
         if filter_function_ids is None:
             filter = True
@@ -97,13 +102,16 @@ def replace_functions_in_document(
                 new_bytes = function_in_blocks.get_substring()
             else:
                 new_function_text = function_in_blocks.get_substring_without_body()
+                logger.info(f"{new_function_text=}")
                 old_function_text = function_declaration.get_substring_without_body()
                 # Get trailing newline and/or whitespace from old text
                 old_trailing_whitespace = re.search(rb"\s*$", old_function_text)
                 # Add it to new text
                 if old_trailing_whitespace is not None:
                     new_function_text = new_function_text.rstrip()
+                    logger.info(f"{new_function_text=}")
                     new_function_text += old_trailing_whitespace.group(0)
+                    logger.info(f"{new_function_text=}")
                 start_replace = function_declaration.substring[0]
                 end_replace = start_replace + len(old_function_text)
                 substring = (start_replace, end_replace)
@@ -125,7 +133,9 @@ def update_typing_imports(
     for f in updated_functions:
         if isinstance(f.value_kind, IR.FunctionKind):
             fun_kind = f.value_kind
-            types_in_function = [p.type for p in fun_kind.parameters if p.type is not None]
+            types_in_function = [
+                p.type for p in fun_kind.parameters if p.type is not None
+            ]
             if fun_kind.return_type is not None:
                 types_in_function.append(fun_kind.return_type)
             names_from_types = get_typing_names_from_types(types_in_function)
@@ -139,7 +149,9 @@ def update_typing_imports(
             import_str += "\n"
         else:
             substring = typing_import.substring
-        code_edit = IR.CodeEdit(substring=substring, new_bytes=import_str.encode("utf-8"))
+        code_edit = IR.CodeEdit(
+            substring=substring, new_bytes=import_str.encode("utf-8")
+        )
         return code_edit
 
 
