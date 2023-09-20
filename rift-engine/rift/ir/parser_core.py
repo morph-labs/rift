@@ -210,6 +210,21 @@ def contains_direct_return(body: Node):
     return False
 
 
+def find_import(node: Node) -> Optional[Import]:
+    substring = (node.start_byte, node.end_byte)
+    if node.type == "import_statement":
+        names = [n.text.decode() for n in node.children_by_field_name("name")]
+        return Import(names=names, substring=substring)
+    elif node.type == "import_from_statement":
+        names = [n.text.decode() for n in node.children_by_field_name("name")]
+        module_name_node = node.child_by_field_name("module_name")
+        if module_name_node is not None:
+            module_name = module_name_node.text.decode()
+        else:
+            module_name = None
+        return Import(names=names, module_name=module_name, substring=substring)
+
+
 class SymbolParser:
     def __init__(self, code: Code, file: File, language: Language, node: Node, scope: Scope):
         self.code = code
@@ -222,6 +237,11 @@ class SymbolParser:
         self.docstring_sub: Optional[Substring] = None
         self.exported = False
         self.has_return = False
+
+    def recurse(self, node: Node, scope: Scope) -> "SymbolParser":
+        return SymbolParser(
+            code=self.code, file=self.file, language=self.language, node=node, scope=scope
+        )
 
     def mk_symbol_decl(
         self,
@@ -367,13 +387,7 @@ class SymbolParser:
                 else:
                     separator = "."
                 new_scope = self.scope + name.text.decode() + separator
-                block = parse_block(
-                    code=self.code,
-                    file=self.file,
-                    language=language,
-                    node=body_node,
-                    scope=new_scope,
-                )
+                block = self.recurse(body_node, new_scope).parse_block()
                 self.docstring_sub
                 # see if the first child is a string expression statements, and if so, use it as the docstring
                 if (
@@ -405,16 +419,9 @@ class SymbolParser:
                 return [declaration]
 
         elif node.type in ["decorated_definition"] and language == "python":  # python decorator
-            defitinion = node.child_by_field_name("definition")
-            if defitinion is not None:
-                finder = SymbolParser(
-                    code=self.code,
-                    file=self.file,
-                    language=language,
-                    node=defitinion,
-                    scope=self.scope,
-                )
-                return finder.find_declarations()
+            definition = node.child_by_field_name("definition")
+            if definition is not None:
+                return self.recurse(definition, self.scope).find_declarations()
 
         elif node.type in ["field_declaration", "function_definition"] and language in ["c", "cpp"]:
             type_node = node.child_by_field_name("type")
@@ -479,22 +486,11 @@ class SymbolParser:
                 self.has_return = contains_direct_return(body_node)
             if body_node is not None and id is not None and language == "python":
                 scope_body = self.scope + f"{id.text.decode()}."
-                statements = parse_block(
-                    code=self.code,
-                    file=self.file,
-                    language=language,
-                    node=body_node,
-                    scope=scope_body,
-                )
-                finder = SymbolParser(
-                    code=self.code,
-                    file=self.file,
-                    language=language,
-                    node=body_node,
-                    scope=scope_body,
-                )
+                statements = self.recurse(body_node, scope_body).parse_block()
                 block_kind = BlockKind(statements)
-                body = finder.mk_body_block(parents=[body_node], block_kind=block_kind)
+                body = self.recurse(body_node, scope_body).mk_body_block(
+                    parents=[body_node], block_kind=block_kind
+                )
                 self.file.add_symbol(body)
             if id is not None:
                 declaration = self.mk_fun_decl(
@@ -662,13 +658,7 @@ class SymbolParser:
                     if name is not None:
                         new_scope = self.scope + name.text.decode() + "."
                         if body_node is not None:
-                            block = parse_block(
-                                code=self.code,
-                                file=self.file,
-                                language=language,
-                                node=body_node,
-                                scope=new_scope,
-                            )
+                            block = self.recurse(body_node, new_scope).parse_block()
                         else:
                             block = []
                         declaration = self.mk_module_decl(id=name, body=block, parents=[node])
@@ -815,13 +805,7 @@ class SymbolParser:
                     print(f"Unexpected module_binding nodes:{len(nodes)}")
                 if id is not None and body is not None:
                     new_scope = self.scope + id.text.decode() + "."
-                    block = parse_block(
-                        code=self.code,
-                        file=self.file,
-                        language=language,
-                        node=body,
-                        scope=new_scope,
-                    )
+                    block = self.recurse(body, new_scope).parse_block()
                     declaration = self.mk_module_decl(id=id, body=block, parents=[node])
                     self.file.add_symbol(declaration)
                     return [declaration]
@@ -900,44 +884,20 @@ class SymbolParser:
         # if not returned earlier
         return []
 
+    def parse_statement(self) -> Statement:
+        declarations = self.recurse(self.node, self.scope).find_declarations()
+        if declarations != []:
+            return Declaration(type=self.node.type, symbols=declarations)
+        import_ = find_import(self.node)
+        if import_ is not None:
+            self.file.add_import(import_)
+        return Statement(type=self.node.type)
 
-def parse_block(
-    code: Code, file: File, language: Language, node: Node, scope: Scope
-) -> List[Statement]:
-    statements: List[Statement] = []
-    for child in node.children:
-        if language == "ruby" and child.text.decode() == "name":
-            continue
-        statement = process_statement(
-            code=code, file=file, language=language, node=child, scope=scope
-        )
-        statements.append(statement)
-    return statements
-
-
-def find_import(node: Node) -> Optional[Import]:
-    substring = (node.start_byte, node.end_byte)
-    if node.type == "import_statement":
-        names = [n.text.decode() for n in node.children_by_field_name("name")]
-        return Import(names=names, substring=substring)
-    elif node.type == "import_from_statement":
-        names = [n.text.decode() for n in node.children_by_field_name("name")]
-        module_name_node = node.child_by_field_name("module_name")
-        if module_name_node is not None:
-            module_name = module_name_node.text.decode()
-        else:
-            module_name = None
-        return Import(names=names, module_name=module_name, substring=substring)
-
-
-def process_statement(
-    code: Code, file: File, language: Language, node: Node, scope: Scope
-) -> Statement:
-    finder = SymbolParser(code=code, file=file, language=language, node=node, scope=scope)
-    declarations = finder.find_declarations()
-    if declarations != []:
-        return Declaration(type=node.type, symbols=declarations)
-    import_ = find_import(node)
-    if import_ is not None:
-        file.add_import(import_)
-    return Statement(type=node.type)
+    def parse_block(self) -> List[Statement]:
+        statements: List[Statement] = []
+        for child in self.node.children:
+            if self.language == "ruby" and child.text.decode() == "name":
+                continue
+            statement = self.recurse(child, self.scope).parse_statement()
+            statements.append(statement)
+        return statements

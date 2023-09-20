@@ -60,6 +60,3 @@ def test_symbol_reference():
         res_some_function.symbol.get_substring_without_body().decode().strip()
         == "def some_function(self, x: int, y: int) -> int:"
     )
-
-
-test_symbol_reference()
