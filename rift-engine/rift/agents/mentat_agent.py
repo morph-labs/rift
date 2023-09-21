@@ -61,6 +61,12 @@ class Mentat(agent.ThirdPartyAgent):
 
     @classmethod
     async def create(cls, params: MentatAgentParams, server):
+        """
+        Create a new Mentat agent instance with the given parameters and server.
+        :param params: The MentatAgentParams containing agent configuration.
+        :param server: The server instance.
+        :return: A new Mentat agent instance.
+        """        
         logger.info(f"{params=}")
         state = MentatAgentState(
             params=params,
@@ -96,6 +102,9 @@ class Mentat(agent.ThirdPartyAgent):
             logger.info(f"[_run_chat_thread] caught exception={e}, exiting")
 
     async def run(self) -> MentatRunResult:
+        """
+        This is the main method of the Mentat agent. It starts the chat thread and handles the main loop of the agent.
+        """
         response_stream = TextStream()
 
         run_chat_thread_task = asyncio.create_task(self._run_chat_thread(response_stream))
