@@ -8,4 +8,4 @@ from .registry import *
 from .rift_chat import *
 from .smol import *
 from .type_inference_agent import *
-from .doc_string_agent import *
+from .docstring_agent import *

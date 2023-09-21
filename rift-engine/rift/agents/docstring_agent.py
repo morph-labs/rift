@@ -18,11 +18,11 @@ import rift.llm.openai_types as openai_types
 import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
 from rift.agents.agenttask import AgentTask
-from rift.ir.missing_doc_strings import (
-    FunctionMissingDocString,
-    FileMissingDocStrings,
-    functions_missing_doc_strings_in_file,
-    files_missing_doc_strings_in_project,
+from rift.ir.missing_docstrings import (
+    FunctionMissingDocstring,
+    FileMissingDocstrings,
+    functions_missing_docstrings_in_file,
+    files_missing_docstrings_in_project,
 )
 from rift.ir.response import (
     Replace,
@@ -59,17 +59,17 @@ class Config:
     debug = False
     model = "gpt-3.5-turbo"  # ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k"]
     temperature = 0.0
-    max_size_group_missing_doc_strings = 10  # Max number of functions to process at once
+    max_size_group_missing_docstrings = 10  # Max number of functions to process at once
 
 
 class MissingDocStringPrompt:
     @staticmethod
     def mk_user_msg(
-        functions_missing_doc_strings: List[FunctionMissingDocString], code: IR.Code
+        functions_missing_docstrings: List[FunctionMissingDocstring], code: IR.Code
     ) -> str:
         missing_str = ""
         n = 0
-        for function in functions_missing_doc_strings:
+        for function in functions_missing_docstrings:
             n += 1
             missing_str += f"{n}. {function.function_declaration.name}\n"
 
@@ -86,11 +86,11 @@ class MissingDocStringPrompt:
         ).lstrip()
 
     @staticmethod
-    def code_for_missing_doc_string_functions(
-        functions_missing_doc_strings: List[FunctionMissingDocString],
+    def code_for_missing_docstring_functions(
+        functions_missing_docstrings: List[FunctionMissingDocstring],
     ) -> IR.Code:
         bytes = b""
-        for function in functions_missing_doc_strings:
+        for function in functions_missing_docstrings:
             bytes += function.function_declaration.get_substring()
             bytes += b"\n"
         return IR.Code(bytes)
@@ -98,20 +98,28 @@ class MissingDocStringPrompt:
     @staticmethod
     def create_prompt_for_file(
         language: IR.Language,
-        functions_missing_doc_strings: List[FunctionMissingDocString],
+        functions_missing_docstrings: List[FunctionMissingDocstring],
     ) -> Prompt:
         example_py = '''
             ```python
                 def foo(a: t1, b : t2) -> t3
                     """
-                    ...
+                    Adds two numbers together.
+
+                    :param a: The first number to add.
+                    :param b: The second number to add.
+                    :return: The sum of a and b.
                     """
             ```
         '''
         example_js = """
             ```javascript
                 /**
-                    ...
+                * Adds two numbers together.
+                * 
+                * @param {t1} a - The first number to add.
+                * @param {t2} b - The second number to add.
+                * @returns {t3} The sum of a and b.
                 */
                 function foo(a: t1, b : t2) : t3 {
             ```
@@ -119,15 +127,21 @@ class MissingDocStringPrompt:
         example_ts = """
             ```typescript
                 /**
-                    ...
+                * Adds two numbers together.
+                * 
+                * @param a - The first number to add.
+                * @param b - The second number to add.
+                * @returns The sum of a and b.
                 */
                 function foo(a: t1, b : t2): t3 {
             ```
         """
         example_ocaml = """
             ```ocaml
-                (** ...
-                *)
+                (** Adds two numbers together.
+                @param a The first number to add.
+                @param b The second number to add.
+                @return The sum of a and b. *)
                 let foo (a: t1) (b : t2) : t3 =
             ```
         """
@@ -155,15 +169,15 @@ class MissingDocStringPrompt:
             """
         ).lstrip()
 
-        code = MissingDocStringPrompt.code_for_missing_doc_string_functions(
-            functions_missing_doc_strings
+        code = MissingDocStringPrompt.code_for_missing_docstring_functions(
+            functions_missing_docstrings
         )
         return [
             dict(role="system", content=system_msg),
             dict(
                 role="user",
                 content=MissingDocStringPrompt.mk_user_msg(
-                    functions_missing_doc_strings=functions_missing_doc_strings,
+                    functions_missing_docstrings=functions_missing_docstrings,
                     code=code,
                 ),
             ),
@@ -172,7 +186,7 @@ class MissingDocStringPrompt:
 
 @dataclass
 class FileProcess:
-    file_missing_doc_strings: FileMissingDocStrings
+    file_missing_docstrings: FileMissingDocstrings
     edits: List[IR.CodeEdit] = field(default_factory=list)
     updated_functions: List[IR.ValueDeclaration] = field(default_factory=list)
     file_change: Optional[file_diff.FileChange] = None
@@ -180,8 +194,8 @@ class FileProcess:
 
 
 @registry.agent(
-    agent_description="Generate missing doc strings for functions",
-    display_name="Generate Doc Strings",
+    agent_description="Generate missing docstrings for functions",
+    display_name="Auto Doc",
     agent_icon="""\
 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_636_8979)">
@@ -199,8 +213,8 @@ class FileProcess:
 </svg>""",
 )
 @dataclass
-class MissingDocStringAgent(agent.ThirdPartyAgent):
-    agent_type: ClassVar[str] = "missing_doc_string_agent"
+class MissingDocstringAgent(agent.ThirdPartyAgent):
+    agent_type: ClassVar[str] = "missing_docstring_agent"
     params_cls: ClassVar[Any] = Params
     debug: bool = Config.debug
 
@@ -214,7 +228,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         self,
         document: IR.Code,
         language: IR.Language,
-        functions_missing_doc_strings: List[FunctionMissingDocString],
+        functions_missing_docstrings: List[FunctionMissingDocstring],
         response: str,
     ) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
         if self.debug:
@@ -225,7 +239,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
             logger.info(f"code_blocks: \n{code_blocks}\n")
         filter_function_ids = [
             function.function_declaration.get_qualified_id()
-            for function in functions_missing_doc_strings
+            for function in functions_missing_docstrings
         ]
         x = replace_functions_from_code_blocks(
             code_blocks=code_blocks,
@@ -241,11 +255,11 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         self,
         document: IR.Code,
         language: IR.Language,
-        functions_missing_doc_strings: List[FunctionMissingDocString],
+        functions_missing_docstrings: List[FunctionMissingDocstring],
     ) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
         prompt = MissingDocStringPrompt.create_prompt_for_file(
             language=language,
-            functions_missing_doc_strings=functions_missing_doc_strings,
+            functions_missing_docstrings=functions_missing_docstrings,
         )
         response_stream = TextStream()
         collected_messages: List[str] = []
@@ -271,7 +285,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
 
         response_stream._feed_task = asyncio.create_task(  # type: ignore
             self.add_task(  # type: ignore
-                f"Write doc strings for {'/'.join(function.function_declaration.name for function in functions_missing_doc_strings)}",
+                f"Write doc strings for {'/'.join(function.function_declaration.name for function in functions_missing_docstrings)}",
                 feed_task,
             ).run()
         )
@@ -281,19 +295,19 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         return self.process_response(
             document=document,
             language=language,
-            functions_missing_doc_strings=functions_missing_doc_strings,
+            functions_missing_docstrings=functions_missing_docstrings,
             response=response,
         )
 
-    def split_missing_doc_strings_in_groups(
-        self, functions_missing_doc_strings: List[FunctionMissingDocString]
-    ) -> List[List[FunctionMissingDocString]]:
-        """Split the missing doc strings in groups of at most Config.max_size_group_missing_doc_strings, and that don't contain functions with the same name."""
-        groups: List[List[FunctionMissingDocString]] = []
-        group: List[FunctionMissingDocString] = []
-        for function in functions_missing_doc_strings:
+    def split_missing_docstrings_in_groups(
+        self, functions_missing_docstrings: List[FunctionMissingDocstring]
+    ) -> List[List[FunctionMissingDocstring]]:
+        """Split the missing doc strings in groups of at most Config.max_size_group_missing_docstrings, and that don't contain functions with the same name."""
+        groups: List[List[FunctionMissingDocstring]] = []
+        group: List[FunctionMissingDocstring] = []
+        for function in functions_missing_docstrings:
             group.append(function)
-            split = len(group) == Config.max_size_group_missing_doc_strings
+            split = len(group) == Config.max_size_group_missing_docstrings
             # also split if a function with the same name is in the current group (e.g. from another class)
             for function2 in group:
                 if function.function_declaration.name == function2.function_declaration.name:
@@ -307,18 +321,18 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         return groups
 
     async def process_file(self, file_process: FileProcess, project: IR.Project) -> None:
-        file_missing_doc_strings = file_process.file_missing_doc_strings
-        language = file_missing_doc_strings.language
-        document = file_missing_doc_strings.ir_code
-        groups_of_functions_missing_doc_strings = self.split_missing_doc_strings_in_groups(
-            file_missing_doc_strings.functions_missing_doc_strings
+        file_missing_docstrings = file_process.file_missing_docstrings
+        language = file_missing_docstrings.language
+        document = file_missing_docstrings.ir_code
+        groups_of_functions_missing_docstrings = self.split_missing_docstrings_in_groups(
+            file_missing_docstrings.functions_missing_docstrings
         )
 
-        for group in groups_of_functions_missing_doc_strings:
+        for group in groups_of_functions_missing_docstrings:
             code_edits, updated_functions = await self.code_edits_for_missing_files(
                 document=document,
                 language=language,
-                functions_missing_doc_strings=group,
+                functions_missing_docstrings=group,
             )
             file_process.edits.extend(code_edits)
             file_process.updated_functions.extend(updated_functions)
@@ -330,19 +344,19 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         if edit_import is not None:
             file_process.edits.append(edit_import)
 
-        old_num_missing = len(file_missing_doc_strings.functions_missing_doc_strings)
+        old_num_missing = len(file_missing_docstrings.functions_missing_docstrings)
         logger.info(f"ABOUT TO APPLY EDITS: {file_process.edits}")
         new_document = document.apply_edits(file_process.edits)
         logger.info(f"{new_document=}")
         dummy_file = IR.File("dummy")
         parser.parse_code_block(dummy_file, new_document, language)
-        new_num_missing = len(functions_missing_doc_strings_in_file(dummy_file))
+        new_num_missing = len(functions_missing_docstrings_in_file(dummy_file))
         await self.send_chat_update(
-            f"Received docs for `{file_missing_doc_strings.ir_name.path}` ({new_num_missing}/{old_num_missing} missing)"
+            f"Received docs for `{file_missing_docstrings.ir_name.path}` ({new_num_missing}/{old_num_missing} missing)"
         )
         if self.debug:
             logger.info(f"new_document:\n{new_document}\n")
-        path = os.path.join(project.root_path, file_missing_doc_strings.ir_name.path)
+        path = os.path.join(project.root_path, file_missing_docstrings.ir_name.path)
         file_change = file_diff.get_file_change(path=path, new_content=str(new_document))
         if self.debug:
             logger.info(f"file_change:\n{file_change}\n")
@@ -381,9 +395,9 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
             logger.info(msg)
             await self.send_chat_update(msg)
 
-        async def log_missing(file_missing_doc_strings: FileMissingDocStrings):
-            await info_update(f"File: {file_missing_doc_strings.ir_name.path}")
-            for function in file_missing_doc_strings.functions_missing_doc_strings:
+        async def log_missing(file_missing_docstrings: FileMissingDocstrings):
+            await info_update(f"File: {file_missing_docstrings.ir_name.path}")
+            for function in file_missing_docstrings.functions_missing_docstrings:
                 logger.info(f"Missing: {function.function_declaration.name}")
 
         async def get_user_response() -> str:
@@ -433,34 +447,34 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         if self.debug:
             logger.info(f"\n=== Project Map ===\n{project.dump_map()}\n")
 
-        files_missing_doc_strings_ = files_missing_doc_strings_in_project(project)
-        files_missing_doc_strings: List[FileMissingDocStrings] = []
-        for file_missing_doc_strings in files_missing_doc_strings_:
-            full_path = os.path.join(project.root_path, file_missing_doc_strings.ir_name.path)
+        files_missing_docstrings_ = files_missing_docstrings_in_project(project)
+        files_missing_docstrings: List[FileMissingDocstrings] = []
+        for file_missing_docstrings in files_missing_docstrings_:
+            full_path = os.path.join(project.root_path, file_missing_docstrings.ir_name.path)
             if full_path not in symbols_per_file:  # no symbols in this file
-                files_missing_doc_strings.append(file_missing_doc_strings)
+                files_missing_docstrings.append(file_missing_docstrings)
             else:  # filter missing doc strings to only include symbols in symbols_per_file
-                functions_missing_doc_strings = [
-                    function_missing_doc_strings
-                    for function_missing_doc_strings in file_missing_doc_strings.functions_missing_doc_strings
-                    if function_missing_doc_strings.function_declaration.get_qualified_id()
+                functions_missing_docstrings = [
+                    function_missing_docstrings
+                    for function_missing_docstrings in file_missing_docstrings.functions_missing_docstrings
+                    if function_missing_docstrings.function_declaration.get_qualified_id()
                     in symbols_per_file[full_path]
                 ]
-                if functions_missing_doc_strings != []:
-                    file_missing_doc_strings.functions_missing_doc_strings = (
-                        functions_missing_doc_strings
+                if functions_missing_docstrings != []:
+                    file_missing_docstrings.functions_missing_docstrings = (
+                        functions_missing_docstrings
                     )
-                    files_missing_doc_strings.append(file_missing_doc_strings)
+                    files_missing_docstrings.append(file_missing_docstrings)
 
         file_processes: List[FileProcess] = []
         total_num_missing = 0
         await info_update("\n=== Missing Docs ===\n")
         files_missing_str = ""
-        for file_missing_doc_strings in files_missing_doc_strings:
-            await log_missing(file_missing_doc_strings)
-            files_missing_str += f"{file_missing_doc_strings.ir_name.path}\n"
-            total_num_missing += len(file_missing_doc_strings.functions_missing_doc_strings)
-            file_processes.append(FileProcess(file_missing_doc_strings=file_missing_doc_strings))
+        for file_missing_docstrings in files_missing_docstrings:
+            await log_missing(file_missing_docstrings)
+            files_missing_str += f"{file_missing_docstrings.ir_name.path}\n"
+            total_num_missing += len(file_missing_docstrings.functions_missing_docstrings)
+            file_processes.append(FileProcess(file_missing_docstrings=file_missing_docstrings))
         if total_num_missing == 0:
             await self.send_chat_update("No missing doc strings in the current file.")
             return Result()
@@ -470,7 +484,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
 
         tasks: List[asyncio.Task[Any]] = [
             asyncio.create_task(self.process_file(file_process=file_processes[i], project=project))
-            for i in range(len(files_missing_doc_strings))
+            for i in range(len(files_missing_docstrings))
         ]
         await asyncio.gather(*tasks)
 
@@ -483,7 +497,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
                 total_new_num_missing += file_process.new_num_missing
             else:
                 total_new_num_missing += len(
-                    file_process.file_missing_doc_strings.functions_missing_doc_strings
+                    file_process.file_missing_docstrings.functions_missing_docstrings
                 )
         await self.apply_file_changes(file_changes)
         await self.send_chat_update(
