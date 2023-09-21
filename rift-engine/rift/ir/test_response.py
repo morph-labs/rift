@@ -158,14 +158,20 @@ def test_response():
     code_blocks1 = response.extract_blocks_from_response(Test.response1)
     document1 = IR.Code(Test.document)
     edits1, _ = response.replace_functions_from_code_blocks(
-        code_blocks=code_blocks1, document=document1, language=language, replace_body=True
+        code_blocks=code_blocks1,
+        document=document1,
+        language=language,
+        replace=response.Replace.ALL,
     )
     new_document1 = document1.apply_edits(edits1)
     new_test_output += f"\nNew document1:\n```\n{new_document1}```"
     code_blocks2 = response.extract_blocks_from_response(Test.response2)
     document2 = IR.Code(Test.document)
     edits2, _ = response.replace_functions_from_code_blocks(
-        code_blocks=code_blocks2, document=document2, language=language, replace_body=True
+        code_blocks=code_blocks2,
+        document=document2,
+        language=language,
+        replace=response.Replace.ALL,
     )
     new_document2 = document2.apply_edits(edits2)
     new_test_output += f"\n\nNew document2:\n```\n{new_document2}```"
@@ -182,7 +188,7 @@ def test_response():
         document=document3,
         filter_function_ids=filter_function_ids,
         language=language,
-        replace_body=False,
+        replace=response.Replace.SIGNATURE,
     )
     edit_imports = response.update_typing_imports(
         code=document3, language=language, updated_functions=updated_functions

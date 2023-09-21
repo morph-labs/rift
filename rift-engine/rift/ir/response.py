@@ -1,3 +1,4 @@
+from enum import Enum
 import re
 from typing import List, Optional, Set, Tuple
 
@@ -65,11 +66,12 @@ def get_typing_names_from_types(types: List[IR.Type]) -> Set[str]:
         names = names.union(new_names)
     return names
 
+Replace = Enum('Replace', ['ALL', 'SIGNATURE'])
 
 def replace_functions_in_document(
     ir_doc: IR.File,
     ir_blocks: IR.File,
-    replace_body: bool,
+    replace: Replace,
     filter_function_ids: Optional[List[IR.QualifiedId]] = None,
 ) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
     """
@@ -97,7 +99,7 @@ def replace_functions_in_document(
             filter = function_declaration.get_qualified_id() in filter_function_ids
         if filter and function_in_blocks is not None:
             updated_functions.append(function_in_blocks)
-            if replace_body:
+            if replace == Replace.ALL:
                 substring = function_declaration.substring
                 new_bytes = function_in_blocks.get_substring()
             else:
@@ -159,7 +161,7 @@ def replace_functions_from_code_blocks(
     code_blocks: List[IR.Code],
     document: IR.Code,
     language: IR.Language,
-    replace_body: bool,
+    replace: Replace,
     filter_function_ids: Optional[List[IR.QualifiedId]] = None,
 ) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
     """
@@ -172,6 +174,6 @@ def replace_functions_from_code_blocks(
         filter_function_ids=filter_function_ids,
         ir_doc=ir_doc,
         ir_blocks=ir_blocks,
-        replace_body=replace_body,
+        replace=replace,
     )
     return code_edits, updated_functions

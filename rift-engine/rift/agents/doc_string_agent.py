@@ -25,6 +25,7 @@ from rift.ir.missing_doc_strings import (
     files_missing_doc_strings_in_project,
 )
 from rift.ir.response import (
+    Replace,
     extract_blocks_from_response,
     replace_functions_from_code_blocks,
     update_typing_imports,
@@ -231,7 +232,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
             document=document,
             language=language,
             filter_function_ids=filter_function_ids,
-            replace_body=True,
+            replace=Replace.ALL,
         )
         logger.info(x)
         return x
