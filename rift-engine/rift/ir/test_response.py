@@ -3,7 +3,7 @@ import os
 from textwrap import dedent
 
 import rift.ir.IR as IR
-from rift.ir.missing_doc_strings import functions_missing_doc_strings_in_file
+from rift.ir.missing_docstrings import functions_missing_docstrings_in_file
 import rift.ir.parser as parser
 import rift.ir.response as response
 from rift.ir.missing_types import functions_missing_types_in_file
@@ -327,7 +327,7 @@ def test_response():
     code_blocks4 = response.extract_blocks_from_response(Test.response4)
     file = IR.File("response4")
     parser.parse_code_block(file, IR.Code(Test.code4), language)
-    missing_docs = functions_missing_doc_strings_in_file(file)
+    missing_docs = functions_missing_docstrings_in_file(file)
     filter_function_ids = [md.function_declaration.get_qualified_id() for md in missing_docs]
     document4 = IR.Code(Test.code4)
     edits4, updated_functions = response.replace_functions_from_code_blocks(
@@ -344,7 +344,7 @@ def test_response():
     code_blocks5 = response.extract_blocks_from_response(Test.response5)
     file = IR.File("response5")
     parser.parse_code_block(file, IR.Code(Test.code5), language)
-    missing_docs = functions_missing_doc_strings_in_file(file)
+    missing_docs = functions_missing_docstrings_in_file(file)
     filter_function_ids = [md.function_declaration.get_qualified_id() for md in missing_docs]
     document5 = IR.Code(Test.code5)
     edits5, updated_functions = response.replace_functions_from_code_blocks(

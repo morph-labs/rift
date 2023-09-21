@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass
 from typing import List
 
@@ -60,14 +59,3 @@ def files_missing_docstrings_in_project(project: IR.Project) -> List[FileMissing
                 FileMissingDocstrings(file_code, file_name, language, functions_missing_docstrings)
             )
     return files_with_missing_docstrings
-
-
-if __name__ == "__main__":
-    from rift.ir.parser import parse_files_in_paths
-
-    project = parse_files_in_paths([os.path.dirname(os.path.abspath(__file__))])
-    files_with_missing_docstrings = files_missing_docstrings_in_project(project)
-    for f in files_with_missing_docstrings:
-        print(f"file:{f.ir_name.path}")
-        for fn in f.functions_missing_docstrings:
-            print(f"  {fn}")
