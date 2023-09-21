@@ -127,19 +127,35 @@ class Mentat(agent.ThirdPartyAgent):
                     agent.RequestChatRequest(messages=self.state.messages)
                 )
 
+                dropped_symbols = False
+
                 def refactor_uri_match(resp: str):
                     uri_pattern = r"\[uri\]\((\S+)\)"
+
                     def replacement(m: re.Match[str]):
                         uri = m.group(1)
+                        if "#" in uri:
+                            nonlocal dropped_symbols
+                            dropped_symbols = True
+                            uri = uri.split("#")[0]
+
                         reference = IR.Reference.from_uri(uri)
-                        file_path = reference.file_path # TODO: this ignores if it's a symbol path
-                        relative_path = os.path.relpath(file_path, self.state.params.workspaceFolderPath)
+                        file_path = reference.file_path
+                        relative_path = os.path.relpath(
+                            file_path, self.state.params.workspaceFolderPath
+                        )
                         return f"`{relative_path}`"
+
                     resp = re.sub(uri_pattern, replacement, resp)
                     return resp
 
                 try:
                     resp = refactor_uri_match(resp)
+
+                    if dropped_symbols:
+                        await self.send_update(
+                            "This agent does not support symbol references. A plain file reference will be used instead."
+                        )
                 except:
                     pass
                 self.state.messages.append(openai.Message.user(content=resp))
@@ -221,7 +237,13 @@ class Mentat(agent.ThirdPartyAgent):
         mentat.code_file_manager.CodeFileManager.write_changes_to_files = write_changes_to_files
         # mentat.parsing.change_delimiter = ("yeehaw" * 10)
 
+        dropped_symbols = False
+
         def extract_path(uri: str):
+            if "#" in uri:
+                nonlocal dropped_symbols
+                dropped_symbols = True
+                uri = uri.split("#")[0]
             if uri.startswith("file://"):
                 return uri[7:]
             if uri.startswith("uri://"):
@@ -260,6 +282,11 @@ class Mentat(agent.ThirdPartyAgent):
             for x in resolve_inline_uris(user_visible_files_response, server=self.server)
         ]
         logger.info(f"{uris=}")
+
+        if dropped_symbols:
+            await self.send_update(
+                "This agent does not support symbol references. A file reference will be used instead."
+            )
 
         paths += uris
 

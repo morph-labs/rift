@@ -31,9 +31,8 @@ def lookup_match(match: str, server: "Server") -> str:
     elif "#" in match:
         this_file = match.split("#")[0]
         project = parser.parse_files_in_paths([this_file])
-        reference_some_function = IR.Reference.from_uri(lsp_uri)
+        reference_some_function = IR.Reference.from_uri(match)
         symbol_ref = project.lookup_reference(reference_some_function)
-        print("The file", this_file, project, reference_some_function, symbol_ref)
         if symbol_ref is not None and symbol_ref.symbol is not None:
             body = symbol_ref.symbol.get_substring().decode().strip()
             logger.info(f"[lookup_match] symbol reference found")
@@ -53,6 +52,7 @@ def lookup_match(match: str, server: "Server") -> str:
                 return ""
     except:
         return ""
+
 
 def resolve_inline_uris(user_response: str, server: "Server") -> List[lsp.Document]:
     logger.info(f"[resolve_inline_uris] {user_response=}")
