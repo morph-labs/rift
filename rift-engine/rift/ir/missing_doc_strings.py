@@ -1,9 +1,8 @@
 import os
-from dataclasses import dataclass, field
-from typing import List, Tuple
+from dataclasses import dataclass
+from typing import List
 
 import rift.ir.IR as IR
-import rift.ir.parser as parser
 
 
 @dataclass
@@ -26,30 +25,18 @@ def functions_missing_doc_strings_in_file(file_name: IR.File) -> List[FunctionMi
     functions_missing_doc_strings: List[FunctionMissingDocString] = []
     function_declarations = file_name.get_function_declarations()
     for function in function_declarations:
-        if function.language not in ["javascript", "ocaml", "python", "rescript", "tsx", "typescript"]:
+        if function.language not in [
+            "javascript",
+            "ocaml",
+            "python",
+            "rescript",
+            "tsx",
+            "typescript",
+        ]:
             continue
         if not function.docstring:
             functions_missing_doc_strings.append(FunctionMissingDocString(function))
     return functions_missing_doc_strings
-
-
-def functions_missing_doc_strings_in_path(
-    root: str, path: str
-) -> Tuple[List[FunctionMissingDocString], IR.Code, IR.File]:
-    "Given a file path, parse the file and find function declarations that are missing doc strings."
-    language = IR.language_from_file_extension(path)
-    functions_missing_doc_strings: List[FunctionMissingDocString] = []
-    if language is None:
-        functions_missing_doc_strings = []
-        file_code = IR.Code(b"")
-    else:
-        full_path = os.path.join(root, path)
-        with open(full_path, "r", encoding="utf-8") as f:
-            file_code = IR.Code(f.read().encode("utf-8"))
-        file_of_path = IR.File(path)
-        parser.parse_code_block(file_of_path, file_code, language)
-        functions_missing_doc_strings = functions_missing_doc_strings_in_file(file_of_path)
-    return (functions_missing_doc_strings, file_code, file_of_path)
 
 
 @dataclass
@@ -69,14 +56,18 @@ def files_missing_doc_strings_in_project(project: IR.Project) -> List[FileMissin
             file_decl = functions_missing_doc_strings[0].function_declaration
             language = file_decl.language
             file_code = file_decl.code
-            files_with_missing_doc_strings.append(FileMissingDocStrings(file_code, file_name, language, functions_missing_doc_strings))
+            files_with_missing_doc_strings.append(
+                FileMissingDocStrings(file_code, file_name, language, functions_missing_doc_strings)
+            )
     return files_with_missing_doc_strings
 
 
 if __name__ == "__main__":
-    import json
     from rift.ir.parser import parse_files_in_paths
-    project = parse_files_in_paths(["/home/john/rift/"])
+
+    project = parse_files_in_paths([os.path.dirname(os.path.abspath(__file__))])
     files_with_missing_doc_strings = files_missing_doc_strings_in_project(project)
     for f in files_with_missing_doc_strings:
-        print(f.functions_missing_doc_strings[0].function_declaration.name)
+        print(f"file:{f.ir_name.path}")
+        for fn in f.functions_missing_doc_strings:
+            print(f"  {fn}")

@@ -58,9 +58,7 @@ class Config:
     debug = False
     model = "gpt-3.5-turbo"  # ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k"]
     temperature = 0.0
-    max_size_group_missing_doc_strings = (
-        10  # Max number of functions to process at once
-    )
+    max_size_group_missing_doc_strings = 10  # Max number of functions to process at once
 
 
 class MissingDocStringPrompt:
@@ -202,15 +200,13 @@ class FileProcess:
 @dataclass
 class MissingDocStringAgent(agent.ThirdPartyAgent):
     agent_type: ClassVar[str] = "missing_doc_string_agent"
-    params_cls: ClassVar[type[Params]] = Params
+    params_cls: ClassVar[Any] = Params
     debug: bool = Config.debug
 
     @classmethod
-    async def create(cls, params: Params, server: LspServer) -> Any:
+    async def create(cls, params: Any, server: LspServer) -> Any:
         state = State(params=params, messages=[], response_lock=asyncio.Lock())
-        obj: agent.ThirdPartyAgent = cls(
-            state=state, agent_id=params.agent_id, server=server
-        )
+        obj: agent.ThirdPartyAgent = cls(state=state, agent_id=params.agent_id, server=server)
         return obj
 
     def process_response(
@@ -255,7 +251,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
 
         async def feed_task():
             openai.api_key = os.environ.get("OPENAI_API_KEY")
-            completion: List[Dict[str, any]] = openai.ChatCompletion.create(
+            completion: List[Dict[str, Any]] = openai.ChatCompletion.create(  # type: ignore
                 model=Config.model,
                 messages=prompt,
                 temperature=Config.temperature,
@@ -299,10 +295,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
             split = len(group) == Config.max_size_group_missing_doc_strings
             # also split if a function with the same name is in the current group (e.g. from another class)
             for function2 in group:
-                if (
-                    function.function_declaration.name
-                    == function2.function_declaration.name
-                ):
+                if function.function_declaration.name == function2.function_declaration.name:
                     split = True
                     break
             if split:
@@ -312,16 +305,12 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
             groups.append(group)
         return groups
 
-    async def process_file(
-        self, file_process: FileProcess, project: IR.Project
-    ) -> None:
+    async def process_file(self, file_process: FileProcess, project: IR.Project) -> None:
         file_missing_doc_strings = file_process.file_missing_doc_strings
         language = file_missing_doc_strings.language
         document = file_missing_doc_strings.ir_code
-        groups_of_functions_missing_doc_strings = (
-            self.split_missing_doc_strings_in_groups(
-                file_missing_doc_strings.functions_missing_doc_strings
-            )
+        groups_of_functions_missing_doc_strings = self.split_missing_doc_strings_in_groups(
+            file_missing_doc_strings.functions_missing_doc_strings
         )
 
         for group in groups_of_functions_missing_doc_strings:
@@ -348,14 +337,12 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         parser.parse_code_block(dummy_file, new_document, language)
         new_num_missing = len(functions_missing_doc_strings_in_file(dummy_file))
         await self.send_chat_update(
-            f"Received types for `{file_missing_doc_strings.ir_name.path}` ({new_num_missing}/{old_num_missing} missing)"
+            f"Received docs for `{file_missing_doc_strings.ir_name.path}` ({new_num_missing}/{old_num_missing} missing)"
         )
         if self.debug:
             logger.info(f"new_document:\n{new_document}\n")
         path = os.path.join(project.root_path, file_missing_doc_strings.ir_name.path)
-        file_change = file_diff.get_file_change(
-            path=path, new_content=str(new_document)
-        )
+        file_change = file_diff.get_file_change(path=path, new_content=str(new_document))
         if self.debug:
             logger.info(f"file_change:\n{file_change}\n")
         file_process.file_change = file_change
@@ -408,7 +395,9 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         text_document = self.get_state().params.textDocument
         if text_document is not None:
             parsed = urlparse(text_document.uri)
-            current_file_uri = url2pathname(unquote(parsed.path)) # Work around bug: https://github.com/scikit-hep/uproot5/issues/325#issue-850683423
+            current_file_uri = url2pathname(
+                unquote(parsed.path)
+            )  # Work around bug: https://github.com/scikit-hep/uproot5/issues/325#issue-850683423
         else:
             raise Exception("Missing textDocument")
 
@@ -446,9 +435,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         files_missing_doc_strings_ = files_missing_doc_strings_in_project(project)
         files_missing_doc_strings: List[FileMissingDocStrings] = []
         for file_missing_doc_strings in files_missing_doc_strings_:
-            full_path = os.path.join(
-                project.root_path, file_missing_doc_strings.ir_name.path
-            )
+            full_path = os.path.join(project.root_path, file_missing_doc_strings.ir_name.path)
             if full_path not in symbols_per_file:  # no symbols in this file
                 files_missing_doc_strings.append(file_missing_doc_strings)
             else:  # filter missing doc strings to only include symbols in symbols_per_file
@@ -466,17 +453,13 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
 
         file_processes: List[FileProcess] = []
         total_num_missing = 0
-        await info_update("\n=== Missing Types ===\n")
+        await info_update("\n=== Missing Docs ===\n")
         files_missing_str = ""
         for file_missing_doc_strings in files_missing_doc_strings:
             await log_missing(file_missing_doc_strings)
             files_missing_str += f"{file_missing_doc_strings.ir_name.path}\n"
-            total_num_missing += len(
-                file_missing_doc_strings.functions_missing_doc_strings
-            )
-            file_processes.append(
-                FileProcess(file_missing_doc_strings=file_missing_doc_strings)
-            )
+            total_num_missing += len(file_missing_doc_strings.functions_missing_doc_strings)
+            file_processes.append(FileProcess(file_missing_doc_strings=file_missing_doc_strings))
         if total_num_missing == 0:
             await self.send_chat_update("No missing doc strings in the current file.")
             return Result()
@@ -485,9 +468,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         )
 
         tasks: List[asyncio.Task[Any]] = [
-            asyncio.create_task(
-                self.process_file(file_process=file_processes[i], project=project)
-            )
+            asyncio.create_task(self.process_file(file_process=file_processes[i], project=project))
             for i in range(len(files_missing_doc_strings))
         ]
         await asyncio.gather(*tasks)
