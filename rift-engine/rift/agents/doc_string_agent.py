@@ -5,6 +5,8 @@ import re
 from dataclasses import dataclass, field
 from textwrap import dedent
 from typing import Any, ClassVar, Coroutine, Dict, List, Optional, Set, Tuple, cast
+from urllib.parse import unquote, urlparse
+from urllib.request import url2pathname
 
 import openai
 
@@ -405,7 +407,8 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
         await self.send_progress()
         text_document = self.get_state().params.textDocument
         if text_document is not None:
-            current_file_uri = text_document.uri
+            parsed = urlparse(text_document.uri)
+            current_file_uri = url2pathname(unquote(parsed.path)) # Work around bug: https://github.com/scikit-hep/uproot5/issues/325#issue-850683423
         else:
             raise Exception("Missing textDocument")
 
