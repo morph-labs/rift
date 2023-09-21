@@ -2,8 +2,6 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
-from urllib.parse import urlparse
-from urllib.request import url2pathname
 
 import rift.ir.custom_parsers as custom_parsers
 
@@ -392,7 +390,7 @@ class Reference:
     - file_path: "home/user/project/src/main.py", qualified_id: "MyClass"
     - file_path: "home/user/project/src/main.py", qualified_id: "MyClass.my_function"
 
-    The URI is of the form "file://<file_path>#<qualified_id>" or "file://<file_path>"
+    The URI is of the form "<file_path>#<qualified_id>" or "<file_path>"
     if qualified_id is None.
     """
 
@@ -404,9 +402,11 @@ class Reference:
 
     @staticmethod
     def from_uri(uri: str) -> "Reference":
-        parsed = urlparse(uri)
-        qualified_id = parsed.fragment if parsed.fragment != "" else None
-        return Reference(file_path=url2pathname(parsed.path), qualified_id=qualified_id)
+        # split uri on first '#' character
+        split = uri.split("#", 1)
+        file_path = split[0]
+        qualified_id = split[1] if len(split) > 1 else None
+        return Reference(file_path=file_path, qualified_id=qualified_id)
 
 
 @dataclass
