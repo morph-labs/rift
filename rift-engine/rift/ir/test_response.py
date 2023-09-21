@@ -3,6 +3,7 @@ import os
 from textwrap import dedent
 
 import rift.ir.IR as IR
+from rift.ir.missing_doc_strings import functions_missing_doc_strings_in_file
 import rift.ir.parser as parser
 import rift.ir.response as response
 from rift.ir.missing_types import functions_missing_types_in_file
@@ -146,6 +147,129 @@ class Test:
         """
     ).lstrip()
 
+    code4 = (
+        dedent(
+            """
+        class TestAddDocs:
+            def dump_elements(self, elements: List[str]) -> None:
+                def dump_symbol(symbol: SymbolInfo) -> None:
+                    decl_without_body = symbol.get_substring_without_body().decode()
+                    elements.append(decl_without_body)
+                    if isinstance(symbol, ContainerDeclaration):
+                        for statement in symbol.body:
+                            dump_statement(statement)
+
+                def dump_statement(statement: Statement) -> None:
+                    if isinstance(statement, Declaration):
+                        for symbol in statement.symbols:
+                            dump_symbol(symbol)
+                    else:
+                        pass
+
+                for statement in self.statements:
+                    dump_statement(statement)
+
+                from typing import Tuple
+                def foo() -> None:
+                    print("Hello world!")
+        """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
+
+    response4 = dedent(
+        """
+        Here are the required changes:
+
+        ```
+        def dump_elements():
+            \"\"\"
+            The doc comment for dump_elements
+            Spans multiple lines
+            \"\"\"
+            ...
+        ```
+
+        Some other thoutghts:
+        - this
+        
+        """
+    ).lstrip()
+
+    code5 = (
+        dedent(
+            """
+
+        function add(a: number, b: number) : number {
+            return a + b;
+        }
+
+        class Employee {
+            empCode: number;
+            empName: string;
+
+            constructor(code: number, name: string) {
+                    this.empName = name;
+                    this.empCode = code;
+            }
+
+            getSalary() : number {
+                return 10000;
+            }
+        }
+        """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
+
+    response5 = dedent(
+        """
+        Here are the required changes:
+
+        ```
+        /**
+        * Adds two numbers together.
+        * 
+        * @param a - The first number to be added.
+        * @param b - The second number to be added.
+        * @returns The sum of the two numbers.
+        */
+        function add(a: number, b: number) : number {
+            return a + b;
+        }
+        ```
+
+        ```
+        /**
+         * Constructor function for creating an instance of a class.
+         * @param code - The code of the employee.
+         * @param name - The name of the employee.
+         */
+        constructor(code: number, name: string) {
+            this.empName = name;
+            this.empCode = code;
+        }
+        ```
+
+        ```
+        /**
+         * Returns the salary of an employee.
+         * 
+         * @returns The salary as a number.
+         */
+        function getSalary(): number {
+            return 10000;
+        }
+        ```
+
+        Some other thoutghts:
+        - this
+        
+        """
+    ).lstrip()
+
 
 def test_response():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -158,14 +282,20 @@ def test_response():
     code_blocks1 = response.extract_blocks_from_response(Test.response1)
     document1 = IR.Code(Test.document)
     edits1, _ = response.replace_functions_from_code_blocks(
-        code_blocks=code_blocks1, document=document1, language=language, replace_body=True
+        code_blocks=code_blocks1,
+        document=document1,
+        language=language,
+        replace=response.Replace.ALL,
     )
     new_document1 = document1.apply_edits(edits1)
     new_test_output += f"\nNew document1:\n```\n{new_document1}```"
     code_blocks2 = response.extract_blocks_from_response(Test.response2)
     document2 = IR.Code(Test.document)
     edits2, _ = response.replace_functions_from_code_blocks(
-        code_blocks=code_blocks2, document=document2, language=language, replace_body=True
+        code_blocks=code_blocks2,
+        document=document2,
+        language=language,
+        replace=response.Replace.ALL,
     )
     new_document2 = document2.apply_edits(edits2)
     new_test_output += f"\n\nNew document2:\n```\n{new_document2}```"
@@ -182,7 +312,7 @@ def test_response():
         document=document3,
         filter_function_ids=filter_function_ids,
         language=language,
-        replace_body=False,
+        replace=response.Replace.SIGNATURE,
     )
     edit_imports = response.update_typing_imports(
         code=document3, language=language, updated_functions=updated_functions
@@ -192,6 +322,40 @@ def test_response():
 
     new_document3 = document3.apply_edits(edits3)
     new_test_output += f"\n\nNew document3:\n```\n{new_document3}```"
+
+    language = "python"
+    code_blocks4 = response.extract_blocks_from_response(Test.response4)
+    file = IR.File("response4")
+    parser.parse_code_block(file, IR.Code(Test.code4), language)
+    missing_docs = functions_missing_doc_strings_in_file(file)
+    filter_function_ids = [md.function_declaration.get_qualified_id() for md in missing_docs]
+    document4 = IR.Code(Test.code4)
+    edits4, updated_functions = response.replace_functions_from_code_blocks(
+        code_blocks=code_blocks4,
+        document=document4,
+        filter_function_ids=filter_function_ids,
+        language=language,
+        replace=response.Replace.DOC,
+    )
+    new_document4 = document4.apply_edits(edits4)
+    new_test_output += f"\n\nNew document4:\n```\n{new_document4}```"
+
+    language = "typescript"
+    code_blocks5 = response.extract_blocks_from_response(Test.response5)
+    file = IR.File("response5")
+    parser.parse_code_block(file, IR.Code(Test.code5), language)
+    missing_docs = functions_missing_doc_strings_in_file(file)
+    filter_function_ids = [md.function_declaration.get_qualified_id() for md in missing_docs]
+    document5 = IR.Code(Test.code5)
+    edits5, updated_functions = response.replace_functions_from_code_blocks(
+        code_blocks=code_blocks5,
+        document=document5,
+        filter_function_ids=filter_function_ids,
+        language=language,
+        replace=response.Replace.DOC,
+    )
+    new_document5 = document5.apply_edits(edits5)
+    new_test_output += f"\n\nNew document5:\n```\n{new_document5}```"
 
     if new_test_output != old_test_output:
         diff = difflib.unified_diff(

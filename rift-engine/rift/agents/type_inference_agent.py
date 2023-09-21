@@ -25,6 +25,7 @@ from rift.ir.missing_types import (
     functions_missing_types_in_file,
 )
 from rift.ir.response import (
+    Replace,
     extract_blocks_from_response,
     replace_functions_from_code_blocks,
     update_typing_imports,
@@ -219,7 +220,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
             document=document,
             filter_function_ids=filter_function_ids,
             language=language,
-            replace_body=False,
+            replace=Replace.SIGNATURE,
         )
 
     async def code_edits_for_missing_files(

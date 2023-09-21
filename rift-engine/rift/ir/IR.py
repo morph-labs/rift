@@ -222,7 +222,7 @@ class SymbolInfo(ABC):
 
     body_sub: Optional[Substring]
     code: Code
-    docstring: str
+    docstring_sub: Optional[Substring]
     exported: bool
     language: Language
     name: str
@@ -245,6 +245,14 @@ class SymbolInfo(ABC):
             start, _end = self.substring
             body_start, _body_end = self.body_sub
             return self.code.bytes[start:body_start]
+        
+    @property
+    def docstring(self) -> Optional[str]:
+        if self.docstring_sub is None:
+            return None
+        else:
+            start, end = self.docstring_sub
+            return self.code.bytes[start:end].decode()
 
     @abstractmethod
     def dump(self, lines: List[str]) -> None:
@@ -256,7 +264,7 @@ class SymbolInfo(ABC):
         )
         if self.scope != "":
             lines.append(f"   scope: {self.scope}")
-        if self.docstring != "":
+        if self.docstring_sub is not None:
             lines.append(f"   docstring: {self.docstring}")
         if self.exported:
             lines.append(f"   exported: {self.exported}")
