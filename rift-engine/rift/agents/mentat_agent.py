@@ -133,18 +133,20 @@ class Mentat(agent.ThirdPartyAgent):
                     uri_pattern = r"\[uri\]\((\S+)\)"
 
                     def replacement(m: re.Match[str]):
-                        uri = m.group(1)
+                        parsed_uri = m.group(1)
                         if "#" in uri:
                             nonlocal dropped_symbols
                             dropped_symbols = True
-                            uri = uri.split("#")[0]
+                            uri, symbol = parsed_uri.split("#")[0], parsed_uri.split("#")[1]
+                        else:
+                            uri = parsed_uri
 
                         reference = IR.Reference.from_uri(uri)
                         file_path = reference.file_path
                         relative_path = os.path.relpath(
                             file_path, self.state.params.workspaceFolderPath
                         )
-                        return f"`{relative_path}`"
+                        return f"`{relative_path}`" if not dropped_symbols else f"{symbol} @ `{relative_path}`"
 
                     resp = re.sub(uri_pattern, replacement, resp)
                     return resp
@@ -153,9 +155,10 @@ class Mentat(agent.ThirdPartyAgent):
                     resp = refactor_uri_match(resp)
 
                     if dropped_symbols:
-                        await self.send_update(
-                            "This agent does not support symbol references. A plain file reference will be used instead."
-                        )
+                        # await self.send_update(
+                        #     "This agent does not support symbol references. A plain file reference will be used instead."
+                        # )
+                        pass
                 except:
                     pass
                 self.state.messages.append(openai.Message.user(content=resp))
