@@ -176,14 +176,34 @@ class Aider(agent.ThirdPartyAgent):
                     agent.RequestChatRequest(messages=self.state.messages)
                 )
 
-                def refactor_uri_match(resp):
-                    def process_path(path):
-                        relative_path = os.path.relpath(path, self.state.params.workspaceFolderPath)
-                        if not resp.startswith("/add"):  # /add does not like a quoted path
-                            relative_path = f"`{relative_path}`"
-                        return relative_path
+                def refactor_uri_match(resp) -> str:
 
-                    resp = re.sub(f"\[uri\]\((\S+)\)", lambda m: process_path(m.group(1)), resp)
+                    def replacement(m: re.Match[str]):
+                        parsed_uri = m.group(1)
+                        if "#" in uri:
+                            nonlocal dropped_symbols
+                            dropped_symbols = True
+                            uri, symbol = parsed_uri.split("#")[0], parsed_uri.split("#")[1]
+                        else:
+                            uri = parsed_uri
+
+                        reference = IR.Reference.from_uri(uri)
+                        file_path = reference.file_path
+                        relative_path = os.path.relpath(
+                            file_path, self.state.params.workspaceFolderPath
+                        )
+                        if not resp.startswith("/add"):
+                            return f"`{relative_path}`" if not dropped_symbols else f"{symbol} @ `{relative_path}`"
+                        else:
+                            return f"{relative_path}" if not dropped_symbols else f"{symbol} @ {relative_path}"
+                    
+                    # def process_path(path):
+                    #     relative_path = os.path.relpath(path, self.state.params.workspaceFolderPath)
+                    #     if not resp.startswith("/add"):  # /add does not like a quoted path
+                    #         relative_path = f"`{relative_path}`"
+                    #     return relative_path
+
+                    resp = re.sub(f"\[uri\]\((\S+)\)", lambda m: replacement(m), resp)
                     return resp
 
                 try:
