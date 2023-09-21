@@ -206,6 +206,34 @@ class BlockKind(SymbolKind):
         return f"{self.name()}[{len(self.statements)}]"
 
 
+Expression = Statement  # TODO: for now
+
+
+@dataclass
+class Case:
+    guard: Expression
+    body: Statement
+
+    def __str__(self) -> str:
+        return f"Case({self.guard}, {self.body})"
+
+
+@dataclass
+class IfKind(SymbolKind):
+    if_case: Case
+    elif_cases: List[Case]
+    else_case: Optional[Case]
+
+    def name(self) -> str:
+        return "If"
+
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   if_case: {self.if_case}")
+        lines.append(f"   elif_cases: {self.elif_cases}")
+        if self.else_case is not None:
+            lines.append(f"   else_case: {self.else_case}")
+
+
 @dataclass
 class FunctionKind(SymbolKind):
     has_return: bool
@@ -318,7 +346,7 @@ class Symbol:
             start, _end = self.substring
             body_start, _body_end = self.body_sub
             return self.code.bytes[start:body_start]
-        
+
     @property
     def docstring(self) -> Optional[str]:
         if self.docstring_sub is None:
