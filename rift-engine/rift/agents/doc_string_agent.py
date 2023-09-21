@@ -232,7 +232,7 @@ class MissingDocStringAgent(agent.ThirdPartyAgent):
             document=document,
             language=language,
             filter_function_ids=filter_function_ids,
-            replace=Replace.ALL,
+            replace=Replace.DOC,
         )
         logger.info(x)
         return x

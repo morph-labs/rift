@@ -68,3 +68,33 @@ def get_num_tokens2(content: t1) -> List[t2]:
 def bar() -> None:
     print("Hello world!")
 ```
+
+New document4:
+```
+class TestAddDocs:
+    def dump_elements(self, elements: List[str]) -> None:
+        """
+        The doc comment for dump_elements
+        Spans multiple lines
+        """
+        def dump_symbol(symbol: SymbolInfo) -> None:
+            decl_without_body = symbol.get_substring_without_body().decode()
+            elements.append(decl_without_body)
+            if isinstance(symbol, ContainerDeclaration):
+                for statement in symbol.body:
+                    dump_statement(statement)
+
+        def dump_statement(statement: Statement) -> None:
+            if isinstance(statement, Declaration):
+                for symbol in statement.symbols:
+                    dump_symbol(symbol)
+            else:
+                pass
+
+        for statement in self.statements:
+            dump_statement(statement)
+
+        from typing import Tuple
+        def foo() -> None:
+            print("Hello world!")
+```

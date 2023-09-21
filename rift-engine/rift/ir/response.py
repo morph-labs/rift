@@ -1,5 +1,7 @@
 from enum import Enum
+from pydoc import doc
 import re
+import textwrap
 from typing import List, Optional, Set, Tuple
 
 import rift.ir.IR as IR
@@ -66,7 +68,9 @@ def get_typing_names_from_types(types: List[IR.Type]) -> Set[str]:
         names = names.union(new_names)
     return names
 
-Replace = Enum('Replace', ['ALL', 'DOC', 'SIGNATURE'])
+
+Replace = Enum("Replace", ["ALL", "DOC", "SIGNATURE"])
+
 
 def replace_functions_in_document(
     ir_doc: IR.File,
@@ -89,9 +93,7 @@ def replace_functions_in_document(
         function_in_blocks = None
         if len(function_in_blocks_) == 1:
             f0 = function_in_blocks_[0]
-            if isinstance(f0, IR.ValueDeclaration) and isinstance(
-                f0.value_kind, IR.FunctionKind
-            ):
+            if isinstance(f0, IR.ValueDeclaration) and isinstance(f0.value_kind, IR.FunctionKind):
                 function_in_blocks = f0
         if filter_function_ids is None:
             filter = True
@@ -103,9 +105,38 @@ def replace_functions_in_document(
                 substring = function_declaration.substring
                 new_bytes = function_in_blocks.get_substring()
             elif replace == Replace.DOC:
-                substring = function_declaration.docstring_substring
-                new_bytes = function_in_blocks.docstring.get_substring()
-            else:
+                if function_in_blocks.docstring is None:
+                    logger.warning(f"No docstring for function {function_declaration.name}")
+                    continue
+                if function_declaration.docstring_sub is not None:
+                    logger.warning(f"Docstring already exists for function {function_declaration.name}")
+                    continue
+
+                # find indent by looking backwards in the bytes until we find a newline
+                def find_indent(bytes: bytes, start: int) -> int:
+                    for i in range(start, -1, -1):
+                        if bytes[i] == 10:
+                            return start - i - 1
+                    return 0
+
+                if (
+                    function_declaration.body_sub is not None
+                    and function_in_blocks.body_sub is not None
+                ):
+                    body_start = function_declaration.body_sub[0]
+                    old_indent = find_indent(function_declaration.code.bytes, body_start)
+                    new_indent = find_indent(
+                        function_in_blocks.code.bytes, function_in_blocks.body_sub[0]
+                    )
+                    substring = (body_start - old_indent, body_start - old_indent)
+                else:
+                    logger.warning(f"No body for function {function_declaration.name}")
+                    continue
+
+                docstring = textwrap.dedent(" " * new_indent + function_in_blocks.docstring)
+                docstring = textwrap.indent(docstring, " " * old_indent)
+                new_bytes = docstring.encode("utf-8") + b"\n"
+            elif replace == Replace.SIGNATURE:
                 new_function_text = function_in_blocks.get_substring_without_body()
                 logger.info(f"{new_function_text=}")
                 old_function_text = function_declaration.get_substring_without_body()
@@ -138,9 +169,7 @@ def update_typing_imports(
     for f in updated_functions:
         if isinstance(f.value_kind, IR.FunctionKind):
             fun_kind = f.value_kind
-            types_in_function = [
-                p.type for p in fun_kind.parameters if p.type is not None
-            ]
+            types_in_function = [p.type for p in fun_kind.parameters if p.type is not None]
             if fun_kind.return_type is not None:
                 types_in_function.append(fun_kind.return_type)
             names_from_types = get_typing_names_from_types(types_in_function)
@@ -154,9 +183,7 @@ def update_typing_imports(
             import_str += "\n"
         else:
             substring = typing_import.substring
-        code_edit = IR.CodeEdit(
-            substring=substring, new_bytes=import_str.encode("utf-8")
-        )
+        code_edit = IR.CodeEdit(substring=substring, new_bytes=import_str.encode("utf-8"))
         return code_edit
 
 
