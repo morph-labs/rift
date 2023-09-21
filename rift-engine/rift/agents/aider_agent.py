@@ -178,6 +178,8 @@ class Aider(agent.ThirdPartyAgent):
 
                 def refactor_uri_match(resp) -> str:
 
+                    dropped_symbols = False
+
                     def replacement(m: re.Match[str]):
                         parsed_uri = m.group(1)
                         if "#" in uri:
