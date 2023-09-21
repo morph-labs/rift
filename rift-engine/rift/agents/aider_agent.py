@@ -188,6 +188,7 @@ class Aider(agent.ThirdPartyAgent):
                             uri, symbol = parsed_uri.split("#")[0], parsed_uri.split("#")[1]
                         else:
                             uri = parsed_uri
+                        
 
                         reference = IR.Reference.from_uri(uri)
                         file_path = reference.file_path
