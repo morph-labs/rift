@@ -98,3 +98,36 @@ class TestAddDocs:
         def foo() -> None:
             print("Hello world!")
 ```
+
+New document5:
+```
+/**
+* Adds two numbers together.
+* 
+* @param a - The first number to be added.
+* @param b - The second number to be added.
+* @returns The sum of the two numbers.
+*/
+function add(a: number, b: number) : number {
+    return a + b;
+}
+
+class Employee {
+    empCode: number;
+    empName: string;
+
+    constructor(code: number, name: string) {
+            this.empName = name;
+            this.empCode = code;
+    }
+
+    /**
+     * Returns the salary of an employee.
+     * 
+     * @returns The salary as a number.
+     */
+    getSalary() : number {
+        return 10000;
+    }
+}
+```

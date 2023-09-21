@@ -109,7 +109,9 @@ def replace_functions_in_document(
                     logger.warning(f"No docstring for function {function_declaration.name}")
                     continue
                 if function_declaration.docstring_sub is not None:
-                    logger.warning(f"Docstring already exists for function {function_declaration.name}")
+                    logger.warning(
+                        f"Docstring already exists for function {function_declaration.name}"
+                    )
                     continue
 
                 # find indent by looking backwards in the bytes until we find a newline
@@ -123,12 +125,25 @@ def replace_functions_in_document(
                     function_declaration.body_sub is not None
                     and function_in_blocks.body_sub is not None
                 ):
-                    body_start = function_declaration.body_sub[0]
-                    old_indent = find_indent(function_declaration.code.bytes, body_start)
-                    new_indent = find_indent(
-                        function_in_blocks.code.bytes, function_in_blocks.body_sub[0]
-                    )
-                    substring = (body_start - old_indent, body_start - old_indent)
+                    if function_declaration.language == "python":
+                        body_start = function_declaration.body_sub[0]
+                        old_indent = find_indent(function_declaration.code.bytes, body_start)
+                        new_indent = find_indent(
+                            function_in_blocks.code.bytes, function_in_blocks.body_sub[0]
+                        )
+                        substring = (body_start - old_indent, body_start - old_indent)
+                    else:
+                        # add the doc comment before the function
+                        old_function_start = function_declaration.substring[0]
+                        old_indent = find_indent(
+                            function_declaration.code.bytes, old_function_start
+                        )
+                        new_function_start = function_in_blocks.substring[0]
+                        new_indent = find_indent(function_in_blocks.code.bytes, new_function_start)
+                        substring = (
+                            old_function_start - old_indent,
+                            old_function_start - old_indent,
+                        )
                 else:
                     logger.warning(f"No body for function {function_declaration.name}")
                     continue

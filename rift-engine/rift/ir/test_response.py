@@ -124,6 +124,29 @@ class Test:
         .encode("utf-8")
     )
 
+    response3 = dedent(
+        """
+        Here are the required changes:
+
+        ```
+        @cache
+        def get_num_tokens(content: str) -> int:           
+        ...
+                       
+        @cache
+        def get_num_tokens2(content: t1) -> List[t2]:           
+            return some(imaginary(code))
+                       
+        def foo() -> string:
+            print("This should be ignored as the return type was not missing")
+        ```
+
+        Some other thoutghts:
+        - this
+        
+        """
+    ).lstrip()
+
     code4 = (
         dedent(
             """
@@ -155,29 +178,6 @@ class Test:
         .encode("utf-8")
     )
 
-    response3 = dedent(
-        """
-        Here are the required changes:
-
-        ```
-        @cache
-        def get_num_tokens(content: str) -> int:           
-        ...
-                       
-        @cache
-        def get_num_tokens2(content: t1) -> List[t2]:           
-            return some(imaginary(code))
-                       
-        def foo() -> string:
-            print("This should be ignored as the return type was not missing")
-        ```
-
-        Some other thoutghts:
-        - this
-        
-        """
-    ).lstrip()
-
     response4 = dedent(
         """
         Here are the required changes:
@@ -189,6 +189,79 @@ class Test:
             Spans multiple lines
             \"\"\"
             ...
+        ```
+
+        Some other thoutghts:
+        - this
+        
+        """
+    ).lstrip()
+
+    code5 = (
+        dedent(
+            """
+
+        function add(a: number, b: number) : number {
+            return a + b;
+        }
+
+        class Employee {
+            empCode: number;
+            empName: string;
+
+            constructor(code: number, name: string) {
+                    this.empName = name;
+                    this.empCode = code;
+            }
+
+            getSalary() : number {
+                return 10000;
+            }
+        }
+        """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
+
+    response5 = dedent(
+        """
+        Here are the required changes:
+
+        ```
+        /**
+        * Adds two numbers together.
+        * 
+        * @param a - The first number to be added.
+        * @param b - The second number to be added.
+        * @returns The sum of the two numbers.
+        */
+        function add(a: number, b: number) : number {
+            return a + b;
+        }
+        ```
+
+        ```
+        /**
+         * Constructor function for creating an instance of a class.
+         * @param code - The code of the employee.
+         * @param name - The name of the employee.
+         */
+        constructor(code: number, name: string) {
+            this.empName = name;
+            this.empCode = code;
+        }
+        ```
+
+        ```
+        /**
+         * Returns the salary of an employee.
+         * 
+         * @returns The salary as a number.
+         */
+        function getSalary(): number {
+            return 10000;
+        }
         ```
 
         Some other thoutghts:
@@ -250,6 +323,7 @@ def test_response():
     new_document3 = document3.apply_edits(edits3)
     new_test_output += f"\n\nNew document3:\n```\n{new_document3}```"
 
+    language = "python"
     code_blocks4 = response.extract_blocks_from_response(Test.response4)
     file = IR.File("response4")
     parser.parse_code_block(file, IR.Code(Test.code4), language)
@@ -263,9 +337,25 @@ def test_response():
         language=language,
         replace=response.Replace.DOC,
     )
-
     new_document4 = document4.apply_edits(edits4)
     new_test_output += f"\n\nNew document4:\n```\n{new_document4}```"
+
+    language = "typescript"
+    code_blocks5 = response.extract_blocks_from_response(Test.response5)
+    file = IR.File("response5")
+    parser.parse_code_block(file, IR.Code(Test.code5), language)
+    missing_docs = functions_missing_doc_strings_in_file(file)
+    filter_function_ids = [md.function_declaration.get_qualified_id() for md in missing_docs]
+    document5 = IR.Code(Test.code5)
+    edits5, updated_functions = response.replace_functions_from_code_blocks(
+        code_blocks=code_blocks5,
+        document=document5,
+        filter_function_ids=filter_function_ids,
+        language=language,
+        replace=response.Replace.DOC,
+    )
+    new_document5 = document5.apply_edits(edits5)
+    new_test_output += f"\n\nNew document5:\n```\n{new_document5}```"
 
     if new_test_output != old_test_output:
         diff = difflib.unified_diff(
