@@ -264,9 +264,9 @@ If: if
    range: ((33, 4), (41, 12))
    substring: (669, 803)
    scope: some_conditionals._1.
-   if_case: Case(comparison_operator, Declaration['block'])
-   elif_cases: [Case(guard=comparison_operator, branch=Declaration['block']), Case(guard=comparison_operator, branch=Declaration['block'])]
-   else_branch: Declaration['block']
+   if_case: Case(comparison_operator[], block['block'])
+   elif_cases: [Case(guard=comparison_operator[], branch=block['block']), Case(guard=comparison_operator[], branch=block['block'])]
+   else_branch: block['block']
 Block: block
    language: python
    range: ((44, 8), (44, 12))
@@ -278,7 +278,7 @@ If: if
    range: ((43, 4), (44, 12))
    substring: (832, 857)
    scope: some_conditionals._3.
-   if_case: Case(comparison_operator, Declaration['block'])
+   if_case: Case(comparison_operator[], block['block'])
 Block: body
    language: python
    range: ((32, 4), (44, 12))

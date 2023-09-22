@@ -8,7 +8,6 @@ from rift.ir.IR import (
     Case,
     ClassKind,
     Code,
-    Declaration,
     Expression,
     File,
     FunctionKind,
@@ -951,11 +950,11 @@ class SymbolParser:
     def parse_statement(self, index: int) -> Statement:
         symbols = self.recurse(self.node, self.scope).parse_symbols(index)
         if symbols != []:
-            return Declaration(type=self.node.type, symbols=symbols)
+            return Statement(type=self.node.type, symbols=symbols)
         import_ = parse_import(self.node)
         if import_ is not None:
             self.file.add_import(import_)
-        return Statement(type=self.node.type)
+        return Statement(type=self.node.type, symbols=[])
 
     def parse_expression(self, index: int) -> Expression:
         # At the moment expressions are not distinguished from statements

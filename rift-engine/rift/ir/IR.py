@@ -60,19 +60,12 @@ class CodeEdit:
 @dataclass
 class Statement:
     type: str
+    symbols: List[
+        "Symbol"
+    ]  # Symbols declared in this statement. Normaly one, or more for mutual definitions.
 
     def __str__(self):
-        return self.type
-
-    __repr__ = __str__
-
-
-@dataclass
-class Declaration(Statement):
-    symbols: List["Symbol"]
-
-    def __str__(self):
-        return f"Declaration{[symbol.name for symbol in self.symbols]}"
+        return f"{self.type}{[symbol.name for symbol in self.symbols]}"
 
     __repr__ = __str__
 
@@ -454,11 +447,10 @@ class File:
                         dump_statement(statement, indent + 2)
 
         def dump_statement(statement: Statement, indent: int) -> None:
-            if isinstance(statement, Declaration):
-                for symbol in statement.symbols:
-                    if isinstance(symbol.symbol_kind, MetaSymbolKind):
-                        continue  # don't dump body statements
-                    dump_symbol(symbol, indent)
+            for symbol in statement.symbols:
+                if isinstance(symbol.symbol_kind, MetaSymbolKind):
+                    continue  # don't dump body statements
+                dump_symbol(symbol, indent)
             else:
                 pass
 
@@ -473,9 +465,10 @@ class File:
                 dump_statement(statement)
 
         def dump_statement(statement: Statement) -> None:
-            if isinstance(statement, Declaration):
-                for symbol in statement.symbols:
-                    dump_symbol(symbol)
+            for symbol in statement.symbols:
+                if isinstance(symbol.symbol_kind, MetaSymbolKind):
+                    continue  # don't dump body statements
+                dump_symbol(symbol)
             else:
                 pass
 
