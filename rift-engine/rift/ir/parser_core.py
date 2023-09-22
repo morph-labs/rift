@@ -228,10 +228,19 @@ def parse_import(node: Node) -> Optional[Import]:
 
 
 class SymbolParser:
-    def __init__(self, code: Code, file: File, language: Language, node: Node, scope: Scope):
+    def __init__(
+        self,
+        code: Code,
+        file: File,
+        language: Language,
+        node: Node,
+        scope: Scope,
+        metasymbols: bool,
+    ) -> None:
         self.code = code
         self.file = file
         self.language: Language = language
+        self.metasymbols = metasymbols
         self.node = node
         self.scope = scope
 
@@ -242,7 +251,12 @@ class SymbolParser:
 
     def recurse(self, node: Node, scope: Scope) -> "SymbolParser":
         return SymbolParser(
-            code=self.code, file=self.file, language=self.language, node=node, scope=scope
+            code=self.code,
+            file=self.file,
+            language=self.language,
+            node=node,
+            metasymbols=self.metasymbols,
+            scope=scope,
         )
 
     def mk_symbol_decl(
@@ -500,7 +514,12 @@ class SymbolParser:
             block_kind: Optional[BlockKind] = None
             if body_node is not None:
                 self.has_return = contains_direct_return(body_node)
-            if body_node is not None and id is not None and language == "python":
+            if (
+                body_node is not None
+                and id is not None
+                and language == "python"
+                and self.metasymbols
+            ):
                 scope_body = self.scope + f"{id.text.decode()}."
                 statements = self.recurse(body_node, scope_body).parse_block()
                 block_kind = BlockKind(statements)
@@ -897,8 +916,10 @@ class SymbolParser:
                     logger.warning(f"Unexpected node type in type_declaration: {t1.type}")
                 return []
 
-        # if not returned earlier
-        return self.parse_metasymbol(index)
+        if self.metasymbols:
+            return self.parse_metasymbol(index)
+        else:
+            return []
 
     def parse_metasymbol(self, index: int) -> List[Symbol]:
         node = self.node

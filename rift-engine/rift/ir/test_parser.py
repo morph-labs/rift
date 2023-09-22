@@ -1,3 +1,4 @@
+from curses import meta
 import difflib
 import os
 from textwrap import dedent
@@ -326,7 +327,7 @@ class Tests:
 
 def new_file(code: IR.Code, path: str, language: IR.Language, project: IR.Project) -> None:
     file = IR.File(path)
-    parser.parse_code_block(file, code, language)
+    parser.parse_code_block(file, code, language, metasymbols=True)
     project.add_file(file)
 
 
