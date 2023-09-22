@@ -112,6 +112,21 @@ class Tests:
         def outer_fun() -> None:
             def inner_fun() -> None:
                 pass
+        
+        def some_conditionals(cond: str) -> None:
+            \"\"\"explanation\"\"\"
+            if cond == "a":
+                pass
+            elif cond == "b":
+                pass
+            elif cond == "c":
+                pass
+            else:
+                pass
+                pass
+            # This is a comment
+            if 34 == 34:
+                pass
     """
         )
         .lstrip()

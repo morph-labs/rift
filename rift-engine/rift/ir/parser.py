@@ -24,7 +24,7 @@ def parse_code_block(file: IR.File, code: IR.Code, language: IR.Language) -> Non
     for node in tree.root_node.children:
         statement = parser_core.SymbolParser(
             code=code, file=file, language=language, node=node, scope=""
-        ).parse_statement()
+        ).parse_statement(index=0)
         file.statements.append(statement)
 
 

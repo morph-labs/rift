@@ -27,11 +27,11 @@ def get_symbol_completions_raw(project: IR.Project) -> List[Dict[str, Symbol]]:
     files: List[File] = []
     for file_ir in project.get_files():
         symbols: List[Symbol] = []
-        for symbol_info in file_ir.search_symbol(lambda _: True):
-            if isinstance(symbol_info.symbol_kind, IR.BlockKind):
-                continue # don't emit completions for blocks at the moment
+        for symbol in file_ir.search_symbol(lambda _: True):
+            if isinstance(symbol.symbol_kind, IR.BodyStatementKind):
+                continue # don't emit completions for statements inside bodies
             symbol = Symbol(
-                symbol_info.name, symbol_info.scope, symbol_info.kind(), symbol_info.range
+                symbol.name, symbol.scope, symbol.kind(), symbol.range
             )
             symbols.append(symbol)
         file = File(file_ir.path, symbols)

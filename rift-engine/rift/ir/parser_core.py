@@ -5,11 +5,14 @@ from tree_sitter import Node
 
 from rift.ir.IR import (
     BlockKind,
+    Case,
     ClassKind,
     Code,
     Declaration,
+    Expression,
     File,
     FunctionKind,
+    IfKind,
     Import,
     InterfaceKind,
     Language,
@@ -210,7 +213,7 @@ def contains_direct_return(body: Node):
     return False
 
 
-def find_import(node: Node) -> Optional[Import]:
+def parse_import(node: Node) -> Optional[Import]:
     substring = (node.start_byte, node.end_byte)
     if node.type == "import_statement":
         names = [n.text.decode() for n in node.children_by_field_name("name")]
@@ -351,7 +354,7 @@ class SymbolParser:
                 self.body_sub = (body_node.start_byte, body_node.end_byte)
             return body_node
 
-    def find_declarations(self) -> List[Symbol]:
+    def find_declarations(self, index: int) -> List[Symbol]:
         previous_node = self.node.prev_sibling
         if previous_node is not None and previous_node.type == "comment":
             docstring = previous_node.text.decode()
@@ -421,7 +424,7 @@ class SymbolParser:
         elif node.type in ["decorated_definition"] and language == "python":  # python decorator
             definition = node.child_by_field_name("definition")
             if definition is not None:
-                return self.recurse(definition, self.scope).find_declarations()
+                return self.recurse(definition, self.scope).find_declarations(index)
 
         elif node.type in ["field_declaration", "function_definition"] and language in ["c", "cpp"]:
             type_node = node.child_by_field_name("type")
@@ -528,7 +531,7 @@ class SymbolParser:
             if len(node.children) >= 2:
                 self.node = node.children[1]
                 self.exported = True
-                return self.find_declarations()
+                return self.find_declarations(index)
 
         elif node.type in ["interface_declaration", "type_alias_declaration"] and language in [
             "js",
@@ -881,23 +884,70 @@ class SymbolParser:
                     logger.warning(f"Unexpected node type in type_declaration: {t1.type}")
                 return []
 
+        elif node.type == "if_statement" and language == "python":
+            self.scope = self.scope + f"_{index}."
+            condition_node = node.child_by_field_name("condition")
+            consequence_node = node.child_by_field_name("consequence")
+            if condition_node is not None and consequence_node is not None:
+                scope = self.scope + "if."
+                condition = self.recurse(condition_node, scope).parse_expression(index)
+                consequence = self.recurse(consequence_node, scope).parse_statement(index)
+                if_case = Case(guard=condition, branch=consequence)
+                alternative_nodes = node.children_by_field_name("alternative")
+                elif_cases: List[Case] = []
+                else_branch: Optional[Statement] = None
+                elif_index = 0
+                for an in alternative_nodes:
+                    if an.type == "elif_clause":
+                        condition_node = an.child_by_field_name("condition")
+                        consequence_node = an.child_by_field_name("consequence")
+                        if condition_node is None or consequence_node is None:
+                            continue
+                        scope = self.scope + f"elif_{elif_index}."
+                        elif_index += 1
+                        condition = self.recurse(condition_node, scope).parse_expression(index)
+                        consequence = self.recurse(consequence_node, scope).parse_statement(index)
+                        elif_cases.append(Case(guard=condition, branch=consequence))
+                    elif an.type == "else_clause":
+                        scope = self.scope + "else."
+                        else_body_node = an.child_by_field_name("body")
+                        # TODO: there can be comments in the else clause before the body
+                        if else_body_node is not None:
+                            else_branch = self.recurse(else_body_node, scope).parse_statement(index)
+                if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_branch=else_branch)
+                symbol = self.mk_symbol_decl(id="if", parents=[node], symbol_kind=if_kind)
+                self.file.add_symbol(symbol)
+                return [symbol]
+
+        elif node.type == "block" and language == "python":
+            statements = self.recurse(node, self.scope).parse_block()
+            block_kind = BlockKind(statements)
+            symbol = self.mk_symbol_decl(id="block", parents=[node], symbol_kind=block_kind)
+            self.file.add_symbol(symbol)
+            return [symbol]
+
         # if not returned earlier
         return []
 
-    def parse_statement(self) -> Statement:
-        declarations = self.recurse(self.node, self.scope).find_declarations()
+    def parse_statement(self, index: int) -> Statement:
+        declarations = self.recurse(self.node, self.scope).find_declarations(index)
         if declarations != []:
             return Declaration(type=self.node.type, symbols=declarations)
-        import_ = find_import(self.node)
+        import_ = parse_import(self.node)
         if import_ is not None:
             self.file.add_import(import_)
         return Statement(type=self.node.type)
 
+    def parse_expression(self, index: int) -> Expression:
+        return self.parse_statement(index)
+
     def parse_block(self) -> List[Statement]:
         statements: List[Statement] = []
+        index = 0
         for child in self.node.children:
             if self.language == "ruby" and child.text.decode() == "name":
                 continue
-            statement = self.recurse(child, self.scope).parse_statement()
+            statement = self.recurse(child, self.scope).parse_statement(index)
+            index += 1
             statements.append(statement)
         return statements

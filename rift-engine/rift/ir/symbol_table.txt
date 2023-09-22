@@ -235,6 +235,65 @@ Function: outer_fun
    body_sub: (562, 599)
    return_type: None
    body: Block[1]
+Block: block
+   language: python
+   range: ((34, 8), (34, 12))
+   substring: (693, 697)
+   scope: some_conditionals._1.if.
+   statements: 1
+Block: block
+   language: python
+   range: ((36, 8), (36, 12))
+   substring: (728, 732)
+   scope: some_conditionals._1.elif_0.
+   statements: 1
+Block: block
+   language: python
+   range: ((38, 8), (38, 12))
+   substring: (763, 767)
+   scope: some_conditionals._1.elif_1.
+   statements: 1
+Block: block
+   language: python
+   range: ((40, 8), (41, 12))
+   substring: (786, 803)
+   scope: some_conditionals._1.else.
+   statements: 2
+If: if
+   language: python
+   range: ((33, 4), (41, 12))
+   substring: (669, 803)
+   scope: some_conditionals._1.
+   if_case: Case(comparison_operator, Declaration['block'])
+   elif_cases: [Case(guard=comparison_operator, branch=Declaration['block']), Case(guard=comparison_operator, branch=Declaration['block'])]
+   else_branch: Declaration['block']
+Block: block
+   language: python
+   range: ((44, 8), (44, 12))
+   substring: (853, 857)
+   scope: some_conditionals._3.if.
+   statements: 1
+If: if
+   language: python
+   range: ((43, 4), (44, 12))
+   substring: (832, 857)
+   scope: some_conditionals._3.
+   if_case: Case(comparison_operator, Declaration['block'])
+Block: body
+   language: python
+   range: ((32, 4), (44, 12))
+   substring: (647, 857)
+   scope: some_conditionals.
+   statements: 4
+Function: some_conditionals
+   language: python
+   range: ((31, 0), (44, 12))
+   substring: (601, 857)
+   docstring: """explanation"""
+   body_sub: (647, 857)
+   parameters: [cond:str]
+   return_type: None
+   body: Block[4]
 === Symbol Table for test.cpp ===
 Function: add
    language: cpp
@@ -474,6 +533,7 @@ File: test.py
       def nested():
   def outer_fun() -> None:
     def inner_fun() -> None:
+  def some_conditionals(cond: str) -> None:
 File: test.cpp
   namespace namespace_name
     void add(int& someRef, int* somePtr)

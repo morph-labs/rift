@@ -71,6 +71,11 @@ class Statement:
 class Declaration(Statement):
     symbols: List["Symbol"]
 
+    def __str__(self):
+        return f"Declaration{[symbol.name for symbol in self.symbols]}"
+    
+    __repr__ = __str__
+
 
 @dataclass
 class Import:
@@ -193,7 +198,14 @@ class SymbolKind(ABC):
 
 
 @dataclass
-class BlockKind(SymbolKind):
+class BodyStatementKind(SymbolKind):
+    """Abstract class for symbol kinds inside a body."""
+    pass
+
+
+
+@dataclass
+class BlockKind(BodyStatementKind):
     statements: List[Statement]
 
     def name(self) -> str:
@@ -212,26 +224,27 @@ Expression = Statement  # TODO: for now
 @dataclass
 class Case:
     guard: Expression
-    body: Statement
+    branch: Statement
 
     def __str__(self) -> str:
-        return f"Case({self.guard}, {self.body})"
+        return f"Case({self.guard}, {self.branch})"
 
 
 @dataclass
-class IfKind(SymbolKind):
+class IfKind(BodyStatementKind):
     if_case: Case
     elif_cases: List[Case]
-    else_case: Optional[Case]
+    else_branch: Optional[Statement]
 
     def name(self) -> str:
         return "If"
 
     def dump(self, lines: List[str]) -> None:
         lines.append(f"   if_case: {self.if_case}")
-        lines.append(f"   elif_cases: {self.elif_cases}")
-        if self.else_case is not None:
-            lines.append(f"   else_case: {self.else_case}")
+        if self.elif_cases != []:
+            lines.append(f"   elif_cases: {self.elif_cases}")
+        if self.else_branch is not None:
+            lines.append(f"   else_branch: {self.else_branch}")
 
 
 @dataclass
@@ -436,6 +449,8 @@ class File:
         def dump_statement(statement: Statement, indent: int) -> None:
             if isinstance(statement, Declaration):
                 for symbol in statement.symbols:
+                    if isinstance(symbol.symbol_kind, BodyStatementKind):
+                        continue # don't dump body statements
                     dump_symbol(symbol, indent)
             else:
                 pass

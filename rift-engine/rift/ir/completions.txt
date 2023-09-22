@@ -136,6 +136,21 @@
                         12
                     ]
                 ]
+            },
+            {
+                "name": "some_conditionals",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        31,
+                        0
+                    ],
+                    [
+                        44,
+                        12
+                    ]
+                ]
             }
         ]
     }
