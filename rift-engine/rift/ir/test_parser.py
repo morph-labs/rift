@@ -1,4 +1,3 @@
-from curses import meta
 import difflib
 import os
 from textwrap import dedent

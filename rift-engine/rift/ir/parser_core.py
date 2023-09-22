@@ -288,7 +288,7 @@ class SymbolParser:
         self,
         id: Node,
         parents: List[Node],
-        body: Optional[BlockKind] = None,
+        body: Optional[Statement] = None,
         parameters: List[Parameter] = [],
         return_type: Optional[Type] = None,
     ) -> Symbol:
@@ -511,7 +511,7 @@ class SymbolParser:
                 if len(stmt.children) > 0 and stmt.children[0].type == "string":
                     docstring_node = stmt.children[0]
                     self.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
-            block_kind: Optional[BlockKind] = None
+            body: Optional[Statement] = None
             if body_node is not None:
                 self.has_return = contains_direct_return(body_node)
             if (
@@ -520,16 +520,11 @@ class SymbolParser:
                 and language == "python"
                 and self.metasymbols
             ):
-                scope_body = self.scope + f"{id.text.decode()}."
-                statements = self.recurse(body_node, scope_body).parse_block()
-                block_kind = BlockKind(statements)
-                body = self.recurse(body_node, scope_body).mk_body_block(
-                    parents=[body_node], block_kind=block_kind
-                )
-                self.file.add_symbol(body)
+                scope_body = self.scope + f"{id.text.decode()}.body."
+                body = self.recurse(body_node, scope_body).parse_statement(index)
             if id is not None:
                 declaration = self.mk_fun_decl(
-                    body=block_kind,
+                    body=body,
                     id=id,
                     parents=[node],
                     parameters=parameters,

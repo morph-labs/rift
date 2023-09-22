@@ -251,7 +251,7 @@ class IfKind(MetaSymbolKind):
 class FunctionKind(SymbolKind):
     has_return: bool
     parameters: List[Parameter]
-    body: Optional[BlockKind] = None
+    body: Optional[Statement] = None # block metasymbol for the function body
     return_type: Optional[Type] = None
 
     def name(self) -> str:
@@ -443,8 +443,7 @@ class File:
             if isinstance(symbol.symbol_kind, FunctionKind):
                 body = symbol.symbol_kind.body
                 if body is not None:
-                    for statement in body.statements:
-                        dump_statement(statement, indent + 2)
+                    dump_statement(body, indent + 2)
 
         def dump_statement(statement: Statement, indent: int) -> None:
             for symbol in statement.symbols:
