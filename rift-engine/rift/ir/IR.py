@@ -73,7 +73,7 @@ class Declaration(Statement):
 
     def __str__(self):
         return f"Declaration{[symbol.name for symbol in self.symbols]}"
-    
+
     __repr__ = __str__
 
 
@@ -198,14 +198,21 @@ class SymbolKind(ABC):
 
 
 @dataclass
-class BodyStatementKind(SymbolKind):
-    """Abstract class for symbol kinds inside a body."""
+class MetaSymbolKind(SymbolKind):
+    """
+    Represents a synthetic or structural symbol in the program.
+
+    These symbols are not derived directly from the source code but are introduced
+    during the parsing or analysis process. They are primarily used to represent
+    unnamed or implicit constructs, such as control structures and intermediate
+    transformations.
+    """
+
     pass
 
 
-
 @dataclass
-class BlockKind(BodyStatementKind):
+class BlockKind(MetaSymbolKind):
     statements: List[Statement]
 
     def name(self) -> str:
@@ -231,7 +238,7 @@ class Case:
 
 
 @dataclass
-class IfKind(BodyStatementKind):
+class IfKind(MetaSymbolKind):
     if_case: Case
     elif_cases: List[Case]
     else_branch: Optional[Statement]
@@ -449,8 +456,8 @@ class File:
         def dump_statement(statement: Statement, indent: int) -> None:
             if isinstance(statement, Declaration):
                 for symbol in statement.symbols:
-                    if isinstance(symbol.symbol_kind, BodyStatementKind):
-                        continue # don't dump body statements
+                    if isinstance(symbol.symbol_kind, MetaSymbolKind):
+                        continue  # don't dump body statements
                     dump_symbol(symbol, indent)
             else:
                 pass

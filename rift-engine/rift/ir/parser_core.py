@@ -354,7 +354,21 @@ class SymbolParser:
                 self.body_sub = (body_node.start_byte, body_node.end_byte)
             return body_node
 
-    def find_declarations(self, index: int) -> List[Symbol]:
+    def parse_symbols(self, index: int) -> List[Symbol]:
+        """
+        Parse the node specified by the index to extract recognized symbols, such as classes,
+        functions, methods, modules, namespaces, etc., across various languages.
+
+        This function processes symbols from languages like C, C++, Python, JavaScript, TypeScript,
+        Ruby, C#, Java, ReScript, and potentially others as the function evolves. It also captures
+        associated documentation comments and appends them to the recognized symbol.
+
+        Returns:
+            List[Symbol]: A list of identified symbols, which can be empty if no symbol is recognized
+            or can contain one or more symbols as the parsing process can identify multiple symbols
+            from a single node (e.g., ReScript let bindings).
+        """
+
         previous_node = self.node.prev_sibling
         if previous_node is not None and previous_node.type == "comment":
             docstring = previous_node.text.decode()
@@ -424,7 +438,7 @@ class SymbolParser:
         elif node.type in ["decorated_definition"] and language == "python":  # python decorator
             definition = node.child_by_field_name("definition")
             if definition is not None:
-                return self.recurse(definition, self.scope).find_declarations(index)
+                return self.recurse(definition, self.scope).parse_symbols(index)
 
         elif node.type in ["field_declaration", "function_definition"] and language in ["c", "cpp"]:
             type_node = node.child_by_field_name("type")
@@ -531,7 +545,7 @@ class SymbolParser:
             if len(node.children) >= 2:
                 self.node = node.children[1]
                 self.exported = True
-                return self.find_declarations(index)
+                return self.parse_symbols(index)
 
         elif node.type in ["interface_declaration", "type_alias_declaration"] and language in [
             "js",
@@ -884,6 +898,19 @@ class SymbolParser:
                     logger.warning(f"Unexpected node type in type_declaration: {t1.type}")
                 return []
 
+        # if not returned earlier
+        return self.parse_metasymbol(index)
+
+    def parse_metasymbol(self, index: int) -> List[Symbol]:
+        node = self.node
+        language = self.language
+
+        if node.type == "block" and language == "python":
+            statements = self.recurse(node, self.scope).parse_block()
+            block_kind = BlockKind(statements)
+            symbol = self.mk_symbol_decl(id="block", parents=[node], symbol_kind=block_kind)
+            self.file.add_symbol(symbol)
+            return [symbol]
         elif node.type == "if_statement" and language == "python":
             self.scope = self.scope + f"_{index}."
             condition_node = node.child_by_field_name("condition")
@@ -919,26 +946,19 @@ class SymbolParser:
                 self.file.add_symbol(symbol)
                 return [symbol]
 
-        elif node.type == "block" and language == "python":
-            statements = self.recurse(node, self.scope).parse_block()
-            block_kind = BlockKind(statements)
-            symbol = self.mk_symbol_decl(id="block", parents=[node], symbol_kind=block_kind)
-            self.file.add_symbol(symbol)
-            return [symbol]
-
-        # if not returned earlier
         return []
 
     def parse_statement(self, index: int) -> Statement:
-        declarations = self.recurse(self.node, self.scope).find_declarations(index)
-        if declarations != []:
-            return Declaration(type=self.node.type, symbols=declarations)
+        symbols = self.recurse(self.node, self.scope).parse_symbols(index)
+        if symbols != []:
+            return Declaration(type=self.node.type, symbols=symbols)
         import_ = parse_import(self.node)
         if import_ is not None:
             self.file.add_import(import_)
         return Statement(type=self.node.type)
 
     def parse_expression(self, index: int) -> Expression:
+        # At the moment expressions are not distinguished from statements
         return self.parse_statement(index)
 
     def parse_block(self) -> List[Statement]:
