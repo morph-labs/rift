@@ -70,7 +70,15 @@ class Statement:
     __repr__ = __str__
 
 
-Expression = Statement  # TODO: for now
+@dataclass
+class Expression:
+    type: str
+    symbol: Optional["Symbol"]
+
+    def __str__(self):
+        return f"{[self.symbol.name] if self.symbol is not None else self.type}"
+
+    __repr__ = __str__
 
 
 Block = List[Statement]

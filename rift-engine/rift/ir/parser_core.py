@@ -1,5 +1,4 @@
 import logging
-import re
 from typing import List, Optional, Tuple
 
 from tree_sitter import Node
@@ -941,10 +940,10 @@ class SymbolParser:
                 condition = self.recurse(condition_node, scope, parent=symbol).parse_expression(
                     index
                 )
-                consequence = self.recurse(
+                branch = self.recurse(
                     consequence_node, scope, parent=symbol
                 ).parse_statements()
-                if_case = Case(condition=condition, branch=consequence)
+                if_case = Case(condition=condition, branch=branch)
                 alternative_nodes = node.children_by_field_name("alternative")
                 elif_cases: List[Case] = []
                 else_branch: List[Statement] = []
@@ -960,10 +959,10 @@ class SymbolParser:
                         condition = self.recurse(
                             condition_node, scope=scope, parent=symbol
                         ).parse_expression(index)
-                        consequence = self.recurse(
+                        branch = self.recurse(
                             consequence_node, scope, parent=symbol
                         ).parse_statements()
-                        elif_cases.append(Case(condition=condition, branch=consequence))
+                        elif_cases.append(Case(condition=condition, branch=branch))
                     elif an.type == "else_clause":
                         scope = self.scope + "else."
                         else_body_node = an.child_by_field_name("body")
@@ -980,10 +979,7 @@ class SymbolParser:
         elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
             child = node.children[0]
             expression = self.recurse(child, self.scope, parent=self.parent).parse_expression(index)
-            if expression.symbols != []:
-                return expression.symbols[0]
-            else:
-                return None
+            return expression.symbol
 
     def parse_statement(self, index: int) -> Statement:
         symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(index)
@@ -1030,8 +1026,7 @@ class SymbolParser:
             self.file.add_symbol(symbol)
         else:
             logger.warning(f"Unexpected expression: {node.type}")
-        symbols = [symbol] if symbol is not None else []
-        return Expression(type=self.node.type, symbols=symbols)
+        return Expression(type=self.node.type, symbol=symbol)
 
     def parse_statements(self) -> List[Statement]:
         statements: List[Statement] = []
