@@ -215,7 +215,7 @@ class BlockKind(MetaSymbolKind):
         lines.append(f"   statements: {len(self.statements)}")
 
     def __str__(self) -> str:
-        return f"{self.name()}[{len(self.statements)}]"
+        return f"{self.name()}{self.statements}"
 
 
 Expression = Statement  # TODO: for now
@@ -382,6 +382,8 @@ class Symbol:
             lines.append(f"   exported: {self.exported}")
         if self.body_sub is not None:
             lines.append(f"   body_sub: {self.body_sub}")
+        if self.body != []:
+            lines.append(f"   body: {self.body}")
         self.symbol_kind.dump(lines)
 
     def kind(self) -> str:

@@ -52,6 +52,7 @@ Class: Bicycle
    substring: (21, 205)
    docstring: // This is docstring
    body_sub: (42, 205)
+   body: [{[], line_comment[], field_declaration[], line_comment[], method_declaration['braking'], }[]]
 Function: sum
    language: java
    range: ((14, 4), (17, 5))
@@ -67,6 +68,7 @@ Class: Math
    substring: (231, 345)
    docstring: /* This is docstring */
    body_sub: (249, 345)
+   body: [{[], method_declaration['sum'], }[]]
 Interface: Animal
    language: java
    range: ((20, 0), (23, 1))
@@ -113,6 +115,7 @@ Class: A
    substring: (141, 224)
    exported: True
    body_sub: (149, 224)
+   body: [{[], method_definition['constructor'], method_definition['load'], }[]]
 Interface: RunHelperSyncResult
    language: typescript
    range: ((9, 0), (12, 1))
@@ -143,6 +146,7 @@ Function: py
    scope: A.
    docstring: """This is a docstring"""
    body_sub: (97, 139)
+   body: [block['block']]
    parameters: [x, y]
    has_return: True
 Class: A(C,D)
@@ -154,6 +158,7 @@ Class: A(C,D)
     for class A
     """
    body_sub: (18, 139)
+   body: [expression_statement[], function_definition['py']]
 Block: block
    language: python
    range: ((14, 8), (14, 12))
@@ -166,6 +171,7 @@ Function: insert_code
    substring: (173, 311)
    scope: B.
    body_sub: (307, 311)
+   body: [block['block']]
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
 Block: block
@@ -180,6 +186,7 @@ Function: load
    substring: (316, 353)
    scope: B.
    body_sub: (349, 353)
+   body: [block['block']]
    parameters: [self, v]
 Block: block
    language: python
@@ -193,17 +200,20 @@ Function: nested
    substring: (380, 410)
    scope: B.Nested.
    body_sub: (406, 410)
+   body: [block['block']]
 Class: Nested
    language: python
    range: ((17, 4), (19, 16))
    substring: (358, 410)
    scope: B.
    body_sub: (380, 410)
+   body: [function_definition['nested']]
 Class: B
    language: python
    range: ((9, 0), (19, 16))
    substring: (140, 410)
    body_sub: (153, 410)
+   body: [decorated_definition['insert_code'], function_definition['load'], class_definition['Nested']]
 Block: block
    language: python
    range: ((29, 8), (29, 12))
@@ -216,6 +226,7 @@ Function: inner_fun
    substring: (562, 599)
    scope: outer_fun.body.
    body_sub: (595, 599)
+   body: [block['block']]
    return_type: None
 Block: block
    language: python
@@ -228,6 +239,7 @@ Function: outer_fun
    range: ((27, 0), (29, 12))
    substring: (533, 599)
    body_sub: (562, 599)
+   body: [block['block']]
    return_type: None
 Block: block
    language: python
@@ -285,6 +297,7 @@ Function: some_conditionals
    substring: (601, 857)
    docstring: """explanation"""
    body_sub: (647, 857)
+   body: [block['block']]
    parameters: [cond:str]
    return_type: None
 === Symbol Table for test.cpp ===
@@ -308,11 +321,13 @@ Class: student
    substring: (76, 139)
    scope: namespace_name::
    body_sub: (90, 139)
+   body: [{[], access_specifier[], field_declaration['print'], }[]]
 Namespace: namespace_name
    language: cpp
    range: ((0, 0), (7, 1))
    substring: (0, 142)
    body_sub: (26, 142)
+   body: [{[], function_definition['add'], class_specifier['student'], ;[], }[]]
 === Symbol Table for test.cs ===
 Function: sum
    language: c_sharp
@@ -330,12 +345,14 @@ Class: SampleClass
    scope: SampleNamespace::
    docstring: // This is docstring
    body_sub: (100, 221)
+   body: [{[], method_declaration['sum'], }[]]
 Namespace: SampleNamespace
    language: c_sharp
    range: ((1, 0), (12, 1))
    substring: (21, 223)
    docstring: // This is docstring
    body_sub: (47, 223)
+   body: [{[], comment[], class_declaration['SampleClass'], }[]]
 Interface: IEquatable
    language: c_sharp
    range: ((14, 0), (17, 1))
@@ -374,6 +391,7 @@ Module: M
    range: ((2, 0), (5, 3))
    substring: (57, 159)
    body_sub: (66, 159)
+   body: [struct[], value_definition['bump'], value_definition['hline'], end[]]
 Function: with_named_args
    language: ocaml
    range: ((7, 4), (7, 81))
@@ -415,6 +433,7 @@ Module: N
    range: ((6, 0), (14, 3))
    substring: (160, 365)
    body_sub: (169, 365)
+   body: [struct[], value_definition['with_named_args'], value_definition['f1', 'f2'], value_definition['v1'], value_definition['v2'], end[]]
 === Symbol Table for test.rb ===
 Function: sum
    language: ruby
@@ -458,6 +477,7 @@ Class: Person
    substring: (397, 680)
    docstring: # This is a docstring for class Person
    body_sub: (422, 680)
+   body: [class[], constant[], call[], method['initialize'], method['introduce'], end[]]
 Function: cream?
    language: ruby
    range: ((37, 12), (39, 15))
@@ -469,6 +489,7 @@ Module: Cream
    range: ((36, 8), (40, 11))
    substring: (690, 774)
    body_sub: (715, 774)
+   body: [module[], constant[], method['cream?'], end[]]
 Function: pour
    language: ruby
    range: ((44, 16), (48, 19))
@@ -482,11 +503,13 @@ Class: Bar
    substring: (807, 1003)
    scope: Foo::
    body_sub: (833, 1003)
+   body: [class[], constant[], method['pour'], end[]]
 Module: Foo
    language: ruby
    range: ((42, 8), (50, 11))
    substring: (784, 1015)
    body_sub: (807, 1015)
+   body: [module[], constant[], class['Bar'], end[]]
 
 === Project Map ===
 File: test.c
