@@ -1,9 +1,11 @@
 import logging
+import re
 from typing import List, Optional, Tuple
 
 from tree_sitter import Node
 
 from rift.ir.IR import (
+    CallKind,
     Case,
     ClassKind,
     Code,
@@ -20,6 +22,7 @@ from rift.ir.IR import (
     Field,
     Scope,
     Statement,
+    StringKind,
     Substring,
     Symbol,
     SymbolKind,
@@ -913,17 +916,22 @@ class SymbolParser:
                 return []
 
         if self.metasymbols:
-            return self.parse_metasymbol(index)
+            metasymbol = self.parse_metasymbol(index)
+            if metasymbol is not None:
+                return [metasymbol]
+            else:
+                return []
         else:
             return []
 
-    def parse_metasymbol(self, index: int) -> List[Symbol]:
+    def parse_metasymbol(self, index: int) -> Optional[Symbol]:
         node = self.node
         language = self.language
 
+        self.scope = self.scope[:-1]  # remove the trailing "." from the scope
+        self.scope = self.scope + f"[{index}]."
+
         if node.type == "if_statement" and language == "python":
-            self.scope = self.scope[:-1]  # remove the trailing "." from the scope
-            self.scope = self.scope + f"[{index}]."
             condition_node = node.child_by_field_name("condition")
             consequence_node = node.child_by_field_name("consequence")
             if condition_node is not None and consequence_node is not None:
@@ -967,9 +975,15 @@ class SymbolParser:
                 if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_branch=else_branch)
                 self.update_dummy_symbol(symbol=symbol, symbol_kind=if_kind)
                 self.file.add_symbol(symbol)
-                return [symbol]
+                return symbol
 
-        return []
+        elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
+            child = node.children[0]
+            expression = self.recurse(child, self.scope, parent=self.parent).parse_expression(index)
+            if expression.symbols != []:
+                return expression.symbols[0]
+            else:
+                return None
 
     def parse_statement(self, index: int) -> Statement:
         symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(index)
@@ -981,8 +995,43 @@ class SymbolParser:
         return Statement(type=self.node.type, symbols=[])
 
     def parse_expression(self, index: int) -> Expression:
-        # At the moment expressions are not distinguished from statements
-        return self.parse_statement(index)
+        node = self.node
+        symbol: Optional[Symbol] = None
+        if node.type == "call":
+            function_node = node.child_by_field_name("function")
+            if function_node is None:
+                logger.warning(f"Unexpected call node structure: {node.text.decode()}")
+            else:
+                function_name = function_node.text.decode()
+
+                symbol = self.mk_dummy_symbol(id="call", parents=[node])
+
+                arguments: List[Expression] = []
+                arguments_node = node.child_by_field_name("arguments")
+                if arguments_node is not None:
+                    arg_num = 0
+                    scope = self.scope + "call."
+                    for arg in arguments_node.children:
+                        if arg.type in ["(", ")"]:
+                            continue
+                        expression = self.recurse(arg, scope, parent=symbol).parse_expression(
+                            arg_num
+                        )
+                        arg_num += 1
+                        arguments.append(expression)
+                self.update_dummy_symbol(
+                    symbol=symbol, symbol_kind=CallKind(function_name, arguments)
+                )
+                self.file.add_symbol(symbol)
+        elif node.type == "string":
+            symbol = self.mk_dummy_symbol(id="string", parents=[node])
+            str = node.text.decode()
+            self.update_dummy_symbol(symbol=symbol, symbol_kind=StringKind(str))
+            self.file.add_symbol(symbol)
+        else:
+            logger.warning(f"Unexpected expression: {node.type}")
+        symbols = [symbol] if symbol is not None else []
+        return Expression(type=self.node.type, symbols=symbols)
 
     def parse_statements(self) -> List[Statement]:
         statements: List[Statement] = []

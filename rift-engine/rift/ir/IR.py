@@ -220,6 +220,31 @@ class Case:
 
 
 @dataclass
+class CallKind(MetaSymbolKind):
+    function_name: str
+    arguments: List[Expression]
+
+    def name(self) -> str:
+        return "Call"
+
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   function_name: {self.function_name}")
+        if self.arguments != []:
+            lines.append(f"   arguments: {self.arguments}")
+
+
+@dataclass
+class StringKind(MetaSymbolKind):
+    value: str
+
+    def name(self) -> str:
+        return "String"
+
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   value: {self.value}")
+
+
+@dataclass
 class IfKind(MetaSymbolKind):
     if_case: Case
     elif_cases: List[Case]

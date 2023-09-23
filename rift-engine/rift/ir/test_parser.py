@@ -134,7 +134,7 @@ class Tests:
                 if cond == "b":
                     pass
                 if cond == "c":
-                    print()
+                    print("hello")
     """
         )
         .lstrip()
