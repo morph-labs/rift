@@ -133,12 +133,6 @@ Function: tsx
    body_sub: (38, 50)
    has_return: True
 === Symbol Table for test.py ===
-Block: block
-   language: python
-   range: ((7, 8), (8, 16))
-   substring: (97, 139)
-   scope: A.py.body.
-   body: [expression_statement[], return_statement[]]
 Function: py
    language: python
    range: ((6, 4), (8, 16))
@@ -146,7 +140,7 @@ Function: py
    scope: A.
    docstring: """This is a docstring"""
    body_sub: (97, 139)
-   body: [block['block']]
+   body: [expression_statement[], return_statement[]]
    parameters: [x, y]
    has_return: True
 Class: A(C,D)
@@ -159,48 +153,30 @@ Class: A(C,D)
     """
    body_sub: (18, 139)
    body: [expression_statement[], function_definition['py']]
-Block: block
-   language: python
-   range: ((14, 8), (14, 12))
-   substring: (307, 311)
-   scope: B.insert_code.body.
-   body: [pass_statement[]]
 Function: insert_code
    language: python
    range: ((11, 4), (14, 12))
    substring: (173, 311)
    scope: B.
    body_sub: (307, 311)
-   body: [block['block']]
+   body: [pass_statement[]]
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
-Block: block
-   language: python
-   range: ((16, 8), (16, 12))
-   substring: (349, 353)
-   scope: B.load.body.
-   body: [pass_statement[]]
 Function: load
    language: python
    range: ((15, 4), (16, 12))
    substring: (316, 353)
    scope: B.
    body_sub: (349, 353)
-   body: [block['block']]
-   parameters: [self, v]
-Block: block
-   language: python
-   range: ((19, 12), (19, 16))
-   substring: (406, 410)
-   scope: B.Nested.nested.body.
    body: [pass_statement[]]
+   parameters: [self, v]
 Function: nested
    language: python
    range: ((18, 8), (19, 16))
    substring: (380, 410)
    scope: B.Nested.
    body_sub: (406, 410)
-   body: [block['block']]
+   body: [pass_statement[]]
 Class: Nested
    language: python
    range: ((17, 4), (19, 16))
@@ -214,32 +190,20 @@ Class: B
    substring: (140, 410)
    body_sub: (153, 410)
    body: [decorated_definition['insert_code'], function_definition['load'], class_definition['Nested']]
-Block: block
-   language: python
-   range: ((29, 8), (29, 12))
-   substring: (595, 599)
-   scope: outer_fun.body.inner_fun.body.
-   body: [pass_statement[]]
 Function: inner_fun
    language: python
    range: ((28, 4), (29, 12))
    substring: (562, 599)
    scope: outer_fun.body.
    body_sub: (595, 599)
-   body: [block['block']]
+   body: [pass_statement[]]
    return_type: None
-Block: block
-   language: python
-   range: ((28, 4), (29, 12))
-   substring: (562, 599)
-   scope: outer_fun.body.
-   body: [function_definition['inner_fun']]
 Function: outer_fun
    language: python
    range: ((27, 0), (29, 12))
    substring: (533, 599)
    body_sub: (562, 599)
-   body: [block['block']]
+   body: [function_definition['inner_fun']]
    return_type: None
 Block: block
    language: python
@@ -285,19 +249,13 @@ If: if
    substring: (832, 857)
    scope: some_conditionals.body._3.
    if_case: Case(comparison_operator[], block['block'])
-Block: block
-   language: python
-   range: ((32, 4), (44, 12))
-   substring: (647, 857)
-   scope: some_conditionals.body.
-   body: [expression_statement[], if_statement['if'], comment[], if_statement['if']]
 Function: some_conditionals
    language: python
    range: ((31, 0), (44, 12))
    substring: (601, 857)
    docstring: """explanation"""
    body_sub: (647, 857)
-   body: [block['block']]
+   body: [expression_statement[], if_statement['if'], comment[], if_statement['if']]
    parameters: [cond:str]
    return_type: None
 === Symbol Table for test.cpp ===
@@ -548,6 +506,7 @@ File: test.py
     class Nested:
       def nested():
   def outer_fun() -> None:
+    def inner_fun() -> None:
   def some_conditionals(cond: str) -> None:
 File: test.cpp
   namespace namespace_name

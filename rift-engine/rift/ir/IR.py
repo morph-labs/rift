@@ -431,10 +431,6 @@ class File:
             lines.append(f"{' ' * indent}{decl_without_body}")
             for statement in symbol.body:
                 dump_statement(statement, indent + 2)
-            if isinstance(symbol.symbol_kind, FunctionKind):
-                body = symbol.body
-                for st in body:
-                    dump_statement(st, indent + 2)
 
         def dump_statement(statement: Statement, indent: int) -> None:
             for symbol in statement.symbols:
