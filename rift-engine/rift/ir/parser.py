@@ -25,7 +25,13 @@ def parse_code_block(
     tree = parser.parse(code.bytes)
     for node in tree.root_node.children:
         statement = parser_core.SymbolParser(
-            code=code, file=file, language=language, metasymbols=metasymbols, node=node, scope=""
+            code=code,
+            file=file,
+            language=language,
+            metasymbols=metasymbols,
+            node=node,
+            parent=None,
+            scope="",
         ).parse_statement(index=0)
         file.statements.append(statement)
 

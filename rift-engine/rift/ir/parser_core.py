@@ -234,6 +234,7 @@ class SymbolParser:
         file: File,
         language: Language,
         node: Node,
+        parent: Optional[Symbol],
         scope: Scope,
         metasymbols: bool,
     ) -> None:
@@ -242,6 +243,7 @@ class SymbolParser:
         self.language: Language = language
         self.metasymbols = metasymbols
         self.node = node
+        self.parent = parent
         self.scope = scope
 
         self.body_sub: Optional[Substring] = None
@@ -249,13 +251,14 @@ class SymbolParser:
         self.exported = False
         self.has_return = False
 
-    def recurse(self, node: Node, scope: Scope) -> "SymbolParser":
+    def recurse(self, node: Node, scope: Scope, parent: Optional[Symbol]) -> "SymbolParser":
         return SymbolParser(
             code=self.code,
             file=self.file,
             language=self.language,
-            node=node,
             metasymbols=self.metasymbols,
+            node=node,
+            parent=parent,
             scope=scope,
         )
 
@@ -278,11 +281,25 @@ class SymbolParser:
             exported=self.exported,
             language=self.language,
             name=name,
+            parent=self.parent,
             range=(parents[0].start_point, parents[-1].end_point),
             scope=self.scope,
             substring=(parents[0].start_byte, parents[-1].end_byte),
             symbol_kind=symbol_kind,
         )
+
+    def mk_dummy_symbol(self, id: Node | str, parents: List[Node]) -> Symbol:
+        if isinstance(id, str):
+            name: str = id
+        else:
+            name = id.text.decode()
+        return self.mk_symbol_decl(id=name, parents=parents, symbol_kind=BlockKind())
+
+    def update_dummy_symbol(
+        self, symbol: Symbol, symbol_kind: SymbolKind, body: List[Statement] = []
+    ) -> None:
+        symbol.symbol_kind = symbol_kind
+        symbol.body = body
 
     def mk_fun_decl(
         self,
@@ -297,9 +314,6 @@ class SymbolParser:
         )
         return self.mk_symbol_decl(body=body, id=id, parents=parents, symbol_kind=symbol_kind)
 
-    def mk_body_block(self, parents: List[Node], block_kind: BlockKind) -> Symbol:
-        return self.mk_symbol_decl(id="body", parents=parents, symbol_kind=block_kind)
-
     def mk_val_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None) -> Symbol:
         symbol_kind = ValueKind(type=type)
         return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
@@ -311,20 +325,6 @@ class SymbolParser:
     def mk_interface_decl(self, id: Node, parents: List[Node]) -> Symbol:
         symbol_kind = InterfaceKind()
         return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
-
-    def mk_class_decl(
-        self, id: Node, body: List[Statement], parents: List[Node], superclasses: Optional[str]
-    ) -> Symbol:
-        symbol_kind = ClassKind(superclasses=superclasses)
-        return self.mk_symbol_decl(id=id, body=body, symbol_kind=symbol_kind, parents=parents)
-
-    def mk_namespace_decl(self, id: Node, body: List[Statement], parents: List[Node]) -> Symbol:
-        symbol_kind = NamespaceKind()
-        return self.mk_symbol_decl(id=id, body=body, symbol_kind=symbol_kind, parents=parents)
-
-    def mk_module_decl(self, id: Node, body: List[Statement], parents: List[Node]) -> Symbol:
-        symbol_kind = ModuleKind()
-        return self.mk_symbol_decl(id=id, body=body, symbol_kind=symbol_kind, parents=parents)
 
     def process_ocaml_body(self, n: Node) -> Tuple[Optional[Type], Optional[Node]]:
         type = None
@@ -417,8 +417,8 @@ class SymbolParser:
                 else:
                     separator = "."
                 new_scope = self.scope + name.text.decode() + separator
-                body = self.recurse(body_node, new_scope).parse_statements()
-                self.docstring_sub
+                symbol = self.mk_dummy_symbol(id=name, parents=[node])
+                body = self.recurse(body_node, new_scope, parent=symbol).parse_statements()
                 # see if the first child is a string expression statements, and if so, use it as the docstring
                 if (
                     body_node.child_count > 0
@@ -427,7 +427,7 @@ class SymbolParser:
                     stmt = body_node.children[0]
                     if len(stmt.children) > 0 and stmt.children[0].type == "string":
                         docstring_node = stmt.children[0]
-                        self.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
+                        symbol.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
                 elif node.prev_sibling is not None and node.prev_sibling.type in [
                     "comment",
                     "line_comment",
@@ -435,23 +435,21 @@ class SymbolParser:
                 ]:
                     # parse class comments before class definition
                     docstring_node = node.prev_sibling
-                    self.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
+                    symbol.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
 
                 if is_namespace:
-                    declaration = self.mk_namespace_decl(id=name, body=body, parents=[node])
+                    self.update_dummy_symbol(symbol, NamespaceKind(), body)
                 elif is_module:
-                    declaration = self.mk_module_decl(id=name, body=body, parents=[node])
+                    self.update_dummy_symbol(symbol, ModuleKind(), body)
                 else:
-                    declaration = self.mk_class_decl(
-                        id=name, body=body, parents=[node], superclasses=superclasses
-                    )
-                self.file.add_symbol(declaration)
-                return [declaration]
+                    self.update_dummy_symbol(symbol, ClassKind(superclasses=superclasses), body)
+                self.file.add_symbol(symbol)
+                return [symbol]
 
         elif node.type in ["decorated_definition"] and language == "python":  # python decorator
             definition = node.child_by_field_name("definition")
             if definition is not None:
-                return self.recurse(definition, self.scope).parse_symbols(index)
+                return self.recurse(definition, self.scope, parent=self.parent).parse_symbols(index)
 
         elif node.type in ["field_declaration", "function_definition"] and language in ["c", "cpp"]:
             type_node = node.child_by_field_name("type")
@@ -514,24 +512,24 @@ class SymbolParser:
             body: List[Statement] = []
             if body_node is not None:
                 self.has_return = contains_direct_return(body_node)
-            if (
-                body_node is not None
-                and id is not None
-                and language == "python"
-                and self.metasymbols
-            ):
+
+            if id is None:
+                return []
+            symbol = self.mk_dummy_symbol(id=id, parents=[node])
+
+            if body_node is not None and language == "python" and self.metasymbols:
                 scope_body = self.scope + f"{id.text.decode()}.body."
-                body = self.recurse(body_node, scope_body).parse_statements()
-            if id is not None:
-                declaration = self.mk_fun_decl(
-                    body=body,
-                    id=id,
-                    parents=[node],
-                    parameters=parameters,
-                    return_type=return_type,
-                )
-                self.file.add_symbol(declaration)
-                return [declaration]
+                body = self.recurse(body_node, scope_body, parent=symbol).parse_statements()
+
+            self.update_dummy_symbol(
+                symbol,
+                FunctionKind(
+                    has_return=self.has_return, parameters=parameters, return_type=return_type
+                ),
+                body=body,
+            )
+            self.file.add_symbol(symbol)
+            return [symbol]
 
         elif node.type in ["lexical_declaration", "variable_declaration"] and language in [
             "javascript",
@@ -687,13 +685,16 @@ class SymbolParser:
                     name = child.child_by_field_name("name")
                     if name is not None:
                         new_scope = self.scope + name.text.decode() + "."
+                        symbol = self.mk_dummy_symbol(id=name, parents=[node])
                         if body_node is not None:
-                            body = self.recurse(body_node, new_scope).parse_statements()
+                            body = self.recurse(
+                                body_node, new_scope, parent=symbol
+                            ).parse_statements()
                         else:
                             body = []
-                        declaration = self.mk_module_decl(id=name, body=body, parents=[node])
-                        self.file.add_symbol(declaration)
-                        return [declaration]
+                        self.update_dummy_symbol(symbol, ModuleKind(), body)
+                        self.file.add_symbol(symbol)
+                        return [symbol]
 
         elif node.type == "let_declaration" and language == "rescript":
             return_type = None
@@ -835,10 +836,11 @@ class SymbolParser:
                     print(f"Unexpected module_binding nodes:{len(nodes)}")
                 if id is not None and body is not None:
                     new_scope = self.scope + id.text.decode() + "."
-                    body = self.recurse(body, new_scope).parse_statements()
-                    declaration = self.mk_module_decl(id=id, body=body, parents=[node])
-                    self.file.add_symbol(declaration)
-                    return [declaration]
+                    symbol = self.mk_dummy_symbol(id=id, parents=[node])
+                    body = self.recurse(body, new_scope, parent=symbol).parse_statements()
+                    self.update_dummy_symbol(symbol, ModuleKind(), body)
+                    self.file.add_symbol(symbol)
+                    return [symbol]
                 else:
                     return []
 
@@ -921,9 +923,11 @@ class SymbolParser:
         language = self.language
 
         if node.type == "block" and language == "python":
-            body = self.recurse(node, self.scope).parse_statements()
+            body = self.recurse(node, self.scope, parent=self.parent).parse_statements()
             block_kind = BlockKind()
-            symbol = self.mk_symbol_decl(body=body, id="block", parents=[node], symbol_kind=block_kind)
+            symbol = self.mk_symbol_decl(
+                body=body, id="block", parents=[node], symbol_kind=block_kind
+            )
             self.file.add_symbol(symbol)
             return [symbol]
         elif node.type == "if_statement" and language == "python":
@@ -931,9 +935,15 @@ class SymbolParser:
             condition_node = node.child_by_field_name("condition")
             consequence_node = node.child_by_field_name("consequence")
             if condition_node is not None and consequence_node is not None:
-                scope = self.scope + "if."
-                condition = self.recurse(condition_node, scope).parse_expression(index)
-                consequence = self.recurse(consequence_node, scope).parse_statement(index)
+                symbol = self.mk_dummy_symbol(id="if", parents=[node])
+                self.scope= self.scope + "if."
+                scope = self.scope + f"if_case."
+                condition = self.recurse(condition_node, scope, parent=symbol).parse_expression(
+                    index
+                )
+                consequence = self.recurse(consequence_node, scope, parent=symbol).parse_statement(
+                    index
+                )
                 if_case = Case(guard=condition, branch=consequence)
                 alternative_nodes = node.children_by_field_name("alternative")
                 elif_cases: List[Case] = []
@@ -945,26 +955,32 @@ class SymbolParser:
                         consequence_node = an.child_by_field_name("consequence")
                         if condition_node is None or consequence_node is None:
                             continue
-                        scope = self.scope + f"elif_{elif_index}."
+                        scope = self.scope + f"elif_case{elif_index}."
                         elif_index += 1
-                        condition = self.recurse(condition_node, scope).parse_expression(index)
-                        consequence = self.recurse(consequence_node, scope).parse_statement(index)
+                        condition = self.recurse(
+                            condition_node, scope=scope, parent=symbol
+                        ).parse_expression(index)
+                        consequence = self.recurse(
+                            consequence_node, scope, parent=symbol
+                        ).parse_statement(index)
                         elif_cases.append(Case(guard=condition, branch=consequence))
                     elif an.type == "else_clause":
                         scope = self.scope + "else."
                         else_body_node = an.child_by_field_name("body")
                         # TODO: there can be comments in the else clause before the body
                         if else_body_node is not None:
-                            else_branch = self.recurse(else_body_node, scope).parse_statement(index)
+                            else_branch = self.recurse(
+                                else_body_node, scope, parent=symbol
+                            ).parse_statement(index)
                 if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_branch=else_branch)
-                symbol = self.mk_symbol_decl(id="if", parents=[node], symbol_kind=if_kind)
+                self.update_dummy_symbol(symbol=symbol, symbol_kind=if_kind)
                 self.file.add_symbol(symbol)
                 return [symbol]
 
         return []
 
     def parse_statement(self, index: int) -> Statement:
-        symbols = self.recurse(self.node, self.scope).parse_symbols(index)
+        symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(index)
         if symbols != []:
             return Statement(type=self.node.type, symbols=symbols)
         import_ = parse_import(self.node)
@@ -982,7 +998,7 @@ class SymbolParser:
         for child in self.node.children:
             if self.language == "ruby" and child.text.decode() == "name":
                 continue
-            statement = self.recurse(child, self.scope).parse_statement(index)
+            statement = self.recurse(child, self.scope, parent=self.parent).parse_statement(index)
             index += 1
             statements.append(statement)
         return statements

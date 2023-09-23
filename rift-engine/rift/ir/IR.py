@@ -329,6 +329,7 @@ class Symbol:
     language: Language
     name: str
     range: Range
+    parent: Optional["Symbol"] # parent symbol in terms of control flow
     scope: Scope
     substring: Substring
     symbol_kind: SymbolKind
@@ -376,6 +377,8 @@ class Symbol:
             lines.append(f"   body_sub: {self.body_sub}")
         if self.body != []:
             lines.append(f"   body: {self.body}")
+        if self.parent:
+            lines.append(f"   parent: {self.parent.get_qualified_id()}")
         self.symbol_kind.dump(lines)
 
     def kind(self) -> str:

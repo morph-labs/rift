@@ -45,6 +45,7 @@ Function: braking
    substring: (124, 203)
    scope: Bicycle.
    body_sub: (146, 203)
+   parent: Bicycle
    return_type: void
 Class: Bicycle
    language: java
@@ -59,6 +60,7 @@ Function: sum
    substring: (255, 343)
    scope: Math.
    body_sub: (291, 343)
+   parent: Math
    parameters: [int a:int, int b:int]
    return_type: int
    has_return: True
@@ -101,12 +103,14 @@ Function: constructor
    substring: (155, 171)
    scope: A.
    body_sub: (169, 171)
+   parent: A
 Function: load
    language: typescript
    range: ((5, 4), (7, 5))
    substring: (176, 222)
    scope: A.
    body_sub: (198, 222)
+   parent: A
    parameters: [v:number]
    has_return: True
 Class: A
@@ -141,6 +145,7 @@ Function: py
    docstring: """This is a docstring"""
    body_sub: (97, 139)
    body: [expression_statement[], return_statement[]]
+   parent: A
    parameters: [x, y]
    has_return: True
 Class: A(C,D)
@@ -160,6 +165,7 @@ Function: insert_code
    scope: B.
    body_sub: (307, 311)
    body: [pass_statement[]]
+   parent: B
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
 Function: load
@@ -169,6 +175,7 @@ Function: load
    scope: B.
    body_sub: (349, 353)
    body: [pass_statement[]]
+   parent: B
    parameters: [self, v]
 Function: nested
    language: python
@@ -177,6 +184,7 @@ Function: nested
    scope: B.Nested.
    body_sub: (406, 410)
    body: [pass_statement[]]
+   parent: B.Nested
 Class: Nested
    language: python
    range: ((17, 4), (19, 16))
@@ -184,6 +192,7 @@ Class: Nested
    scope: B.
    body_sub: (380, 410)
    body: [function_definition['nested']]
+   parent: B
 Class: B
    language: python
    range: ((9, 0), (19, 16))
@@ -197,6 +206,7 @@ Function: inner_fun
    scope: outer_fun.body.
    body_sub: (595, 599)
    body: [pass_statement[]]
+   parent: outer_fun
    return_type: None
 Function: outer_fun
    language: python
@@ -209,31 +219,36 @@ Block: block
    language: python
    range: ((34, 8), (34, 12))
    substring: (693, 697)
-   scope: some_conditionals.body._1.if.
+   scope: some_conditionals.body._1.if.if_case.
    body: [pass_statement[]]
+   parent: some_conditionals.body._1.if
 Block: block
    language: python
    range: ((36, 8), (36, 12))
    substring: (728, 732)
-   scope: some_conditionals.body._1.elif_0.
+   scope: some_conditionals.body._1.if.elif_case0.
    body: [pass_statement[]]
+   parent: some_conditionals.body._1.if
 Block: block
    language: python
    range: ((38, 8), (38, 12))
    substring: (763, 767)
-   scope: some_conditionals.body._1.elif_1.
+   scope: some_conditionals.body._1.if.elif_case1.
    body: [pass_statement[]]
+   parent: some_conditionals.body._1.if
 Block: block
    language: python
    range: ((40, 8), (41, 12))
    substring: (786, 803)
-   scope: some_conditionals.body._1.else.
+   scope: some_conditionals.body._1.if.else.
    body: [pass_statement[], pass_statement[]]
+   parent: some_conditionals.body._1.if
 If: if
    language: python
    range: ((33, 4), (41, 12))
    substring: (669, 803)
    scope: some_conditionals.body._1.
+   parent: some_conditionals
    if_case: Case(comparison_operator[], block['block'])
    elif_cases: [Case(guard=comparison_operator[], branch=block['block']), Case(guard=comparison_operator[], branch=block['block'])]
    else_branch: block['block']
@@ -241,13 +256,15 @@ Block: block
    language: python
    range: ((44, 8), (44, 12))
    substring: (853, 857)
-   scope: some_conditionals.body._3.if.
+   scope: some_conditionals.body._3.if.if_case.
    body: [pass_statement[]]
+   parent: some_conditionals.body._3.if
 If: if
    language: python
    range: ((43, 4), (44, 12))
    substring: (832, 857)
    scope: some_conditionals.body._3.
+   parent: some_conditionals
    if_case: Case(comparison_operator[], block['block'])
 Function: some_conditionals
    language: python
@@ -265,6 +282,7 @@ Function: add
    substring: (32, 71)
    scope: namespace_name::
    body_sub: (69, 71)
+   parent: namespace_name
    parameters: [someRef:int&, somePtr:int*]
    return_type: void
 Function: print
@@ -272,6 +290,7 @@ Function: print
    range: ((5, 12), (5, 25))
    substring: (120, 133)
    scope: namespace_name::student.
+   parent: namespace_name::student
    return_type: void
 Class: student
    language: cpp
@@ -280,6 +299,7 @@ Class: student
    scope: namespace_name::
    body_sub: (90, 139)
    body: [{[], access_specifier[], field_declaration['print'], }[]]
+   parent: namespace_name
 Namespace: namespace_name
    language: cpp
    range: ((0, 0), (7, 1))
@@ -293,6 +313,7 @@ Function: sum
    substring: (110, 215)
    scope: SampleNamespace::SampleClass.
    body_sub: (149, 215)
+   parent: SampleNamespace::SampleClass
    parameters: [int a:int, int b:int]
    return_type: int
    has_return: True
@@ -304,6 +325,7 @@ Class: SampleClass
    docstring: // This is docstring
    body_sub: (100, 221)
    body: [{[], method_declaration['sum'], }[]]
+   parent: SampleNamespace
 Namespace: SampleNamespace
    language: c_sharp
    range: ((1, 0), (12, 1))
@@ -336,6 +358,7 @@ Function: bump
    substring: (79, 112)
    scope: M.
    body_sub: (102, 112)
+   parent: M
    parameters: [?step:typeof(1), x]
 Function: hline
    language: ocaml
@@ -343,6 +366,7 @@ Function: hline
    substring: (117, 155)
    scope: M.
    body_sub: (142, 155)
+   parent: M
    parameters: [~x, ~x, ~y]
 Module: M
    language: ocaml
@@ -356,6 +380,7 @@ Function: with_named_args
    substring: (182, 259)
    scope: N.
    body_sub: (234, 259)
+   parent: N
    parameters: [~named_arg1:int, ?named_arg2]
 Function: f1
    language: ocaml
@@ -363,6 +388,7 @@ Function: f1
    substring: (265, 295)
    scope: N.
    body_sub: (290, 295)
+   parent: N
    parameters: [x:int, x:int]
    return_type: int
 Function: f2
@@ -371,6 +397,7 @@ Function: f2
    substring: (300, 326)
    scope: N.
    body_sub: (321, 326)
+   parent: N
    parameters: [x:int, x:int]
    return_type: int
 Value: v1
@@ -379,12 +406,14 @@ Value: v1
    substring: (332, 342)
    scope: N.
    body_sub: (339, 342)
+   parent: N
 Value: v2
    language: ocaml
    range: ((13, 4), (13, 18))
    substring: (347, 361)
    scope: N.
    body_sub: (358, 361)
+   parent: N
    type: int
 Module: N
    language: ocaml
@@ -422,6 +451,7 @@ Function: initialize
    substring: (461, 558)
    scope: Person::
    body_sub: (503, 558)
+   parent: Person
    parameters: [name, age]
 Function: introduce
    language: ruby
@@ -429,6 +459,7 @@ Function: introduce
    substring: (572, 668)
    scope: Person::
    body_sub: (602, 668)
+   parent: Person
 Class: Person
    language: ruby
    range: ((23, 8), (34, 11))
@@ -442,6 +473,7 @@ Function: cream?
    substring: (715, 762)
    scope: Cream::
    body_sub: (742, 762)
+   parent: Cream
 Module: Cream
    language: ruby
    range: ((36, 8), (40, 11))
@@ -454,6 +486,7 @@ Function: pour
    substring: (833, 987)
    scope: Foo::Bar::
    body_sub: (881, 987)
+   parent: Foo::Bar
    parameters: [container, liquid]
 Class: Bar
    language: ruby
@@ -462,6 +495,7 @@ Class: Bar
    scope: Foo::
    body_sub: (833, 1003)
    body: [class[], constant[], method['pour'], end[]]
+   parent: Foo
 Module: Foo
    language: ruby
    range: ((42, 8), (50, 11))
