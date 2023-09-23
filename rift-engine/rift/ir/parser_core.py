@@ -4,7 +4,6 @@ from typing import List, Optional, Tuple
 from tree_sitter import Node
 
 from rift.ir.IR import (
-    BlockKind,
     Case,
     ClassKind,
     Code,
@@ -293,7 +292,7 @@ class SymbolParser:
             name: str = id
         else:
             name = id.text.decode()
-        return self.mk_symbol_decl(id=name, parents=parents, symbol_kind=BlockKind())
+        return self.mk_symbol_decl(id=name, parents=parents, symbol_kind=ValueKind())
 
     def update_dummy_symbol(
         self, symbol: Symbol, symbol_kind: SymbolKind, body: List[Statement] = []
@@ -922,33 +921,25 @@ class SymbolParser:
         node = self.node
         language = self.language
 
-        if node.type == "block" and language == "python":
-            body = self.recurse(node, self.scope, parent=self.parent).parse_statements()
-            block_kind = BlockKind()
-            symbol = self.mk_symbol_decl(
-                body=body, id="block", parents=[node], symbol_kind=block_kind
-            )
-            self.file.add_symbol(symbol)
-            return [symbol]
-        elif node.type == "if_statement" and language == "python": 
-            self.scope = self.scope[:-1] # remove the trailing "." from the scope
+        if node.type == "if_statement" and language == "python":
+            self.scope = self.scope[:-1]  # remove the trailing "." from the scope
             self.scope = self.scope + f"[{index}]."
             condition_node = node.child_by_field_name("condition")
             consequence_node = node.child_by_field_name("consequence")
             if condition_node is not None and consequence_node is not None:
                 symbol = self.mk_dummy_symbol(id="if", parents=[node])
-                self.scope= self.scope + "if."
+                self.scope = self.scope + "if."
                 scope = self.scope + f"if_case."
                 condition = self.recurse(condition_node, scope, parent=symbol).parse_expression(
                     index
                 )
-                consequence = self.recurse(consequence_node, scope, parent=symbol).parse_statement(
-                    index
-                )
-                if_case = Case(guard=condition, branch=consequence)
+                consequence = self.recurse(
+                    consequence_node, scope, parent=symbol
+                ).parse_statements()
+                if_case = Case(condition=condition, branch=consequence)
                 alternative_nodes = node.children_by_field_name("alternative")
                 elif_cases: List[Case] = []
-                else_branch: Optional[Statement] = None
+                else_branch: List[Statement] = []
                 elif_index = 0
                 for an in alternative_nodes:
                     if an.type == "elif_clause":
@@ -963,8 +954,8 @@ class SymbolParser:
                         ).parse_expression(index)
                         consequence = self.recurse(
                             consequence_node, scope, parent=symbol
-                        ).parse_statement(index)
-                        elif_cases.append(Case(guard=condition, branch=consequence))
+                        ).parse_statements()
+                        elif_cases.append(Case(condition=condition, branch=consequence))
                     elif an.type == "else_clause":
                         scope = self.scope + "else."
                         else_body_node = an.child_by_field_name("body")
@@ -972,7 +963,7 @@ class SymbolParser:
                         if else_body_node is not None:
                             else_branch = self.recurse(
                                 else_body_node, scope, parent=symbol
-                            ).parse_statement(index)
+                            ).parse_statements()
                 if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_branch=else_branch)
                 self.update_dummy_symbol(symbol=symbol, symbol_kind=if_kind)
                 self.file.add_symbol(symbol)

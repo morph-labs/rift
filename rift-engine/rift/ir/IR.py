@@ -70,6 +70,12 @@ class Statement:
     __repr__ = __str__
 
 
+Expression = Statement  # TODO: for now
+
+
+Block = List[Statement]
+
+
 @dataclass
 class Import:
     names: List[str]  # import foo, bar, baz
@@ -205,28 +211,19 @@ class MetaSymbolKind(SymbolKind):
 
 
 @dataclass
-class BlockKind(MetaSymbolKind):
-    def name(self) -> str:
-        return "Block"
-
-
-Expression = Statement  # TODO: for now
-
-
-@dataclass
 class Case:
-    guard: Expression
-    branch: Statement
+    condition: Expression
+    branch: Block
 
     def __str__(self) -> str:
-        return f"Case({self.guard}, {self.branch})"
+        return f"Case({self.condition}, {self.branch})"
 
 
 @dataclass
 class IfKind(MetaSymbolKind):
     if_case: Case
     elif_cases: List[Case]
-    else_branch: Optional[Statement]
+    else_branch: List[Statement]
 
     def name(self) -> str:
         return "If"
@@ -235,7 +232,7 @@ class IfKind(MetaSymbolKind):
         lines.append(f"   if_case: {self.if_case}")
         if self.elif_cases != []:
             lines.append(f"   elif_cases: {self.elif_cases}")
-        if self.else_branch is not None:
+        if self.else_branch != []:
             lines.append(f"   else_branch: {self.else_branch}")
 
 
@@ -321,7 +318,7 @@ class ModuleKind(SymbolKind):
 class Symbol:
     """Class for symbol information."""
 
-    body: List[Statement]
+    body: Block
     body_sub: Optional[Substring]
     code: Code
     docstring_sub: Optional[Substring]
@@ -329,7 +326,7 @@ class Symbol:
     language: Language
     name: str
     range: Range
-    parent: Optional["Symbol"] # parent symbol in terms of control flow
+    parent: Optional["Symbol"]  # parent symbol in terms of control flow
     scope: Scope
     substring: Substring
     symbol_kind: SymbolKind

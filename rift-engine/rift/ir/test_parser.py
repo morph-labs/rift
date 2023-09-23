@@ -127,6 +127,7 @@ class Tests:
             # This is a comment
             if 34 == 34:
                 pass
+                pass
     """
         )
         .lstrip()

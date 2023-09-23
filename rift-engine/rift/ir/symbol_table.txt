@@ -215,63 +215,28 @@ Function: outer_fun
    body_sub: (562, 599)
    body: [function_definition['inner_fun']]
    return_type: None
-Block: block
-   language: python
-   range: ((34, 8), (34, 12))
-   substring: (693, 697)
-   scope: some_conditionals.body[1].if.if_case.
-   body: [pass_statement[]]
-   parent: some_conditionals.body[1].if
-Block: block
-   language: python
-   range: ((36, 8), (36, 12))
-   substring: (728, 732)
-   scope: some_conditionals.body[1].if.elif_case0.
-   body: [pass_statement[]]
-   parent: some_conditionals.body[1].if
-Block: block
-   language: python
-   range: ((38, 8), (38, 12))
-   substring: (763, 767)
-   scope: some_conditionals.body[1].if.elif_case1.
-   body: [pass_statement[]]
-   parent: some_conditionals.body[1].if
-Block: block
-   language: python
-   range: ((40, 8), (41, 12))
-   substring: (786, 803)
-   scope: some_conditionals.body[1].if.else.
-   body: [pass_statement[], pass_statement[]]
-   parent: some_conditionals.body[1].if
 If: if
    language: python
    range: ((33, 4), (41, 12))
    substring: (669, 803)
    scope: some_conditionals.body[1].
    parent: some_conditionals
-   if_case: Case(comparison_operator[], block['block'])
-   elif_cases: [Case(guard=comparison_operator[], branch=block['block']), Case(guard=comparison_operator[], branch=block['block'])]
-   else_branch: block['block']
-Block: block
-   language: python
-   range: ((44, 8), (44, 12))
-   substring: (853, 857)
-   scope: some_conditionals.body[3].if.if_case.
-   body: [pass_statement[]]
-   parent: some_conditionals.body[3].if
+   if_case: Case(comparison_operator[], [pass_statement[]])
+   elif_cases: [Case(condition=comparison_operator[], branch=[pass_statement[]]), Case(condition=comparison_operator[], branch=[pass_statement[]])]
+   else_branch: [pass_statement[], pass_statement[]]
 If: if
    language: python
-   range: ((43, 4), (44, 12))
-   substring: (832, 857)
+   range: ((43, 4), (45, 12))
+   substring: (832, 870)
    scope: some_conditionals.body[3].
    parent: some_conditionals
-   if_case: Case(comparison_operator[], block['block'])
+   if_case: Case(comparison_operator[], [pass_statement[], pass_statement[]])
 Function: some_conditionals
    language: python
-   range: ((31, 0), (44, 12))
-   substring: (601, 857)
+   range: ((31, 0), (45, 12))
+   substring: (601, 870)
    docstring: """explanation"""
-   body_sub: (647, 857)
+   body_sub: (647, 870)
    body: [expression_statement[], if_statement['if'], comment[], if_statement['if']]
    parameters: [cond:str]
    return_type: None
