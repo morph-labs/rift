@@ -288,14 +288,14 @@ class SymbolParser:
         self,
         id: Node,
         parents: List[Node],
-        body: Optional[Statement] = None,
+        body: List[Statement] = [],
         parameters: List[Parameter] = [],
         return_type: Optional[Type] = None,
     ) -> Symbol:
         symbol_kind = FunctionKind(
-            body=body, has_return=self.has_return, parameters=parameters, return_type=return_type
+            has_return=self.has_return, parameters=parameters, return_type=return_type
         )
-        return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
+        return self.mk_symbol_decl(body=body, id=id, parents=parents, symbol_kind=symbol_kind)
 
     def mk_body_block(self, parents: List[Node], block_kind: BlockKind) -> Symbol:
         return self.mk_symbol_decl(id="body", parents=parents, symbol_kind=block_kind)
@@ -511,7 +511,7 @@ class SymbolParser:
                 if len(stmt.children) > 0 and stmt.children[0].type == "string":
                     docstring_node = stmt.children[0]
                     self.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
-            body: Optional[Statement] = None
+            body: List[Statement] = []
             if body_node is not None:
                 self.has_return = contains_direct_return(body_node)
             if (
@@ -521,7 +521,8 @@ class SymbolParser:
                 and self.metasymbols
             ):
                 scope_body = self.scope + f"{id.text.decode()}.body."
-                body = self.recurse(body_node, scope_body).parse_statement(index)
+                body_stmt = self.recurse(body_node, scope_body).parse_statement(index)
+                body = [body_stmt]
             if id is not None:
                 declaration = self.mk_fun_decl(
                     body=body,

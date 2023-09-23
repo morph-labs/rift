@@ -145,7 +145,6 @@ Function: py
    body_sub: (97, 139)
    parameters: [x, y]
    has_return: True
-   body: block['block']
 Class: A(C,D)
    language: python
    range: ((0, 0), (8, 16))
@@ -169,7 +168,6 @@ Function: insert_code
    body_sub: (307, 311)
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
-   body: block['block']
 Block: block
    language: python
    range: ((16, 8), (16, 12))
@@ -183,7 +181,6 @@ Function: load
    scope: B.
    body_sub: (349, 353)
    parameters: [self, v]
-   body: block['block']
 Block: block
    language: python
    range: ((19, 12), (19, 16))
@@ -196,7 +193,6 @@ Function: nested
    substring: (380, 410)
    scope: B.Nested.
    body_sub: (406, 410)
-   body: block['block']
 Class: Nested
    language: python
    range: ((17, 4), (19, 16))
@@ -221,7 +217,6 @@ Function: inner_fun
    scope: outer_fun.body.
    body_sub: (595, 599)
    return_type: None
-   body: block['block']
 Block: block
    language: python
    range: ((28, 4), (29, 12))
@@ -234,7 +229,6 @@ Function: outer_fun
    substring: (533, 599)
    body_sub: (562, 599)
    return_type: None
-   body: block['block']
 Block: block
    language: python
    range: ((34, 8), (34, 12))
@@ -293,7 +287,6 @@ Function: some_conditionals
    body_sub: (647, 857)
    parameters: [cond:str]
    return_type: None
-   body: block['block']
 === Symbol Table for test.cpp ===
 Function: add
    language: cpp
