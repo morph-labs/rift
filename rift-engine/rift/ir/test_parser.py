@@ -108,6 +108,25 @@ class Tests:
         import foo.bar.baz as fbb
         from foo.bar import baz
         from typing import Iterable, Union
+
+        def outer_fun() -> None:
+            def inner_fun() -> None:
+                pass
+        
+        def some_conditionals(cond: str) -> None:
+            \"\"\"explanation\"\"\"
+            if cond == "a":
+                pass
+            elif cond == "b":
+                pass
+            elif cond == "c":
+                pass
+            else:
+                pass
+                pass
+            # This is a comment
+            if 34 == 34:
+                pass
     """
         )
         .lstrip()
@@ -204,6 +223,9 @@ class Tests:
         and bindings = (z:int) => multiple(z, z)
 
         let _  = "not in the symbol table"
+
+        type myRecord = {x: int, y?: option<string>}
+        type myList = list<int>
     """
         )
         .lstrip()
@@ -304,7 +326,7 @@ class Tests:
 
 def new_file(code: IR.Code, path: str, language: IR.Language, project: IR.Project) -> None:
     file = IR.File(path)
-    parser.parse_code_block(file, code, language)
+    parser.parse_code_block(file, code, language, metasymbols=True)
     project.add_file(file)
 
 

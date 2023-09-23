@@ -1,5 +1,4 @@
 from enum import Enum
-from pydoc import doc
 import re
 import textwrap
 from typing import List, Optional, Set, Tuple
@@ -77,23 +76,23 @@ def replace_functions_in_document(
     ir_blocks: IR.File,
     replace: Replace,
     filter_function_ids: Optional[List[IR.QualifiedId]] = None,
-) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
+) -> Tuple[List[IR.CodeEdit], List[IR.Symbol]]:
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
     """
     function_declarations_in_document: List[
-        IR.ValueDeclaration
+        IR.Symbol
     ] = ir_doc.get_function_declarations()
 
     code_edits: List[IR.CodeEdit] = []
-    updated_functions: List[IR.ValueDeclaration] = []
+    updated_functions: List[IR.Symbol] = []
 
     for function_declaration in function_declarations_in_document:
         function_in_blocks_ = ir_blocks.search_symbol(function_declaration.name)
         function_in_blocks = None
         if len(function_in_blocks_) == 1:
             f0 = function_in_blocks_[0]
-            if isinstance(f0, IR.ValueDeclaration) and isinstance(f0.value_kind, IR.FunctionKind):
+            if isinstance(f0.symbol_kind, IR.FunctionKind):
                 function_in_blocks = f0
         if filter_function_ids is None:
             filter = True
@@ -173,7 +172,7 @@ def replace_functions_in_document(
 
 
 def update_typing_imports(
-    code: IR.Code, language: IR.Language, updated_functions: List[IR.ValueDeclaration]
+    code: IR.Code, language: IR.Language, updated_functions: List[IR.Symbol]
 ) -> Optional[IR.CodeEdit]:
     file = parse_code_blocks(code_blocks=[code], language=language)
     typing_import = file.search_module_import("typing")
@@ -182,8 +181,8 @@ def update_typing_imports(
     if typing_import is not None:
         typing_names = set(typing_import.names)
     for f in updated_functions:
-        if isinstance(f.value_kind, IR.FunctionKind):
-            fun_kind = f.value_kind
+        if isinstance(f.symbol_kind, IR.FunctionKind):
+            fun_kind = f.symbol_kind
             types_in_function = [p.type for p in fun_kind.parameters if p.type is not None]
             if fun_kind.return_type is not None:
                 types_in_function.append(fun_kind.return_type)
@@ -208,7 +207,7 @@ def replace_functions_from_code_blocks(
     language: IR.Language,
     replace: Replace,
     filter_function_ids: Optional[List[IR.QualifiedId]] = None,
-) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
+) -> Tuple[List[IR.CodeEdit], List[IR.Symbol]]:
     """
     Generates a new document by replacing functions in the original document with the corresponding functions
     from the code blocks.

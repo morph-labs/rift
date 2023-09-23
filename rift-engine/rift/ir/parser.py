@@ -18,13 +18,15 @@ def get_parser(language: IR.Language) -> Parser:
         return get_tree_sitter_parser(language)
 
 
-def parse_code_block(file: IR.File, code: IR.Code, language: IR.Language) -> None:
+def parse_code_block(
+    file: IR.File, code: IR.Code, language: IR.Language, metasymbols: bool = False
+) -> None:
     parser = get_parser(language)
     tree = parser.parse(code.bytes)
     for node in tree.root_node.children:
-        statement = parser_core.process_statement(
-            code=code, file=file, language=language, node=node, scope=""
-        )
+        statement = parser_core.SymbolParser(
+            code=code, file=file, language=language, metasymbols=metasymbols, node=node, scope=""
+        ).parse_statement(index=0)
         file.statements.append(statement)
 
 
@@ -62,7 +64,7 @@ def parse_files_in_paths(
             parse_path(path, project, filter_file)
         else:
             for root, dirs, files in os.walk(path):
-                dirs[:] = [d for d in dirs if d != "node_modules"]
+                dirs[:] = [d for d in dirs if d not in ["node_modules", ".git"]]
                 for file in files:
                     full_path = os.path.join(root, file)
                     parse_path(full_path, project, filter_file)
