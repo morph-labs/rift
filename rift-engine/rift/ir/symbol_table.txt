@@ -219,35 +219,35 @@ Block: block
    language: python
    range: ((34, 8), (34, 12))
    substring: (693, 697)
-   scope: some_conditionals.body._1.if.if_case.
+   scope: some_conditionals.body[1].if.if_case.
    body: [pass_statement[]]
-   parent: some_conditionals.body._1.if
+   parent: some_conditionals.body[1].if
 Block: block
    language: python
    range: ((36, 8), (36, 12))
    substring: (728, 732)
-   scope: some_conditionals.body._1.if.elif_case0.
+   scope: some_conditionals.body[1].if.elif_case0.
    body: [pass_statement[]]
-   parent: some_conditionals.body._1.if
+   parent: some_conditionals.body[1].if
 Block: block
    language: python
    range: ((38, 8), (38, 12))
    substring: (763, 767)
-   scope: some_conditionals.body._1.if.elif_case1.
+   scope: some_conditionals.body[1].if.elif_case1.
    body: [pass_statement[]]
-   parent: some_conditionals.body._1.if
+   parent: some_conditionals.body[1].if
 Block: block
    language: python
    range: ((40, 8), (41, 12))
    substring: (786, 803)
-   scope: some_conditionals.body._1.if.else.
+   scope: some_conditionals.body[1].if.else.
    body: [pass_statement[], pass_statement[]]
-   parent: some_conditionals.body._1.if
+   parent: some_conditionals.body[1].if
 If: if
    language: python
    range: ((33, 4), (41, 12))
    substring: (669, 803)
-   scope: some_conditionals.body._1.
+   scope: some_conditionals.body[1].
    parent: some_conditionals
    if_case: Case(comparison_operator[], block['block'])
    elif_cases: [Case(guard=comparison_operator[], branch=block['block']), Case(guard=comparison_operator[], branch=block['block'])]
@@ -256,14 +256,14 @@ Block: block
    language: python
    range: ((44, 8), (44, 12))
    substring: (853, 857)
-   scope: some_conditionals.body._3.if.if_case.
+   scope: some_conditionals.body[3].if.if_case.
    body: [pass_statement[]]
-   parent: some_conditionals.body._3.if
+   parent: some_conditionals.body[3].if
 If: if
    language: python
    range: ((43, 4), (44, 12))
    substring: (832, 857)
-   scope: some_conditionals.body._3.
+   scope: some_conditionals.body[3].
    parent: some_conditionals
    if_case: Case(comparison_operator[], block['block'])
 Function: some_conditionals

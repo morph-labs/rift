@@ -930,8 +930,9 @@ class SymbolParser:
             )
             self.file.add_symbol(symbol)
             return [symbol]
-        elif node.type == "if_statement" and language == "python":
-            self.scope = self.scope + f"_{index}."
+        elif node.type == "if_statement" and language == "python": 
+            self.scope = self.scope[:-1] # remove the trailing "." from the scope
+            self.scope = self.scope + f"[{index}]."
             condition_node = node.child_by_field_name("condition")
             consequence_node = node.child_by_field_name("consequence")
             if condition_node is not None and consequence_node is not None:
