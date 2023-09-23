@@ -128,6 +128,13 @@ class Tests:
             if 34 == 34:
                 pass
                 pass
+                
+        def with_nested_conditionals(cond: str) -> None:
+            if cond == "a":
+                if cond == "b":
+                    pass
+                if cond == "c":
+                    print()
     """
         )
         .lstrip()

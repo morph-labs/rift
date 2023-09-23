@@ -240,6 +240,35 @@ Function: some_conditionals
    body: [expression_statement[], if_statement['if'], comment[], if_statement['if']]
    parameters: [cond:str]
    return_type: None
+If: if
+   language: python
+   range: ((49, 8), (50, 16))
+   substring: (949, 981)
+   scope: with_nested_conditionals.body[0].if.if_case[0].
+   parent: with_nested_conditionals.body[0].if
+   if_case: Case(comparison_operator[], [pass_statement[]])
+If: if
+   language: python
+   range: ((51, 8), (52, 19))
+   substring: (990, 1025)
+   scope: with_nested_conditionals.body[0].if.if_case[1].
+   parent: with_nested_conditionals.body[0].if
+   if_case: Case(comparison_operator[], [expression_statement[]])
+If: if
+   language: python
+   range: ((48, 4), (52, 19))
+   substring: (925, 1025)
+   scope: with_nested_conditionals.body[0].
+   parent: with_nested_conditionals
+   if_case: Case(comparison_operator[], [if_statement['if'], if_statement['if']])
+Function: with_nested_conditionals
+   language: python
+   range: ((47, 0), (52, 19))
+   substring: (872, 1025)
+   body_sub: (925, 1025)
+   body: [if_statement['if']]
+   parameters: [cond:str]
+   return_type: None
 === Symbol Table for test.cpp ===
 Function: add
    language: cpp
@@ -507,6 +536,7 @@ File: test.py
   def outer_fun() -> None:
     def inner_fun() -> None:
   def some_conditionals(cond: str) -> None:
+  def with_nested_conditionals(cond: str) -> None:
 File: test.cpp
   namespace namespace_name
     void add(int& someRef, int* somePtr)

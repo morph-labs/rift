@@ -151,6 +151,21 @@
                         12
                     ]
                 ]
+            },
+            {
+                "name": "with_nested_conditionals",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        47,
+                        0
+                    ],
+                    [
+                        52,
+                        19
+                    ]
+                ]
             }
         ]
     }
