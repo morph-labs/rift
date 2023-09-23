@@ -417,7 +417,7 @@ class SymbolParser:
                 else:
                     separator = "."
                 new_scope = self.scope + name.text.decode() + separator
-                body = self.recurse(body_node, new_scope).parse_block()
+                body = self.recurse(body_node, new_scope).parse_statements()
                 self.docstring_sub
                 # see if the first child is a string expression statements, and if so, use it as the docstring
                 if (
@@ -521,7 +521,7 @@ class SymbolParser:
                 and self.metasymbols
             ):
                 scope_body = self.scope + f"{id.text.decode()}.body."
-                body = self.recurse(body_node, scope_body).parse_block()
+                body = self.recurse(body_node, scope_body).parse_statements()
             if id is not None:
                 declaration = self.mk_fun_decl(
                     body=body,
@@ -688,7 +688,7 @@ class SymbolParser:
                     if name is not None:
                         new_scope = self.scope + name.text.decode() + "."
                         if body_node is not None:
-                            body = self.recurse(body_node, new_scope).parse_block()
+                            body = self.recurse(body_node, new_scope).parse_statements()
                         else:
                             body = []
                         declaration = self.mk_module_decl(id=name, body=body, parents=[node])
@@ -835,7 +835,7 @@ class SymbolParser:
                     print(f"Unexpected module_binding nodes:{len(nodes)}")
                 if id is not None and body is not None:
                     new_scope = self.scope + id.text.decode() + "."
-                    body = self.recurse(body, new_scope).parse_block()
+                    body = self.recurse(body, new_scope).parse_statements()
                     declaration = self.mk_module_decl(id=id, body=body, parents=[node])
                     self.file.add_symbol(declaration)
                     return [declaration]
@@ -921,7 +921,7 @@ class SymbolParser:
         language = self.language
 
         if node.type == "block" and language == "python":
-            body = self.recurse(node, self.scope).parse_block()
+            body = self.recurse(node, self.scope).parse_statements()
             block_kind = BlockKind()
             symbol = self.mk_symbol_decl(body=body, id="block", parents=[node], symbol_kind=block_kind)
             self.file.add_symbol(symbol)
@@ -976,7 +976,7 @@ class SymbolParser:
         # At the moment expressions are not distinguished from statements
         return self.parse_statement(index)
 
-    def parse_block(self) -> List[Statement]:
+    def parse_statements(self) -> List[Statement]:
         statements: List[Statement] = []
         index = 0
         for child in self.node.children:
