@@ -923,8 +923,8 @@ class SymbolParser:
 
         if node.type == "block" and language == "python":
             statements = self.recurse(node, self.scope).parse_block()
-            block_kind = BlockKind(statements)
-            symbol = self.mk_symbol_decl(id="block", parents=[node], symbol_kind=block_kind)
+            block_kind = BlockKind()
+            symbol = self.mk_symbol_decl(body=statements, id="block", parents=[node], symbol_kind=block_kind)
             self.file.add_symbol(symbol)
             return [symbol]
         elif node.type == "if_statement" and language == "python":

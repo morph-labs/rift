@@ -206,16 +206,8 @@ class MetaSymbolKind(SymbolKind):
 
 @dataclass
 class BlockKind(MetaSymbolKind):
-    statements: List[Statement]
-
     def name(self) -> str:
         return "Block"
-
-    def dump(self, lines: List[str]) -> None:
-        lines.append(f"   statements: {len(self.statements)}")
-
-    def __str__(self) -> str:
-        return f"{self.name()}{self.statements}"
 
 
 Expression = Statement  # TODO: for now
