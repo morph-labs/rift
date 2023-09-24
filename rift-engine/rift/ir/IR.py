@@ -211,10 +211,10 @@ class MetaSymbolKind(SymbolKind):
 @dataclass
 class Case:
     condition: Item
-    branch: Block
+    block: Block
 
     def __str__(self) -> str:
-        return f"Case({self.condition}, {self.branch})"
+        return f"Case({self.condition}, {self.block})"
 
 
 @dataclass

@@ -939,7 +939,7 @@ class SymbolParser:
                     index
                 )
                 if_block = self.recurse(consequence_node, scope, parent=symbol).parse_block()
-                if_case = Case(condition=condition, branch=if_block)
+                if_case = Case(condition=condition, block=if_block)
                 alternative_nodes = node.children_by_field_name("alternative")
                 elif_cases: List[Case] = []
                 else_block: Block = []
@@ -958,7 +958,7 @@ class SymbolParser:
                         elif_block = self.recurse(
                             consequence_node, scope, parent=symbol
                         ).parse_block()
-                        elif_cases.append(Case(condition=condition, branch=elif_block))
+                        elif_cases.append(Case(condition=condition, block=elif_block))
                     elif an.type == "else_clause":
                         scope = self.scope + "else."
                         else_body_node = an.child_by_field_name("body")

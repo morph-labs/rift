@@ -246,7 +246,7 @@ If: if
    scope: some_conditionals.body[1].
    parent: some_conditionals
    if_case: Case('comparison_operator', ['pass_statement'])
-   elif_cases: [Case(condition='comparison_operator', branch=['pass_statement']), Case(condition='comparison_operator', branch=['pass_statement'])]
+   elif_cases: [Case(condition='comparison_operator', block=['pass_statement']), Case(condition='comparison_operator', block=['pass_statement'])]
    else_branch: ['pass_statement', 'pass_statement']
 If: if
    language: python
