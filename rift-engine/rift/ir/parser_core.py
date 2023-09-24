@@ -4,11 +4,12 @@ from typing import List, Optional, Tuple
 from tree_sitter import Node
 
 from rift.ir.IR import (
+    Block,
     CallKind,
     Case,
     ClassKind,
     Code,
-    Expression,
+    Item,
     File,
     FunctionKind,
     IfKind,
@@ -20,7 +21,6 @@ from rift.ir.IR import (
     Parameter,
     Field,
     Scope,
-    Statement,
     StringKind,
     Substring,
     Symbol,
@@ -268,7 +268,7 @@ class SymbolParser:
         id: Node | str,
         parents: List[Node],
         symbol_kind: SymbolKind,
-        body: List[Statement] = [],
+        body: Block = [],
     ) -> Symbol:
         if isinstance(id, str):
             name: str = id
@@ -297,7 +297,7 @@ class SymbolParser:
         return self.mk_symbol_decl(id=name, parents=parents, symbol_kind=ValueKind())
 
     def update_dummy_symbol(
-        self, symbol: Symbol, symbol_kind: SymbolKind, body: List[Statement] = []
+        self, symbol: Symbol, symbol_kind: SymbolKind, body: Block = []
     ) -> None:
         symbol.symbol_kind = symbol_kind
         symbol.body = body
@@ -306,7 +306,7 @@ class SymbolParser:
         self,
         id: Node,
         parents: List[Node],
-        body: List[Statement] = [],
+        body: Block = [],
         parameters: List[Parameter] = [],
         return_type: Optional[Type] = None,
     ) -> Symbol:
@@ -419,7 +419,7 @@ class SymbolParser:
                     separator = "."
                 new_scope = self.scope + name.text.decode() + separator
                 symbol = self.mk_dummy_symbol(id=name, parents=[node])
-                body = self.recurse(body_node, new_scope, parent=symbol).parse_statements()
+                body = self.recurse(body_node, new_scope, parent=symbol).parse_block()
                 # see if the first child is a string expression statements, and if so, use it as the docstring
                 if (
                     body_node.child_count > 0
@@ -510,7 +510,7 @@ class SymbolParser:
                 if len(stmt.children) > 0 and stmt.children[0].type == "string":
                     docstring_node = stmt.children[0]
                     self.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
-            body: List[Statement] = []
+            body: Block = []
             if body_node is not None:
                 self.has_return = contains_direct_return(body_node)
 
@@ -520,7 +520,7 @@ class SymbolParser:
 
             if body_node is not None and language == "python" and self.metasymbols:
                 scope_body = self.scope + f"{id.text.decode()}.body."
-                body = self.recurse(body_node, scope_body, parent=symbol).parse_statements()
+                body = self.recurse(body_node, scope_body, parent=symbol).parse_block()
 
             self.update_dummy_symbol(
                 symbol,
@@ -688,9 +688,7 @@ class SymbolParser:
                         new_scope = self.scope + name.text.decode() + "."
                         symbol = self.mk_dummy_symbol(id=name, parents=[node])
                         if body_node is not None:
-                            body = self.recurse(
-                                body_node, new_scope, parent=symbol
-                            ).parse_statements()
+                            body = self.recurse(body_node, new_scope, parent=symbol).parse_block()
                         else:
                             body = []
                         self.update_dummy_symbol(symbol, ModuleKind(), body)
@@ -838,7 +836,7 @@ class SymbolParser:
                 if id is not None and body is not None:
                     new_scope = self.scope + id.text.decode() + "."
                     symbol = self.mk_dummy_symbol(id=id, parents=[node])
-                    body = self.recurse(body, new_scope, parent=symbol).parse_statements()
+                    body = self.recurse(body, new_scope, parent=symbol).parse_block()
                     self.update_dummy_symbol(symbol, ModuleKind(), body)
                     self.file.add_symbol(symbol)
                     return [symbol]
@@ -940,13 +938,11 @@ class SymbolParser:
                 condition = self.recurse(condition_node, scope, parent=symbol).parse_expression(
                     index
                 )
-                branch = self.recurse(
-                    consequence_node, scope, parent=symbol
-                ).parse_statements()
-                if_case = Case(condition=condition, branch=branch)
+                if_block = self.recurse(consequence_node, scope, parent=symbol).parse_block()
+                if_case = Case(condition=condition, branch=if_block)
                 alternative_nodes = node.children_by_field_name("alternative")
                 elif_cases: List[Case] = []
-                else_branch: List[Statement] = []
+                else_block: Block = []
                 elif_index = 0
                 for an in alternative_nodes:
                     if an.type == "elif_clause":
@@ -959,19 +955,19 @@ class SymbolParser:
                         condition = self.recurse(
                             condition_node, scope=scope, parent=symbol
                         ).parse_expression(index)
-                        branch = self.recurse(
+                        elif_block = self.recurse(
                             consequence_node, scope, parent=symbol
-                        ).parse_statements()
-                        elif_cases.append(Case(condition=condition, branch=branch))
+                        ).parse_block()
+                        elif_cases.append(Case(condition=condition, branch=elif_block))
                     elif an.type == "else_clause":
                         scope = self.scope + "else."
                         else_body_node = an.child_by_field_name("body")
                         # TODO: there can be comments in the else clause before the body
                         if else_body_node is not None:
-                            else_branch = self.recurse(
+                            else_block = self.recurse(
                                 else_body_node, scope, parent=symbol
-                            ).parse_statements()
-                if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_branch=else_branch)
+                            ).parse_block()
+                if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_branch=else_block)
                 self.update_dummy_symbol(symbol=symbol, symbol_kind=if_kind)
                 self.file.add_symbol(symbol)
                 return symbol
@@ -981,16 +977,18 @@ class SymbolParser:
             expression = self.recurse(child, self.scope, parent=self.parent).parse_expression(index)
             return expression.symbol
 
-    def parse_statement(self, index: int) -> Statement:
+    def parse_statement(
+        self, index: int
+    ) -> List[Item]:  # list because mutual definitions let x = and y = ...
         symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(index)
         if symbols != []:
-            return Statement(type=self.node.type, symbols=symbols)
+            return [Item(type=self.node.type, symbol=s) for s in symbols]
         import_ = parse_import(self.node)
         if import_ is not None:
             self.file.add_import(import_)
-        return Statement(type=self.node.type, symbols=[])
+        return [Item(type=self.node.type, symbol=None)]
 
-    def parse_expression(self, index: int) -> Expression:
+    def parse_expression(self, index: int) -> Item:
         node = self.node
         symbol: Optional[Symbol] = None
         if node.type == "call":
@@ -1002,7 +1000,7 @@ class SymbolParser:
 
                 symbol = self.mk_dummy_symbol(id="call", parents=[node])
 
-                arguments: List[Expression] = []
+                arguments: List[Item] = []
                 arguments_node = node.child_by_field_name("arguments")
                 if arguments_node is not None:
                     arg_num = 0
@@ -1026,15 +1024,17 @@ class SymbolParser:
             self.file.add_symbol(symbol)
         else:
             logger.warning(f"Unexpected expression: {node.type}")
-        return Expression(type=self.node.type, symbol=symbol)
+        return Item(type=self.node.type, symbol=symbol)
 
-    def parse_statements(self) -> List[Statement]:
-        statements: List[Statement] = []
+    def parse_block(self) -> Block:
+        block: Block = []
         index = 0
         for child in self.node.children:
             if self.language == "ruby" and child.text.decode() == "name":
                 continue
-            statement = self.recurse(child, self.scope, parent=self.parent).parse_statement(index)
-            index += 1
-            statements.append(statement)
-        return statements
+            items = self.recurse(child, self.scope, parent=self.parent).parse_statement(
+                index
+            )
+            index += len(items)
+            block.extend(items)
+        return block

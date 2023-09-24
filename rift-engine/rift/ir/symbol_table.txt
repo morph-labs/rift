@@ -53,7 +53,7 @@ Class: Bicycle
    substring: (21, 205)
    docstring: // This is docstring
    body_sub: (42, 205)
-   body: [{[], line_comment[], field_declaration[], line_comment[], method_declaration['braking'], }[]]
+   body: ['{', 'line_comment', 'field_declaration', 'line_comment', braking, '}']
 Function: sum
    language: java
    range: ((14, 4), (17, 5))
@@ -70,7 +70,7 @@ Class: Math
    substring: (231, 345)
    docstring: /* This is docstring */
    body_sub: (249, 345)
-   body: [{[], method_declaration['sum'], }[]]
+   body: ['{', sum, '}']
 Interface: Animal
    language: java
    range: ((20, 0), (23, 1))
@@ -119,7 +119,7 @@ Class: A
    substring: (141, 224)
    exported: True
    body_sub: (149, 224)
-   body: [{[], method_definition['constructor'], method_definition['load'], }[]]
+   body: ['{', constructor, load, '}']
 Interface: RunHelperSyncResult
    language: typescript
    range: ((9, 0), (12, 1))
@@ -161,7 +161,7 @@ Function: py
    scope: A.
    docstring: """This is a docstring"""
    body_sub: (97, 139)
-   body: [expression_statement['string'], return_statement[]]
+   body: [string, 'return_statement']
    parent: A
    parameters: [x, y]
    has_return: True
@@ -174,14 +174,14 @@ Class: A(C,D)
     for class A
     """
    body_sub: (18, 139)
-   body: [expression_statement['string'], function_definition['py']]
+   body: [string, py]
 Function: insert_code
    language: python
    range: ((11, 4), (14, 12))
    substring: (173, 311)
    scope: B.
    body_sub: (307, 311)
-   body: [pass_statement[]]
+   body: ['pass_statement']
    parent: B
    parameters: [self, document:str, cursor_offset:int]
    return_type: InsertCodeResult
@@ -191,7 +191,7 @@ Function: load
    substring: (316, 353)
    scope: B.
    body_sub: (349, 353)
-   body: [pass_statement[]]
+   body: ['pass_statement']
    parent: B
    parameters: [self, v]
 Function: nested
@@ -200,7 +200,7 @@ Function: nested
    substring: (380, 410)
    scope: B.Nested.
    body_sub: (406, 410)
-   body: [pass_statement[]]
+   body: ['pass_statement']
    parent: B.Nested
 Class: Nested
    language: python
@@ -208,21 +208,21 @@ Class: Nested
    substring: (358, 410)
    scope: B.
    body_sub: (380, 410)
-   body: [function_definition['nested']]
+   body: [nested]
    parent: B
 Class: B
    language: python
    range: ((9, 0), (19, 16))
    substring: (140, 410)
    body_sub: (153, 410)
-   body: [decorated_definition['insert_code'], function_definition['load'], class_definition['Nested']]
+   body: [insert_code, load, Nested]
 Function: inner_fun
    language: python
    range: ((28, 4), (29, 12))
    substring: (562, 599)
    scope: outer_fun.body.
    body_sub: (595, 599)
-   body: [pass_statement[]]
+   body: ['pass_statement']
    parent: outer_fun
    return_type: None
 Function: outer_fun
@@ -230,7 +230,7 @@ Function: outer_fun
    range: ((27, 0), (29, 12))
    substring: (533, 599)
    body_sub: (562, 599)
-   body: [function_definition['inner_fun']]
+   body: [inner_fun]
    return_type: None
 String: string
    language: python
@@ -245,23 +245,23 @@ If: if
    substring: (669, 803)
    scope: some_conditionals.body[1].
    parent: some_conditionals
-   if_case: Case(comparison_operator, [pass_statement[]])
-   elif_cases: [Case(condition=comparison_operator, branch=[pass_statement[]]), Case(condition=comparison_operator, branch=[pass_statement[]])]
-   else_branch: [pass_statement[], pass_statement[]]
+   if_case: Case('comparison_operator', ['pass_statement'])
+   elif_cases: [Case(condition='comparison_operator', branch=['pass_statement']), Case(condition='comparison_operator', branch=['pass_statement'])]
+   else_branch: ['pass_statement', 'pass_statement']
 If: if
    language: python
    range: ((43, 4), (45, 12))
    substring: (832, 870)
    scope: some_conditionals.body[3].
    parent: some_conditionals
-   if_case: Case(comparison_operator, [pass_statement[], pass_statement[]])
+   if_case: Case('comparison_operator', ['pass_statement', 'pass_statement'])
 Function: some_conditionals
    language: python
    range: ((31, 0), (45, 12))
    substring: (601, 870)
    docstring: """explanation"""
    body_sub: (647, 870)
-   body: [expression_statement['string'], if_statement['if'], comment[], if_statement['if']]
+   body: [string, if, 'comment', if]
    parameters: [cond:str]
    return_type: None
 If: if
@@ -270,7 +270,7 @@ If: if
    substring: (949, 981)
    scope: with_nested_conditionals.body[0].if.if_case[0].
    parent: with_nested_conditionals.body[0].if
-   if_case: Case(comparison_operator, [pass_statement[]])
+   if_case: Case('comparison_operator', ['pass_statement'])
 String: string
    language: python
    range: ((52, 18), (52, 25))
@@ -285,27 +285,27 @@ Call: call
    scope: with_nested_conditionals.body[0].if.if_case[1].if.if_case[0].
    parent: with_nested_conditionals.body[0].if.if_case[1].if
    function_name: print
-   arguments: [['string']]
+   arguments: [string]
 If: if
    language: python
    range: ((51, 8), (52, 26))
    substring: (990, 1032)
    scope: with_nested_conditionals.body[0].if.if_case[1].
    parent: with_nested_conditionals.body[0].if
-   if_case: Case(comparison_operator, [expression_statement['call']])
+   if_case: Case('comparison_operator', [call])
 If: if
    language: python
    range: ((48, 4), (52, 26))
    substring: (925, 1032)
    scope: with_nested_conditionals.body[0].
    parent: with_nested_conditionals
-   if_case: Case(comparison_operator, [if_statement['if'], if_statement['if']])
+   if_case: Case('comparison_operator', [if, if])
 Function: with_nested_conditionals
    language: python
    range: ((47, 0), (52, 26))
    substring: (872, 1032)
    body_sub: (925, 1032)
-   body: [if_statement['if']]
+   body: [if]
    parameters: [cond:str]
    return_type: None
 === Symbol Table for test.cpp ===
@@ -331,14 +331,14 @@ Class: student
    substring: (76, 139)
    scope: namespace_name::
    body_sub: (90, 139)
-   body: [{[], access_specifier[], field_declaration['print'], }[]]
+   body: ['{', 'access_specifier', print, '}']
    parent: namespace_name
 Namespace: namespace_name
    language: cpp
    range: ((0, 0), (7, 1))
    substring: (0, 142)
    body_sub: (26, 142)
-   body: [{[], function_definition['add'], class_specifier['student'], ;[], }[]]
+   body: ['{', add, student, ';', '}']
 === Symbol Table for test.cs ===
 Function: sum
    language: c_sharp
@@ -357,7 +357,7 @@ Class: SampleClass
    scope: SampleNamespace::
    docstring: // This is docstring
    body_sub: (100, 221)
-   body: [{[], method_declaration['sum'], }[]]
+   body: ['{', sum, '}']
    parent: SampleNamespace
 Namespace: SampleNamespace
    language: c_sharp
@@ -365,7 +365,7 @@ Namespace: SampleNamespace
    substring: (21, 223)
    docstring: // This is docstring
    body_sub: (47, 223)
-   body: [{[], comment[], class_declaration['SampleClass'], }[]]
+   body: ['{', 'comment', SampleClass, '}']
 Interface: IEquatable
    language: c_sharp
    range: ((14, 0), (17, 1))
@@ -406,7 +406,7 @@ Module: M
    range: ((2, 0), (5, 3))
    substring: (57, 159)
    body_sub: (66, 159)
-   body: [struct[], value_definition['bump'], value_definition['hline'], end[]]
+   body: ['struct', bump, hline, 'end']
 Function: with_named_args
    language: ocaml
    range: ((7, 4), (7, 81))
@@ -453,7 +453,7 @@ Module: N
    range: ((6, 0), (14, 3))
    substring: (160, 365)
    body_sub: (169, 365)
-   body: [struct[], value_definition['with_named_args'], value_definition['f1', 'f2'], value_definition['v1'], value_definition['v2'], end[]]
+   body: ['struct', with_named_args, f1, f2, v1, v2, 'end']
 === Symbol Table for test.rb ===
 Function: sum
    language: ruby
@@ -499,7 +499,7 @@ Class: Person
    substring: (397, 680)
    docstring: # This is a docstring for class Person
    body_sub: (422, 680)
-   body: [class[], constant[], call[], method['initialize'], method['introduce'], end[]]
+   body: ['class', 'constant', 'call', initialize, introduce, 'end']
 Function: cream?
    language: ruby
    range: ((37, 12), (39, 15))
@@ -512,7 +512,7 @@ Module: Cream
    range: ((36, 8), (40, 11))
    substring: (690, 774)
    body_sub: (715, 774)
-   body: [module[], constant[], method['cream?'], end[]]
+   body: ['module', 'constant', cream?, 'end']
 Function: pour
    language: ruby
    range: ((44, 16), (48, 19))
@@ -527,14 +527,14 @@ Class: Bar
    substring: (807, 1003)
    scope: Foo::
    body_sub: (833, 1003)
-   body: [class[], constant[], method['pour'], end[]]
+   body: ['class', 'constant', pour, 'end']
    parent: Foo
 Module: Foo
    language: ruby
    range: ((42, 8), (50, 11))
    substring: (784, 1015)
    body_sub: (807, 1015)
-   body: [module[], constant[], class['Bar'], end[]]
+   body: ['module', 'constant', Bar, 'end']
 
 === Project Map ===
 File: test.c

@@ -58,30 +58,20 @@ class CodeEdit:
 
 
 @dataclass
-class Statement:
-    type: str
-    symbols: List[
-        "Symbol"
-    ]  # Symbols declared in this statement. Normaly one, or more for mutual definitions.
-
-    def __str__(self):
-        return f"{self.type}{[symbol.name for symbol in self.symbols]}"
-
-    __repr__ = __str__
-
-
-@dataclass
-class Expression:
+class Item:
     type: str
     symbol: Optional["Symbol"]
 
     def __str__(self):
-        return f"{[self.symbol.name] if self.symbol is not None else self.type}"
+        if self.symbol:
+            return self.symbol.name
+        else:
+            return f"'{self.type}'"
 
     __repr__ = __str__
 
 
-Block = List[Statement]
+Block = List[Item]
 
 
 @dataclass
@@ -220,7 +210,7 @@ class MetaSymbolKind(SymbolKind):
 
 @dataclass
 class Case:
-    condition: Expression
+    condition: Item
     branch: Block
 
     def __str__(self) -> str:
@@ -230,7 +220,7 @@ class Case:
 @dataclass
 class CallKind(MetaSymbolKind):
     function_name: str
-    arguments: List[Expression]
+    arguments: List[Item]
 
     def name(self) -> str:
         return "Call"
@@ -256,7 +246,7 @@ class StringKind(MetaSymbolKind):
 class IfKind(MetaSymbolKind):
     if_case: Case
     elif_cases: List[Case]
-    else_branch: List[Statement]
+    else_branch: List[Item]
 
     def name(self) -> str:
         return "If"
@@ -418,7 +408,7 @@ class Symbol:
 @dataclass
 class File:
     path: str  # path of the file relative to the root directory
-    statements: List[Statement] = field(default_factory=list)
+    statements: List[Item] = field(default_factory=list)
     _imports: List[Import] = field(default_factory=list)
     _symbol_table: Dict[QualifiedId, Symbol] = field(default_factory=dict)
 
@@ -465,13 +455,11 @@ class File:
             for statement in symbol.body:
                 dump_statement(statement, indent + 2)
 
-        def dump_statement(statement: Statement, indent: int) -> None:
-            for symbol in statement.symbols:
-                if isinstance(symbol.symbol_kind, MetaSymbolKind):
-                    continue  # don't dump body statements
-                dump_symbol(symbol, indent)
-            else:
-                pass
+        def dump_statement(statement: Item, indent: int) -> None:
+            if statement.symbol:
+                if not isinstance(statement.symbol.symbol_kind, MetaSymbolKind):
+                    # don't dump body statements
+                    dump_symbol(statement.symbol, indent)
 
         for statement in self.statements:
             dump_statement(statement, indent)
@@ -483,13 +471,11 @@ class File:
             for statement in symbol.body:
                 dump_statement(statement)
 
-        def dump_statement(statement: Statement) -> None:
-            for symbol in statement.symbols:
-                if isinstance(symbol.symbol_kind, MetaSymbolKind):
-                    continue  # don't dump body statements
-                dump_symbol(symbol)
-            else:
-                pass
+        def dump_statement(statement: Item) -> None:
+            if statement.symbol:
+                if not isinstance(statement.symbol.symbol_kind, MetaSymbolKind):
+                    # don't dump body statements
+                    dump_symbol(statement.symbol)
 
         for statement in self.statements:
             dump_statement(statement)
