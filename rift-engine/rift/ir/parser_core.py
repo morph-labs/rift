@@ -277,12 +277,14 @@ class SymbolParser:
         id: Node | str,
         parents: List[Node],
         symbol_kind: SymbolKind,
-        body: Block = [],
+        body: Optional[Block] = None,
     ) -> Symbol:
         if isinstance(id, str):
             name: str = id
         else:
             name = id.text.decode()
+        if body is None:
+            body = []
         return Symbol(
             body=body,
             body_sub=self.body_sub,
@@ -306,18 +308,21 @@ class SymbolParser:
         return self.mk_symbol_decl(id=name, parents=parents, symbol_kind=ValueKind())
 
     def update_dummy_symbol(
-        self, symbol: Symbol, symbol_kind: SymbolKind, body: Block = []
+        self, symbol: Symbol, symbol_kind: SymbolKind, body: Optional[Block] = None
     ) -> None:
         symbol.symbol_kind = symbol_kind
-        symbol.body = body
+        if body is not None:
+            symbol.body = body
 
     def mk_fun_decl(
         self,
         id: Node,
         parents: List[Node],
-        parameters: List[Parameter] = [],
+        parameters: Optional[List[Parameter]] = None,
         return_type: Optional[Type] = None,
     ) -> Symbol:
+        if parameters is None:
+            parameters = []
         symbol_kind = FunctionKind(
             has_return=self.has_return, parameters=parameters, return_type=return_type
         )
@@ -986,38 +991,46 @@ class SymbolParser:
         elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
             symbol = mk_dummy("expression")
             child = node.children[0]
-            expression = self.recurse(child, self.scope, parent=self.parent).parse_expression(
-                counter
-            )
-            body = [expression]
-            code = node.text.decode()
-
-            # In the code, replace symbols from the body with their names.
-            # For each symbol, find the position in the code and replace it with the symbol name.
-            # The position is determined by comparing the start of this node and the start of that symbol.
-            symbols = [item.symbol for item in body if item.symbol is not None]
-            sorted_symbols = sorted(symbols, key=lambda s: s.substring[0])
-            for symbol in sorted_symbols:
-                start, end = symbol.substring
-                start -= node.start_byte
-                end -= node.start_byte
-                if start >= 0 and end <= len(code):
-                    code = code[:start] + symbol.name + code[end:]
-
-            self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code), body=body)
+            code = self.recurse(child, self.scope, parent=symbol).parse_expression_code(counter)
+            self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code), body=[])
             self.file.add_symbol(symbol)
             return symbol
 
-    def parse_statement(
-        self, counter: Counter
-    ) -> List[Item]:  # list because mutual definitions let x = and y = ...
-        symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(counter)
-        if symbols != []:
-            return [Item(type=self.node.type, symbol=s) for s in symbols]
-        import_ = parse_import(self.node)
-        if import_ is not None:
-            self.file.add_import(import_)
-        return [Item(type=self.node.type, symbol=None)]
+    def parse_expression_code(self, counter: Counter) -> str:
+        """
+        Parse an expression to generate its corresponding code with symbols replaced by their names.
+        """
+
+        expression = self.recurse(self.node, self.scope, parent=self.parent).parse_expression(
+            counter
+        )
+
+        code = self.node.text.decode()
+
+        if self.parent is None:
+            return code
+
+        # If the expression has a symbol, add it to the parent's body
+        if expression.symbol:
+            self.parent.body.append(expression)
+
+        # Get a list of symbols from the parent's body
+        symbols = [item.symbol for item in self.parent.body if item.symbol is not None]
+
+        # Sort the symbols based on their starting substring index in descending order for accurate replacement
+        sorted_symbols = sorted(symbols, key=lambda s: s.substring[0], reverse=True)
+
+        # Replace each symbol in the code with its name
+        for symbol in sorted_symbols:
+            start, end = symbol.substring
+            # Adjust start and end based on the node's starting byte
+            start -= self.node.start_byte
+            end -= self.node.start_byte
+            # Ensure the symbol's start and end are within bounds of the code's length
+            if start >= 0 and end <= len(code):
+                code = code[:start] + symbol.name + code[end:]
+
+        return code
 
     def parse_expression(self, counter: Counter) -> Item:
         node = self.node
@@ -1045,12 +1058,23 @@ class SymbolParser:
                         arg_counter.next()
                         arguments.append(expression)
                 self.update_dummy_symbol(
-                    symbol=symbol, symbol_kind=CallKind(function_name, arguments)
+                    symbol=symbol, symbol_kind=CallKind(function_name, arguments), body=[]
                 )
                 self.file.add_symbol(symbol)
         else:
             logger.warning(f"Unexpected expression: {node.type}")
         return Item(type=self.node.type, symbol=symbol)
+
+    def parse_statement(
+        self, counter: Counter
+    ) -> List[Item]:  # list because mutual definitions let x = and y = ...
+        symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(counter)
+        if symbols != []:
+            return [Item(type=self.node.type, symbol=s) for s in symbols]
+        import_ = parse_import(self.node)
+        if import_ is not None:
+            self.file.add_import(import_)
+        return [Item(type=self.node.type, symbol=None)]
 
     def parse_block(self) -> Block:
         block: Block = []

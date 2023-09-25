@@ -94,7 +94,9 @@ class Type:
         return Type(kind="array", arguments=[self])
 
     @staticmethod
-    def constructor(name: str, arguments: List["Type"] = []) -> "Type":
+    def constructor(name: str, arguments: Optional[List["Type"]] = None) -> "Type":
+        if arguments is None:
+            arguments = []
         return Type(kind="constructor", name=name, arguments=arguments)
 
     def function(self) -> "Type":
