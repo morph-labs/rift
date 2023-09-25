@@ -284,6 +284,7 @@ Expression: expression$0
    range: ((52, 12), (52, 26))
    substring: (1018, 1032)
    scope: with_nested_conditionals.if.if_case.if.if_case.
+   body: [call$0]
    parent: with_nested_conditionals.if.if_case.if$1
    code: call$0
 Call: call$1
@@ -299,6 +300,7 @@ Expression: expression$1
    range: ((53, 12), (53, 26))
    substring: (1045, 1059)
    scope: with_nested_conditionals.if.if_case.if.if_case.
+   body: [call$1]
    parent: with_nested_conditionals.if.if_case.if$1
    code: call$1
 If: if$1

@@ -312,7 +312,7 @@ class SymbolParser:
     ) -> None:
         symbol.symbol_kind = symbol_kind
         if body is not None:
-            symbol.body = body
+            symbol.body += body
 
     def mk_fun_decl(
         self,
@@ -992,7 +992,7 @@ class SymbolParser:
             symbol = mk_dummy("expression")
             child = node.children[0]
             code = self.recurse(child, self.scope, parent=symbol).parse_expression_code(counter)
-            self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code), body=[])
+            self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code))
             self.file.add_symbol(symbol)
             return symbol
 
@@ -1058,7 +1058,7 @@ class SymbolParser:
                         arg_counter.next()
                         arguments.append(expression)
                 self.update_dummy_symbol(
-                    symbol=symbol, symbol_kind=CallKind(function_name, arguments), body=[]
+                    symbol=symbol, symbol_kind=CallKind(function_name, arguments)
                 )
                 self.file.add_symbol(symbol)
         else:
