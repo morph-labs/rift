@@ -239,7 +239,7 @@ Expression: expression$0
    scope: some_conditionals.
    parent: some_conditionals
    code: """explanation"""
-If: if$1
+If: if$0
    language: python
    range: ((33, 4), (41, 12))
    substring: (669, 803)
@@ -249,7 +249,7 @@ If: if$1
    if_case: Case(cond == "a", ['pass_statement'])
    elif_cases: [Case(cond == "b", ['pass_statement']), Case(cond == "c", ['pass_statement'])]
    else_block: ['pass_statement', 'pass_statement']
-If: if$3
+If: if$1
    language: python
    range: ((43, 4), (45, 12))
    substring: (832, 870)
@@ -263,14 +263,14 @@ Function: some_conditionals
    substring: (601, 870)
    docstring: """explanation"""
    body_sub: (647, 870)
-   body: [expression$0, if$1, 'comment', if$3]
+   body: [expression$0, if$0, 'comment', if$1]
    parameters: [cond:str]
    return_type: None
 If: if$0
    language: python
    range: ((49, 8), (50, 16))
    substring: (949, 981)
-   scope: with_nested_conditionals.if.if_case.
+   scope: with_nested_conditionals.if$0.
    body: ['pass_statement']
    parent: with_nested_conditionals.if$0
    if_case: Case(cond == "b", ['pass_statement'])
@@ -278,39 +278,39 @@ Call: call$0
    language: python
    range: ((52, 12), (52, 26))
    substring: (1018, 1032)
-   scope: with_nested_conditionals.if.if_case.if.if_case.expression.
-   parent: with_nested_conditionals.if.if_case.if.if_case.expression$0
+   scope: with_nested_conditionals.if$0.if$1.expression$0.
+   parent: with_nested_conditionals.if$0.if$1.expression$0
    function_name: print
    arguments: ['"hello"']
 Expression: expression$0
    language: python
    range: ((52, 12), (52, 26))
    substring: (1018, 1032)
-   scope: with_nested_conditionals.if.if_case.if.if_case.
+   scope: with_nested_conditionals.if$0.if$1.
    body: [call$0]
-   parent: with_nested_conditionals.if.if_case.if$1
+   parent: with_nested_conditionals.if$0.if$1
    code: call$0
 Call: call$1
    language: python
    range: ((53, 12), (53, 26))
    substring: (1045, 1059)
-   scope: with_nested_conditionals.if.if_case.if.if_case.expression.
-   parent: with_nested_conditionals.if.if_case.if.if_case.expression$1
+   scope: with_nested_conditionals.if$0.if$1.expression$1.
+   parent: with_nested_conditionals.if$0.if$1.expression$1
    function_name: print
    arguments: ['"world"']
 Expression: expression$1
    language: python
    range: ((53, 12), (53, 26))
    substring: (1045, 1059)
-   scope: with_nested_conditionals.if.if_case.if.if_case.
+   scope: with_nested_conditionals.if$0.if$1.
    body: [call$1]
-   parent: with_nested_conditionals.if.if_case.if$1
+   parent: with_nested_conditionals.if$0.if$1
    code: call$1
 If: if$1
    language: python
    range: ((51, 8), (53, 26))
    substring: (990, 1059)
-   scope: with_nested_conditionals.if.if_case.
+   scope: with_nested_conditionals.if$0.
    body: [expression$0, expression$1]
    parent: with_nested_conditionals.if$0
    if_case: Case(cond == "c", [expression$0, expression$1])

@@ -1,5 +1,6 @@
+from dataclasses import dataclass, field
 import logging
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from tree_sitter import Node
 
@@ -229,13 +230,22 @@ def parse_import(node: Node) -> Optional[Import]:
         return Import(names=names, module_name=module_name, substring=substring)
 
 
+@dataclass
 class Counter:
-    def __init__(self, start: int = 0) -> None:
-        self.count = start
+    """
+    Counter class that maintains a count for unique names.
+    """
 
-    def next(self) -> int:
-        self.count += 1
-        return self.count
+    dict: Dict[str, int] = field(default_factory=dict)
+
+    def next(self, name: str) -> int:
+        """
+        Increment the count of the given name and return the previous count.
+
+        """
+        count = self.dict.get(name, 0)
+        self.dict[name] = count + 1
+        return count
 
 
 class SymbolParser:
@@ -307,6 +317,13 @@ class SymbolParser:
         else:
             name = id.text.decode()
         return self.mk_symbol_decl(id=name, parents=parents, symbol_kind=ValueKind())
+
+    def mk_dummy_metasymbol(self, counter: Counter, name: str) -> Symbol:
+        count = counter.next(name)
+        id = f"{name}${count}"
+        dummy = self.mk_dummy_symbol(id=id, parents=[self.node])
+        self.scope = self.scope + f"{id}."
+        return dummy
 
     def update_dummy_symbol(self, symbol: Symbol, symbol_kind: SymbolKind) -> None:
         symbol.symbol_kind = symbol_kind
@@ -933,21 +950,15 @@ class SymbolParser:
         node = self.node
         language = self.language
 
-        def mk_dummy(name: str) -> Symbol:
-            dummy = self.mk_dummy_symbol(id=f"{name}${counter.count}", parents=[node])
-            self.scope = self.scope + f"{name}."
-            return dummy
-
         if node.type == "if_statement" and language == "python":
             condition_node = node.child_by_field_name("condition")
             consequence_node = node.child_by_field_name("consequence")
             if condition_node is not None and consequence_node is not None:
-                symbol = mk_dummy("if")
-                scope = self.scope + f"if_case."
-                condition = self.recurse(condition_node, scope, parent=symbol).parse_expression(
-                    counter
-                )
-                if_block = self.recurse(consequence_node, scope, parent=symbol).parse_block()
+                symbol = self.mk_dummy_metasymbol(counter, "if")
+                condition = self.recurse(
+                    condition_node, self.scope, parent=symbol
+                ).parse_expression(counter)
+                if_block = self.recurse(consequence_node, self.scope, parent=symbol).parse_block()
                 if_case = Case(condition=condition, block=if_block)
                 alternative_nodes = node.children_by_field_name("alternative")
                 elif_cases: List[Case] = []
@@ -959,22 +970,20 @@ class SymbolParser:
                         consequence_node = an.child_by_field_name("consequence")
                         if condition_node is None or consequence_node is None:
                             continue
-                        scope = self.scope + f"elif_case{elif_index}."
                         elif_index += 1
                         condition = self.recurse(
-                            condition_node, scope=scope, parent=symbol
+                            condition_node, self.scope, parent=symbol
                         ).parse_expression(counter)
                         elif_block = self.recurse(
-                            consequence_node, scope, parent=symbol
+                            consequence_node, self.scope, parent=symbol
                         ).parse_block()
                         elif_cases.append(Case(condition=condition, block=elif_block))
                     elif an.type == "else_clause":
-                        scope = self.scope + "else."
                         else_body_node = an.child_by_field_name("body")
                         # TODO: there can be comments in the else clause before the body
                         if else_body_node is not None:
                             else_block = self.recurse(
-                                else_body_node, scope, parent=symbol
+                                else_body_node, self.scope, parent=symbol
                             ).parse_block()
                 if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_block=else_block)
                 self.update_dummy_symbol(symbol=symbol, symbol_kind=if_kind)
@@ -982,7 +991,7 @@ class SymbolParser:
                 return symbol
 
         elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
-            symbol = mk_dummy("expression")
+            symbol = self.mk_dummy_metasymbol(counter, "expression")
             child = node.children[0]
             code = self.recurse(child, self.scope, parent=symbol).parse_expression(counter)
             self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code))
@@ -1029,20 +1038,20 @@ class SymbolParser:
             else:
                 function_name = function_node.text.decode()
 
-                symbol = self.mk_dummy_symbol(id=f"call${counter.count}", parents=[node])
+                count = counter.next("call")
+                symbol = self.mk_dummy_symbol(id=f"call${count}", parents=[node])
+                self.scope = self.scope + "call."
 
                 arguments: List[Expression] = []
                 arguments_node = node.child_by_field_name("arguments")
                 if arguments_node is not None:
                     arg_counter = Counter()
-                    scope = self.scope + "call."
                     for arg in arguments_node.children:
                         if arg.type in ["(", ")"]:
                             continue
-                        expression = self.recurse(arg, scope, parent=symbol).parse_expression(
+                        expression = self.recurse(arg, self.scope, parent=symbol).parse_expression(
                             arg_counter
                         )
-                        arg_counter.next()
                         arguments.append(expression)
                 self.update_dummy_symbol(
                     symbol=symbol, symbol_kind=CallKind(function_name, arguments)
@@ -1073,7 +1082,5 @@ class SymbolParser:
             if self.language == "ruby" and child.text.decode() == "name":
                 continue
             items = self.recurse(child, self.scope, parent=self.parent).parse_statement(counter)
-            for _ in items:
-                counter.next()
             block.extend(items)
         return block
