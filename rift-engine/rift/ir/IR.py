@@ -60,8 +60,8 @@ Expression = str
 
 @dataclass
 class Item:
-    type: str
-    symbol: Optional["Symbol"]
+    type: Optional[str] = ""
+    symbol: Optional["Symbol"] = None
 
     def __str__(self):
         if self.symbol:
@@ -226,7 +226,7 @@ class Case:
 @dataclass
 class CallKind(MetaSymbolKind):
     function_name: str
-    arguments: List[Item]
+    arguments: List[Expression]
 
     def name(self) -> str:
         return "Call"

@@ -9,6 +9,7 @@ from rift.ir.IR import (
     Case,
     ClassKind,
     Code,
+    Expression,
     ExpressionKind,
     Item,
     File,
@@ -951,9 +952,9 @@ class SymbolParser:
             if condition_node is not None and consequence_node is not None:
                 symbol = mk_dummy("if")
                 scope = self.scope + f"if_case."
-                condition = self.recurse(
-                    condition_node, scope, parent=symbol
-                ).parse_expression_code(counter)
+                condition = self.recurse(condition_node, scope, parent=symbol).parse_expression(
+                    counter
+                )
                 if_block = self.recurse(consequence_node, scope, parent=symbol).parse_block()
                 if_case = Case(condition=condition, block=if_block)
                 alternative_nodes = node.children_by_field_name("alternative")
@@ -970,7 +971,7 @@ class SymbolParser:
                         elif_index += 1
                         condition = self.recurse(
                             condition_node, scope=scope, parent=symbol
-                        ).parse_expression_code(counter)
+                        ).parse_expression(counter)
                         elif_block = self.recurse(
                             consequence_node, scope, parent=symbol
                         ).parse_block()
@@ -991,28 +992,22 @@ class SymbolParser:
         elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
             symbol = mk_dummy("expression")
             child = node.children[0]
-            code = self.recurse(child, self.scope, parent=symbol).parse_expression_code(counter)
+            code = self.recurse(child, self.scope, parent=symbol).parse_expression(counter)
             self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code))
             self.file.add_symbol(symbol)
             return symbol
 
-    def parse_expression_code(self, counter: Counter) -> str:
+    def parse_expression(self, counter: Counter) -> Expression:
         """
         Parse an expression to generate its corresponding code with symbols replaced by their names.
         """
 
-        expression = self.recurse(self.node, self.scope, parent=self.parent).parse_expression(
-            counter
-        )
+        self.recurse(self.node, self.scope, parent=self.parent).walk_expression(counter)
 
         code = self.node.text.decode()
 
         if self.parent is None:
             return code
-
-        # If the expression has a symbol, add it to the parent's body
-        if expression.symbol:
-            self.parent.body.append(expression)
 
         # Get a list of symbols from the parent's body
         symbols = [item.symbol for item in self.parent.body if item.symbol is not None]
@@ -1032,7 +1027,7 @@ class SymbolParser:
 
         return code
 
-    def parse_expression(self, counter: Counter) -> Item:
+    def walk_expression(self, counter: Counter) -> None:
         node = self.node
         symbol: Optional[Symbol] = None
         if node.type == "call":
@@ -1044,7 +1039,7 @@ class SymbolParser:
 
                 symbol = self.mk_dummy_symbol(id=f"call${counter.count}", parents=[node])
 
-                arguments: List[Item] = []
+                arguments: List[Expression] = []
                 arguments_node = node.child_by_field_name("arguments")
                 if arguments_node is not None:
                     arg_counter = Counter()
@@ -1060,10 +1055,12 @@ class SymbolParser:
                 self.update_dummy_symbol(
                     symbol=symbol, symbol_kind=CallKind(function_name, arguments)
                 )
+                if symbol and self.parent:
+                    self.parent.body.append(Item(symbol=symbol))
+
                 self.file.add_symbol(symbol)
         else:
             logger.warning(f"Unexpected expression: {node.type}")
-        return Item(type=self.node.type, symbol=symbol)
 
     def parse_statement(
         self, counter: Counter

@@ -278,7 +278,7 @@ Call: call$0
    scope: with_nested_conditionals.if.if_case.if.if_case.expression.
    parent: with_nested_conditionals.if.if_case.if.if_case.expression$0
    function_name: print
-   arguments: ['string']
+   arguments: ['"hello"']
 Expression: expression$0
    language: python
    range: ((52, 12), (52, 26))
@@ -294,7 +294,7 @@ Call: call$1
    scope: with_nested_conditionals.if.if_case.if.if_case.expression.
    parent: with_nested_conditionals.if.if_case.if.if_case.expression$1
    function_name: print
-   arguments: ['string']
+   arguments: ['"world"']
 Expression: expression$1
    language: python
    range: ((53, 12), (53, 26))
