@@ -56,7 +56,9 @@ class CodeEdit:
         start, end = self.substring
         return Code(code.bytes[:start] + self.new_bytes + code.bytes[end:])
 
+
 Expression = str
+
 
 @dataclass
 class Item:
@@ -218,7 +220,7 @@ class Case:
 
     def __str__(self) -> str:
         return f"Case({self.condition}, {self.block})"
-    
+
     def __repr__(self) -> str:
         return self.__str__()
 
@@ -456,37 +458,22 @@ class File:
 
     def dump_map(self, indent: int, lines: List[str]) -> None:
         def dump_symbol(symbol: Symbol, indent: int) -> None:
-            decl_without_body = symbol.get_substring_without_body().decode().strip()
-            # indent the declaration
-            decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
-            lines.append(f"{' ' * indent}{decl_without_body}")
+            if not isinstance(symbol.symbol_kind, MetaSymbolKind):
+                decl_without_body = symbol.get_substring_without_body().decode().strip()
+                # indent the declaration
+                decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
+                lines.append(f"{' ' * indent}{decl_without_body}")
+            else:
+                lines.append(f"{' ' * indent}{symbol.symbol_kind.name()}")
             for statement in symbol.body:
                 dump_statement(statement, indent + 2)
 
         def dump_statement(statement: Item, indent: int) -> None:
             if statement.symbol:
-                if not isinstance(statement.symbol.symbol_kind, MetaSymbolKind):
-                    # don't dump body statements
-                    dump_symbol(statement.symbol, indent)
+                dump_symbol(statement.symbol, indent)
 
         for statement in self.statements:
             dump_statement(statement, indent)
-
-    def dump_elements(self, elements: List[str]) -> None:
-        def dump_symbol(symbol: Symbol) -> None:
-            decl_without_body = symbol.get_substring_without_body().decode()
-            elements.append(decl_without_body)
-            for statement in symbol.body:
-                dump_statement(statement)
-
-        def dump_statement(statement: Item) -> None:
-            if statement.symbol:
-                if not isinstance(statement.symbol.symbol_kind, MetaSymbolKind):
-                    # don't dump body statements
-                    dump_symbol(statement.symbol)
-
-        for statement in self.statements:
-            dump_statement(statement)
 
 
 @dataclass
@@ -559,12 +546,6 @@ class Project:
             lines.append(f"{' ' * indent}File: {file.path}")
             file.dump_map(indent + 2, lines)
         return "\n".join(lines)
-
-    def dump_elements(self) -> List[str]:
-        elements: List[str] = []
-        for file in self.get_files():
-            file.dump_elements(elements)
-        return elements
 
 
 def language_from_file_extension(file_path: str) -> Optional[Language]:

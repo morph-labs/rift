@@ -581,7 +581,9 @@ File: test.tsx
   function tsx()
 File: test.py
   class A(C,D):
+    Expression
     def py(x, y):
+      Expression
   class B:
     async def insert_code(
             self, document: str, cursor_offset: int, goal: Optional[str] = None
@@ -592,7 +594,11 @@ File: test.py
   def outer_fun() -> None:
     def inner_fun() -> None:
   def some_conditionals(cond: str) -> None:
+    Expression
+    If
+    If
   def with_nested_conditionals(cond: str) -> None:
+    If
 File: test.cpp
   namespace namespace_name
     void add(int& someRef, int* somePtr)
