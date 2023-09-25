@@ -245,16 +245,16 @@ If: if$1
    substring: (669, 803)
    scope: some_conditionals.
    parent: some_conditionals
-   if_case: Case('comparison_operator', ['pass_statement'])
-   elif_cases: [Case(condition='comparison_operator', block=['pass_statement']), Case(condition='comparison_operator', block=['pass_statement'])]
-   else_branch: ['pass_statement', 'pass_statement']
+   if_case: Case(cond == "a", ['pass_statement'])
+   elif_cases: [Case(cond == "b", ['pass_statement']), Case(cond == "c", ['pass_statement'])]
+   else_block: ['pass_statement', 'pass_statement']
 If: if$3
    language: python
    range: ((43, 4), (45, 12))
    substring: (832, 870)
    scope: some_conditionals.
    parent: some_conditionals
-   if_case: Case('comparison_operator', ['pass_statement', 'pass_statement'])
+   if_case: Case(34 == 34, ['pass_statement', 'pass_statement'])
 Function: some_conditionals
    language: python
    range: ((31, 0), (45, 12))
@@ -270,7 +270,7 @@ If: if$0
    substring: (949, 981)
    scope: with_nested_conditionals.if.if_case.
    parent: with_nested_conditionals.if$0
-   if_case: Case('comparison_operator', ['pass_statement'])
+   if_case: Case(cond == "b", ['pass_statement'])
 Call: call$0
    language: python
    range: ((52, 12), (52, 26))
@@ -309,14 +309,14 @@ If: if$1
    substring: (990, 1059)
    scope: with_nested_conditionals.if.if_case.
    parent: with_nested_conditionals.if$0
-   if_case: Case('comparison_operator', [expression$0, expression$1])
+   if_case: Case(cond == "c", [expression$0, expression$1])
 If: if$0
    language: python
    range: ((48, 4), (53, 26))
    substring: (925, 1059)
    scope: with_nested_conditionals.
    parent: with_nested_conditionals
-   if_case: Case('comparison_operator', [if$0, if$1])
+   if_case: Case(cond == "a", [if$0, if$1])
 Function: with_nested_conditionals
    language: python
    range: ((47, 0), (53, 26))

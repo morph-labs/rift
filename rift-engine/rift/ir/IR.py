@@ -56,6 +56,7 @@ class CodeEdit:
         start, end = self.substring
         return Code(code.bytes[:start] + self.new_bytes + code.bytes[end:])
 
+Expression = str
 
 @dataclass
 class Item:
@@ -212,11 +213,14 @@ class MetaSymbolKind(SymbolKind):
 
 @dataclass
 class Case:
-    condition: Item
+    condition: Expression
     block: Block
 
     def __str__(self) -> str:
         return f"Case({self.condition}, {self.block})"
+    
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 @dataclass
@@ -250,7 +254,7 @@ class ExpressionKind(MetaSymbolKind):
 class IfKind(MetaSymbolKind):
     if_case: Case
     elif_cases: List[Case]
-    else_branch: List[Item]
+    else_block: Block
 
     def name(self) -> str:
         return "If"
@@ -259,8 +263,8 @@ class IfKind(MetaSymbolKind):
         lines.append(f"   if_case: {self.if_case}")
         if self.elif_cases != []:
             lines.append(f"   elif_cases: {self.elif_cases}")
-        if self.else_branch != []:
-            lines.append(f"   else_branch: {self.else_branch}")
+        if self.else_block != []:
+            lines.append(f"   else_block: {self.else_block}")
 
 
 @dataclass

@@ -951,9 +951,9 @@ class SymbolParser:
             if condition_node is not None and consequence_node is not None:
                 symbol = mk_dummy("if")
                 scope = self.scope + f"if_case."
-                condition = self.recurse(condition_node, scope, parent=symbol).parse_expression(
-                    counter
-                )
+                condition = self.recurse(
+                    condition_node, scope, parent=symbol
+                ).parse_expression_code(counter)
                 if_block = self.recurse(consequence_node, scope, parent=symbol).parse_block()
                 if_case = Case(condition=condition, block=if_block)
                 alternative_nodes = node.children_by_field_name("alternative")
@@ -970,7 +970,7 @@ class SymbolParser:
                         elif_index += 1
                         condition = self.recurse(
                             condition_node, scope=scope, parent=symbol
-                        ).parse_expression(counter)
+                        ).parse_expression_code(counter)
                         elif_block = self.recurse(
                             consequence_node, scope, parent=symbol
                         ).parse_block()
@@ -983,7 +983,7 @@ class SymbolParser:
                             else_block = self.recurse(
                                 else_body_node, scope, parent=symbol
                             ).parse_block()
-                if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_branch=else_block)
+                if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_block=else_block)
                 self.update_dummy_symbol(symbol=symbol, symbol_kind=if_kind)
                 self.file.add_symbol(symbol)
                 return symbol
