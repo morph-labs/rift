@@ -232,14 +232,16 @@ class CallKind(MetaSymbolKind):
 
 
 @dataclass
-class StringKind(MetaSymbolKind):
-    value: str
+class ExpressionKind(MetaSymbolKind):
+    """Expression statement"""
+
+    code: str
 
     def name(self) -> str:
-        return "String"
+        return "Expression"
 
     def dump(self, lines: List[str]) -> None:
-        lines.append(f"   value: {self.value}")
+        lines.append(f"   code: {self.code}")
 
 
 @dataclass

@@ -137,23 +137,25 @@ Function: tsx
    body_sub: (38, 50)
    has_return: True
 === Symbol Table for test.py ===
-String: string$0
+Expression: expression$0
    language: python
    range: ((1, 4), (4, 7))
    substring: (18, 69)
    scope: A.
+   body: ['string']
    parent: A
-   value: """
+   code: """
     This is a docstring
     for class A
     """
-String: string$0
+Expression: expression$0
    language: python
    range: ((7, 8), (7, 33))
    substring: (97, 122)
    scope: A.py.
+   body: ['string']
    parent: A.py
-   value: """This is a docstring"""
+   code: """This is a docstring"""
 Function: py
    language: python
    range: ((6, 4), (8, 16))
@@ -161,7 +163,7 @@ Function: py
    scope: A.
    docstring: """This is a docstring"""
    body_sub: (97, 139)
-   body: [string$0, 'return_statement']
+   body: [expression$0, 'return_statement']
    parent: A
    parameters: [x, y]
    has_return: True
@@ -174,7 +176,7 @@ Class: A(C,D)
     for class A
     """
    body_sub: (18, 139)
-   body: [string$0, py]
+   body: [expression$0, py]
 Function: insert_code
    language: python
    range: ((11, 4), (14, 12))
@@ -232,13 +234,14 @@ Function: outer_fun
    body_sub: (562, 599)
    body: [inner_fun]
    return_type: None
-String: string$0
+Expression: expression$0
    language: python
    range: ((32, 4), (32, 21))
    substring: (647, 664)
    scope: some_conditionals.
+   body: ['string']
    parent: some_conditionals
-   value: """explanation"""
+   code: """explanation"""
 If: if$1
    language: python
    range: ((33, 4), (41, 12))
@@ -261,7 +264,7 @@ Function: some_conditionals
    substring: (601, 870)
    docstring: """explanation"""
    body_sub: (647, 870)
-   body: [string$0, if$1, 'comment', if$3]
+   body: [expression$0, if$1, 'comment', if$3]
    parameters: [cond:str]
    return_type: None
 If: if$0
@@ -271,40 +274,41 @@ If: if$0
    scope: with_nested_conditionals.if.if_case.
    parent: with_nested_conditionals.if$0
    if_case: Case('comparison_operator', ['pass_statement'])
-String: string$0
-   language: python
-   range: ((52, 18), (52, 25))
-   substring: (1024, 1031)
-   scope: with_nested_conditionals.if.if_case.if.if_case.call.
-   parent: with_nested_conditionals.if.if_case.if.if_case.call$0
-   value: "hello"
-Call: call$0
+Expression: call$0
    language: python
    range: ((52, 12), (52, 26))
    substring: (1018, 1032)
-   scope: with_nested_conditionals.if.if_case.if.if_case.
+   scope: with_nested_conditionals.if.if_case.if.if_case.expression.
+   body: [call$0]
    parent: with_nested_conditionals.if.if_case.if$1
-   function_name: print
-   arguments: [string$0]
+   code: call$0
+Expression: call$1
+   language: python
+   range: ((53, 12), (53, 26))
+   substring: (1045, 1059)
+   scope: with_nested_conditionals.if.if_case.if.if_case.expression.
+   body: [call$1]
+   parent: with_nested_conditionals.if.if_case.if$1
+   code: call$1
 If: if$1
    language: python
-   range: ((51, 8), (52, 26))
-   substring: (990, 1032)
+   range: ((51, 8), (53, 26))
+   substring: (990, 1059)
    scope: with_nested_conditionals.if.if_case.
    parent: with_nested_conditionals.if$0
-   if_case: Case('comparison_operator', [call$0])
+   if_case: Case('comparison_operator', [call$0, call$1])
 If: if$0
    language: python
-   range: ((48, 4), (52, 26))
-   substring: (925, 1032)
+   range: ((48, 4), (53, 26))
+   substring: (925, 1059)
    scope: with_nested_conditionals.
    parent: with_nested_conditionals
    if_case: Case('comparison_operator', [if$0, if$1])
 Function: with_nested_conditionals
    language: python
-   range: ((47, 0), (52, 26))
-   substring: (872, 1032)
-   body_sub: (925, 1032)
+   range: ((47, 0), (53, 26))
+   substring: (872, 1059)
+   body_sub: (925, 1059)
    body: [if$0]
    parameters: [cond:str]
    return_type: None

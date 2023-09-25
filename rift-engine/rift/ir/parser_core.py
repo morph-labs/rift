@@ -9,6 +9,7 @@ from rift.ir.IR import (
     Case,
     ClassKind,
     Code,
+    ExpressionKind,
     Item,
     File,
     FunctionKind,
@@ -21,7 +22,6 @@ from rift.ir.IR import (
     Parameter,
     Field,
     Scope,
-    StringKind,
     Substring,
     Symbol,
     SymbolKind,
@@ -935,12 +935,16 @@ class SymbolParser:
         node = self.node
         language = self.language
 
+        def mk_dummy(name: str) -> Symbol:
+            dummy = self.mk_dummy_symbol(id=f"{name}${counter.count}", parents=[node])
+            self.scope = self.scope + f"{name}."
+            return dummy
+
         if node.type == "if_statement" and language == "python":
             condition_node = node.child_by_field_name("condition")
             consequence_node = node.child_by_field_name("consequence")
             if condition_node is not None and consequence_node is not None:
-                symbol = self.mk_dummy_symbol(id=f"if${counter.count}", parents=[node])
-                self.scope = self.scope + "if."
+                symbol = mk_dummy("if")
                 scope = self.scope + f"if_case."
                 condition = self.recurse(condition_node, scope, parent=symbol).parse_expression(
                     counter
@@ -980,11 +984,29 @@ class SymbolParser:
                 return symbol
 
         elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
+            symbol = mk_dummy("expression")
             child = node.children[0]
             expression = self.recurse(child, self.scope, parent=self.parent).parse_expression(
                 counter
             )
-            return expression.symbol
+            body = [expression]
+            code = node.text.decode()
+
+            # In the code, replace symbols from the body with their names.
+            # For each symbol, find the position in the code and replace it with the symbol name.
+            # The position is determined by comparing the start of this node and the start of that symbol.
+            symbols = [item.symbol for item in body if item.symbol is not None]
+            sorted_symbols = sorted(symbols, key=lambda s: s.substring[0])
+            for symbol in sorted_symbols:
+                start, end = symbol.substring
+                start -= node.start_byte
+                end -= node.start_byte
+                if start >= 0 and end <= len(code):
+                    code = code[:start] + symbol.name + code[end:]
+
+            self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code), body=body)
+            self.file.add_symbol(symbol)
+            return symbol
 
     def parse_statement(
         self, counter: Counter
@@ -1026,11 +1048,6 @@ class SymbolParser:
                     symbol=symbol, symbol_kind=CallKind(function_name, arguments)
                 )
                 self.file.add_symbol(symbol)
-        elif node.type == "string":
-            symbol = self.mk_dummy_symbol(id=f"string${counter.count}", parents=[node])
-            str = node.text.decode()
-            self.update_dummy_symbol(symbol=symbol, symbol_kind=StringKind(str))
-            self.file.add_symbol(symbol)
         else:
             logger.warning(f"Unexpected expression: {node.type}")
         return Item(type=self.node.type, symbol=symbol)
