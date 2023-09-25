@@ -228,6 +228,15 @@ def parse_import(node: Node) -> Optional[Import]:
         return Import(names=names, module_name=module_name, substring=substring)
 
 
+class Counter:
+    def __init__(self, start: int = 0) -> None:
+        self.count = start
+
+    def next(self) -> int:
+        self.count += 1
+        return self.count
+
+
 class SymbolParser:
     def __init__(
         self,
@@ -368,7 +377,7 @@ class SymbolParser:
                 self.body_sub = (body_node.start_byte, body_node.end_byte)
             return body_node
 
-    def parse_symbols(self, index: int) -> List[Symbol]:
+    def parse_symbols(self, counter: Counter) -> List[Symbol]:
         """
         Parse the node specified by the index to extract recognized symbols, such as classes,
         functions, methods, modules, namespaces, etc., across various languages.
@@ -450,7 +459,9 @@ class SymbolParser:
         elif node.type in ["decorated_definition"] and language == "python":  # python decorator
             definition = node.child_by_field_name("definition")
             if definition is not None:
-                return self.recurse(definition, self.scope, parent=self.parent).parse_symbols(index)
+                return self.recurse(definition, self.scope, parent=self.parent).parse_symbols(
+                    counter
+                )
 
         elif node.type in ["field_declaration", "function_definition"] and language in ["c", "cpp"]:
             type_node = node.child_by_field_name("type")
@@ -557,7 +568,7 @@ class SymbolParser:
             if len(node.children) >= 2:
                 self.node = node.children[1]
                 self.exported = True
-                return self.parse_symbols(index)
+                return self.parse_symbols(counter)
 
         elif node.type in ["interface_declaration", "type_alias_declaration"] and language in [
             "js",
@@ -913,7 +924,7 @@ class SymbolParser:
                 return []
 
         if self.metasymbols:
-            metasymbol = self.parse_metasymbol(index)
+            metasymbol = self.parse_metasymbol(counter)
             if metasymbol is not None:
                 return [metasymbol]
             else:
@@ -921,12 +932,12 @@ class SymbolParser:
         else:
             return []
 
-    def parse_metasymbol(self, index: int) -> Optional[Symbol]:
+    def parse_metasymbol(self, counter: Counter) -> Optional[Symbol]:
         node = self.node
         language = self.language
 
         self.scope = self.scope[:-1]  # remove the trailing "." from the scope
-        self.scope = self.scope + f"[{index}]."
+        self.scope = self.scope + f"[{counter.count}]."
 
         if node.type == "if_statement" and language == "python":
             condition_node = node.child_by_field_name("condition")
@@ -936,7 +947,7 @@ class SymbolParser:
                 self.scope = self.scope + "if."
                 scope = self.scope + f"if_case."
                 condition = self.recurse(condition_node, scope, parent=symbol).parse_expression(
-                    index
+                    counter
                 )
                 if_block = self.recurse(consequence_node, scope, parent=symbol).parse_block()
                 if_case = Case(condition=condition, block=if_block)
@@ -954,7 +965,7 @@ class SymbolParser:
                         elif_index += 1
                         condition = self.recurse(
                             condition_node, scope=scope, parent=symbol
-                        ).parse_expression(index)
+                        ).parse_expression(counter)
                         elif_block = self.recurse(
                             consequence_node, scope, parent=symbol
                         ).parse_block()
@@ -974,13 +985,15 @@ class SymbolParser:
 
         elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
             child = node.children[0]
-            expression = self.recurse(child, self.scope, parent=self.parent).parse_expression(index)
+            expression = self.recurse(child, self.scope, parent=self.parent).parse_expression(
+                counter
+            )
             return expression.symbol
 
     def parse_statement(
-        self, index: int
+        self, counter: Counter
     ) -> List[Item]:  # list because mutual definitions let x = and y = ...
-        symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(index)
+        symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(counter)
         if symbols != []:
             return [Item(type=self.node.type, symbol=s) for s in symbols]
         import_ = parse_import(self.node)
@@ -988,7 +1001,7 @@ class SymbolParser:
             self.file.add_import(import_)
         return [Item(type=self.node.type, symbol=None)]
 
-    def parse_expression(self, index: int) -> Item:
+    def parse_expression(self, counter: Counter) -> Item:
         node = self.node
         symbol: Optional[Symbol] = None
         if node.type == "call":
@@ -1003,15 +1016,15 @@ class SymbolParser:
                 arguments: List[Item] = []
                 arguments_node = node.child_by_field_name("arguments")
                 if arguments_node is not None:
-                    arg_num = 0
+                    arg_counter = Counter()
                     scope = self.scope + "call."
                     for arg in arguments_node.children:
                         if arg.type in ["(", ")"]:
                             continue
                         expression = self.recurse(arg, scope, parent=symbol).parse_expression(
-                            arg_num
+                            arg_counter
                         )
-                        arg_num += 1
+                        arg_counter.next()
                         arguments.append(expression)
                 self.update_dummy_symbol(
                     symbol=symbol, symbol_kind=CallKind(function_name, arguments)
@@ -1028,13 +1041,12 @@ class SymbolParser:
 
     def parse_block(self) -> Block:
         block: Block = []
-        index = 0
+        counter = Counter()
         for child in self.node.children:
             if self.language == "ruby" and child.text.decode() == "name":
                 continue
-            items = self.recurse(child, self.scope, parent=self.parent).parse_statement(
-                index
-            )
-            index += len(items)
+            items = self.recurse(child, self.scope, parent=self.parent).parse_statement(counter)
+            for _ in items:
+                counter.next()
             block.extend(items)
         return block

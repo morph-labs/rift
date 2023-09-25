@@ -32,7 +32,7 @@ def parse_code_block(
             node=node,
             parent=None,
             scope="",
-        ).parse_statement(index=0)
+        ).parse_statement(counter=parser_core.Counter())
         file.statements.extend(items)
 
 
