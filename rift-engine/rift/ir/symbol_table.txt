@@ -586,9 +586,12 @@ File: test.tsx
   function tsx()
 File: test.py
   class A(C,D):
-    Expression
+    expression$0 = `"""
+    This is a docstring
+    for class A
+    """`
     def py(x, y):
-      Expression
+      expression$0 = `"""This is a docstring"""`
   class B:
     async def insert_code(
             self, document: str, cursor_offset: int, goal: Optional[str] = None
@@ -599,17 +602,17 @@ File: test.py
   def outer_fun() -> None:
     def inner_fun() -> None:
   def some_conditionals(cond: str) -> None:
-    Expression
-    If
-    If
+    expression$0 = `"""explanation"""`
+    if$0 = `if cond == "a": ['pass_statement'] elif cond == "b": ['pass_statement'] elif cond == "c": ['pass_statement'] else: ['pass_statement', 'pass_statement']`
+    if$1 = `if 34 == 34: ['pass_statement', 'pass_statement']`
   def with_nested_conditionals(cond: str) -> None:
-    If
-      If
-      If
-        Expression
-          Call
-        Expression
-          Call
+    if$0 = `if cond == "a": [if$0, if$1]`
+      if$0 = `if cond == "b": ['pass_statement']`
+      if$1 = `if cond == "c": [expression$0, expression$1]`
+        expression$0 = `call$0`
+          call$0 = `print("hello")`
+        expression$1 = `call$1`
+          call$1 = `print("world")`
 File: test.cpp
   namespace namespace_name
     void add(int& someRef, int* somePtr)

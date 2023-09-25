@@ -238,6 +238,12 @@ class CallKind(MetaSymbolKind):
         if self.arguments != []:
             lines.append(f"   arguments: {self.arguments}")
 
+    def __str__(self) -> str:
+        return f"{self.function_name}({', '.join(self.arguments)})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 @dataclass
 class ExpressionKind(MetaSymbolKind):
@@ -250,6 +256,12 @@ class ExpressionKind(MetaSymbolKind):
 
     def dump(self, lines: List[str]) -> None:
         lines.append(f"   code: {self.code}")
+
+    def __str__(self) -> str:
+        return self.code
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 @dataclass
@@ -267,6 +279,15 @@ class IfKind(MetaSymbolKind):
             lines.append(f"   elif_cases: {self.elif_cases}")
         if self.else_block != []:
             lines.append(f"   else_block: {self.else_block}")
+
+    def __str__(self) -> str:
+        if_str = f"if {self.if_case.condition}: {self.if_case.block}"
+        elif_str = "".join([f" elif {case.condition}: {case.block}" for case in self.elif_cases])
+        else_str = f" else: {self.else_block}" if self.else_block != [] else ""
+        return f"{if_str}{elif_str}{else_str}"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 @dataclass
@@ -466,7 +487,7 @@ class File:
                 decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
                 lines.append(f"{' ' * indent}{decl_without_body}")
             else:
-                lines.append(f"{' ' * indent}{symbol.symbol_kind.name()}")
+                lines.append(f"{' ' * indent}{symbol.name} = `{symbol.symbol_kind}`")
             for statement in symbol.body:
                 dump_statement(statement, indent + 2)
 
