@@ -529,7 +529,7 @@ class SymbolParser:
             symbol = self.mk_dummy_symbol(id=id, parents=[node])
 
             if body_node is not None and language == "python" and self.metasymbols:
-                scope_body = self.scope + f"{id.text.decode()}.body."
+                scope_body = self.scope + f"{id.text.decode()}."
                 body = self.recurse(body_node, scope_body, parent=symbol).parse_block()
 
             self.update_dummy_symbol(
@@ -934,9 +934,6 @@ class SymbolParser:
     def parse_metasymbol(self, counter: Counter) -> Optional[Symbol]:
         node = self.node
         language = self.language
-
-        self.scope = self.scope[:-1]  # remove the trailing "." from the scope
-        self.scope = self.scope + f"[{counter.count}]."
 
         if node.type == "if_statement" and language == "python":
             condition_node = node.child_by_field_name("condition")

@@ -109,7 +109,7 @@
             },
             {
                 "name": "inner_fun",
-                "scope": "outer_fun.body.",
+                "scope": "outer_fun.",
                 "kind": "Function",
                 "range": [
                     [

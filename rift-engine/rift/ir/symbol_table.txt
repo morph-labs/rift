@@ -141,7 +141,7 @@ String: string$0
    language: python
    range: ((1, 4), (4, 7))
    substring: (18, 69)
-   scope: A[0].
+   scope: A.
    parent: A
    value: """
     This is a docstring
@@ -151,7 +151,7 @@ String: string$0
    language: python
    range: ((7, 8), (7, 33))
    substring: (97, 122)
-   scope: A.py.body[0].
+   scope: A.py.
    parent: A.py
    value: """This is a docstring"""
 Function: py
@@ -220,7 +220,7 @@ Function: inner_fun
    language: python
    range: ((28, 4), (29, 12))
    substring: (562, 599)
-   scope: outer_fun.body.
+   scope: outer_fun.
    body_sub: (595, 599)
    body: ['pass_statement']
    parent: outer_fun
@@ -236,14 +236,14 @@ String: string$0
    language: python
    range: ((32, 4), (32, 21))
    substring: (647, 664)
-   scope: some_conditionals.body[0].
+   scope: some_conditionals.
    parent: some_conditionals
    value: """explanation"""
 If: if$1
    language: python
    range: ((33, 4), (41, 12))
    substring: (669, 803)
-   scope: some_conditionals.body[1].
+   scope: some_conditionals.
    parent: some_conditionals
    if_case: Case('comparison_operator', ['pass_statement'])
    elif_cases: [Case(condition='comparison_operator', block=['pass_statement']), Case(condition='comparison_operator', block=['pass_statement'])]
@@ -252,7 +252,7 @@ If: if$3
    language: python
    range: ((43, 4), (45, 12))
    substring: (832, 870)
-   scope: some_conditionals.body[3].
+   scope: some_conditionals.
    parent: some_conditionals
    if_case: Case('comparison_operator', ['pass_statement', 'pass_statement'])
 Function: some_conditionals
@@ -268,36 +268,36 @@ If: if$0
    language: python
    range: ((49, 8), (50, 16))
    substring: (949, 981)
-   scope: with_nested_conditionals.body[0].if.if_case[0].
-   parent: with_nested_conditionals.body[0].if$0
+   scope: with_nested_conditionals.if.if_case.
+   parent: with_nested_conditionals.if$0
    if_case: Case('comparison_operator', ['pass_statement'])
 String: string$0
    language: python
    range: ((52, 18), (52, 25))
    substring: (1024, 1031)
-   scope: with_nested_conditionals.body[0].if.if_case[1].if.if_case[0].call.
-   parent: with_nested_conditionals.body[0].if.if_case[1].if.if_case[0].call$0
+   scope: with_nested_conditionals.if.if_case.if.if_case.call.
+   parent: with_nested_conditionals.if.if_case.if.if_case.call$0
    value: "hello"
 Call: call$0
    language: python
    range: ((52, 12), (52, 26))
    substring: (1018, 1032)
-   scope: with_nested_conditionals.body[0].if.if_case[1].if.if_case[0].
-   parent: with_nested_conditionals.body[0].if.if_case[1].if$1
+   scope: with_nested_conditionals.if.if_case.if.if_case.
+   parent: with_nested_conditionals.if.if_case.if$1
    function_name: print
    arguments: [string$0]
 If: if$1
    language: python
    range: ((51, 8), (52, 26))
    substring: (990, 1032)
-   scope: with_nested_conditionals.body[0].if.if_case[1].
-   parent: with_nested_conditionals.body[0].if$0
+   scope: with_nested_conditionals.if.if_case.
+   parent: with_nested_conditionals.if$0
    if_case: Case('comparison_operator', [call$0])
 If: if$0
    language: python
    range: ((48, 4), (52, 26))
    substring: (925, 1032)
-   scope: with_nested_conditionals.body[0].
+   scope: with_nested_conditionals.
    parent: with_nested_conditionals
    if_case: Case('comparison_operator', [if$0, if$1])
 Function: with_nested_conditionals
