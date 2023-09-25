@@ -308,12 +308,8 @@ class SymbolParser:
             name = id.text.decode()
         return self.mk_symbol_decl(id=name, parents=parents, symbol_kind=ValueKind())
 
-    def update_dummy_symbol(
-        self, symbol: Symbol, symbol_kind: SymbolKind, body: Optional[Block] = None
-    ) -> None:
+    def update_dummy_symbol(self, symbol: Symbol, symbol_kind: SymbolKind) -> None:
         symbol.symbol_kind = symbol_kind
-        if body is not None:
-            symbol.body += body
 
     def mk_fun_decl(
         self,
@@ -433,7 +429,7 @@ class SymbolParser:
                     separator = "."
                 new_scope = self.scope + name.text.decode() + separator
                 symbol = self.mk_dummy_symbol(id=name, parents=[node])
-                body = self.recurse(body_node, new_scope, parent=symbol).parse_block()
+                self.recurse(body_node, new_scope, parent=symbol).parse_block()
                 # see if the first child is a string expression statements, and if so, use it as the docstring
                 if (
                     body_node.child_count > 0
@@ -453,11 +449,11 @@ class SymbolParser:
                     symbol.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
 
                 if is_namespace:
-                    self.update_dummy_symbol(symbol, NamespaceKind(), body)
+                    self.update_dummy_symbol(symbol, NamespaceKind())
                 elif is_module:
-                    self.update_dummy_symbol(symbol, ModuleKind(), body)
+                    self.update_dummy_symbol(symbol, ModuleKind())
                 else:
-                    self.update_dummy_symbol(symbol, ClassKind(superclasses=superclasses), body)
+                    self.update_dummy_symbol(symbol, ClassKind(superclasses=superclasses))
                 self.file.add_symbol(symbol)
                 return [symbol]
 
@@ -526,7 +522,6 @@ class SymbolParser:
                 if len(stmt.children) > 0 and stmt.children[0].type == "string":
                     docstring_node = stmt.children[0]
                     self.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
-            body: Block = []
             if body_node is not None:
                 self.has_return = contains_direct_return(body_node)
 
@@ -536,14 +531,13 @@ class SymbolParser:
 
             if body_node is not None and language == "python" and self.metasymbols:
                 scope_body = self.scope + f"{id.text.decode()}."
-                body = self.recurse(body_node, scope_body, parent=symbol).parse_block()
+                self.recurse(body_node, scope_body, parent=symbol).parse_block()
 
             self.update_dummy_symbol(
                 symbol,
                 FunctionKind(
                     has_return=self.has_return, parameters=parameters, return_type=return_type
                 ),
-                body=body,
             )
             self.file.add_symbol(symbol)
             return [symbol]
@@ -704,10 +698,8 @@ class SymbolParser:
                         new_scope = self.scope + name.text.decode() + "."
                         symbol = self.mk_dummy_symbol(id=name, parents=[node])
                         if body_node is not None:
-                            body = self.recurse(body_node, new_scope, parent=symbol).parse_block()
-                        else:
-                            body = []
-                        self.update_dummy_symbol(symbol, ModuleKind(), body)
+                            self.recurse(body_node, new_scope, parent=symbol).parse_block()
+                        self.update_dummy_symbol(symbol, ModuleKind())
                         self.file.add_symbol(symbol)
                         return [symbol]
 
@@ -852,8 +844,8 @@ class SymbolParser:
                 if id is not None and body is not None:
                     new_scope = self.scope + id.text.decode() + "."
                     symbol = self.mk_dummy_symbol(id=id, parents=[node])
-                    body = self.recurse(body, new_scope, parent=symbol).parse_block()
-                    self.update_dummy_symbol(symbol, ModuleKind(), body)
+                    self.recurse(body, new_scope, parent=symbol).parse_block()
+                    self.update_dummy_symbol(symbol, ModuleKind())
                     self.file.add_symbol(symbol)
                     return [symbol]
                 else:
@@ -1055,9 +1047,6 @@ class SymbolParser:
                 self.update_dummy_symbol(
                     symbol=symbol, symbol_kind=CallKind(function_name, arguments)
                 )
-                if symbol and self.parent:
-                    self.parent.body.append(Item(symbol=symbol))
-
                 self.file.add_symbol(symbol)
         else:
             logger.warning(f"Unexpected expression: {node.type}")
@@ -1066,12 +1055,16 @@ class SymbolParser:
         self, counter: Counter
     ) -> List[Item]:  # list because mutual definitions let x = and y = ...
         symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(counter)
-        if symbols != []:
-            return [Item(type=self.node.type, symbol=s) for s in symbols]
         import_ = parse_import(self.node)
         if import_ is not None:
             self.file.add_import(import_)
-        return [Item(type=self.node.type, symbol=None)]
+        if symbols != []:
+            return [Item(type=self.node.type, symbol=s) for s in symbols]
+        else:
+            item = Item(type=self.node.type, symbol=None)
+            if self.parent:
+                self.parent.body.append(item)
+            return [item]
 
     def parse_block(self) -> Block:
         block: Block = []

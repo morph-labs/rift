@@ -439,6 +439,8 @@ class File:
         return None
 
     def add_symbol(self, symbol: Symbol) -> None:
+        if symbol.parent:
+            symbol.parent.body.append(Item(symbol=symbol))
         self._symbol_table[symbol.get_qualified_id()] = symbol
 
     def add_import(self, import_: Import) -> None:
