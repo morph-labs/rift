@@ -315,14 +315,13 @@ class SymbolParser:
         self,
         id: Node,
         parents: List[Node],
-        body: Block = [],
         parameters: List[Parameter] = [],
         return_type: Optional[Type] = None,
     ) -> Symbol:
         symbol_kind = FunctionKind(
             has_return=self.has_return, parameters=parameters, return_type=return_type
         )
-        return self.mk_symbol_decl(body=body, id=id, parents=parents, symbol_kind=symbol_kind)
+        return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
 
     def mk_val_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None) -> Symbol:
         symbol_kind = ValueKind(type=type)
@@ -943,7 +942,7 @@ class SymbolParser:
             condition_node = node.child_by_field_name("condition")
             consequence_node = node.child_by_field_name("consequence")
             if condition_node is not None and consequence_node is not None:
-                symbol = self.mk_dummy_symbol(id="if", parents=[node])
+                symbol = self.mk_dummy_symbol(id=f"if${counter.count}", parents=[node])
                 self.scope = self.scope + "if."
                 scope = self.scope + f"if_case."
                 condition = self.recurse(condition_node, scope, parent=symbol).parse_expression(
@@ -1011,7 +1010,7 @@ class SymbolParser:
             else:
                 function_name = function_node.text.decode()
 
-                symbol = self.mk_dummy_symbol(id="call", parents=[node])
+                symbol = self.mk_dummy_symbol(id=f"call${counter.count}", parents=[node])
 
                 arguments: List[Item] = []
                 arguments_node = node.child_by_field_name("arguments")
@@ -1031,7 +1030,7 @@ class SymbolParser:
                 )
                 self.file.add_symbol(symbol)
         elif node.type == "string":
-            symbol = self.mk_dummy_symbol(id="string", parents=[node])
+            symbol = self.mk_dummy_symbol(id=f"string${counter.count}", parents=[node])
             str = node.text.decode()
             self.update_dummy_symbol(symbol=symbol, symbol_kind=StringKind(str))
             self.file.add_symbol(symbol)
