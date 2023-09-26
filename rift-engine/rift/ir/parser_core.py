@@ -12,6 +12,7 @@ from rift.ir.IR import (
     Code,
     Expression,
     ExpressionKind,
+    GuardKind,
     Item,
     File,
     FunctionKind,
@@ -946,6 +947,14 @@ class SymbolParser:
         else:
             return []
 
+    def parse_guard(self, counter: Counter, guard_node: Node, parent: Symbol) -> Symbol:
+        self_guard = self.recurse(guard_node, self.scope, parent=parent)
+        guard_symbol = self_guard.mk_dummy_metasymbol(counter, "guard")
+        condition = self_guard.parse_expression(counter)
+        self_guard.update_dummy_symbol(symbol=guard_symbol, symbol_kind=GuardKind(condition))
+        self_guard.file.add_symbol(guard_symbol)
+        return guard_symbol
+
     def parse_metasymbol(self, counter: Counter) -> Optional[Symbol]:
         node = self.node
         language = self.language
@@ -954,28 +963,28 @@ class SymbolParser:
             condition_node = node.child_by_field_name("condition")
             consequence_node = node.child_by_field_name("consequence")
             if condition_node is not None and consequence_node is not None:
-                symbol = self.mk_dummy_metasymbol(counter, "if")
-                condition = self.recurse(
-                    condition_node, self.scope, parent=symbol
-                ).parse_expression(counter)
-                if_block = self.recurse(consequence_node, self.scope, parent=symbol).parse_block()
+                if_symbol = self.mk_dummy_metasymbol(counter, "if")
+
+                condition = self.parse_guard(counter, condition_node, parent=if_symbol)
+
+                if_block = self.recurse(
+                    consequence_node, self.scope, parent=if_symbol
+                ).parse_block()
                 if_case = Case(condition=condition, block=if_block)
                 alternative_nodes = node.children_by_field_name("alternative")
                 elif_cases: List[Case] = []
                 else_block: Block = []
-                elif_index = 0
                 for an in alternative_nodes:
                     if an.type == "elif_clause":
                         condition_node = an.child_by_field_name("condition")
                         consequence_node = an.child_by_field_name("consequence")
                         if condition_node is None or consequence_node is None:
                             continue
-                        elif_index += 1
-                        condition = self.recurse(
-                            condition_node, self.scope, parent=symbol
-                        ).parse_expression(counter)
+
+                        condition = self.parse_guard(counter, condition_node, parent=if_symbol)
+
                         elif_block = self.recurse(
-                            consequence_node, self.scope, parent=symbol
+                            consequence_node, self.scope, parent=if_symbol
                         ).parse_block()
                         elif_cases.append(Case(condition=condition, block=elif_block))
                     elif an.type == "else_clause":
@@ -983,12 +992,12 @@ class SymbolParser:
                         # TODO: there can be comments in the else clause before the body
                         if else_body_node is not None:
                             else_block = self.recurse(
-                                else_body_node, self.scope, parent=symbol
+                                else_body_node, self.scope, parent=if_symbol
                             ).parse_block()
                 if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_block=else_block)
-                self.update_dummy_symbol(symbol=symbol, symbol_kind=if_kind)
-                self.file.add_symbol(symbol)
-                return symbol
+                self.update_dummy_symbol(symbol=if_symbol, symbol_kind=if_kind)
+                self.file.add_symbol(if_symbol)
+                return if_symbol
 
         elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
             child = node.children[0]

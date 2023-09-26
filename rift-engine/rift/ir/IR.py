@@ -215,12 +215,31 @@ class MetaSymbolKind(SymbolKind):
 
 @dataclass
 class Case:
-    condition: Expression
+    condition: "Symbol"
     block: Block
 
     def __str__(self) -> str:
-        return f"Case({self.condition}, {self.block})"
+        return f"Case({self.condition.name}, {self.block})"
 
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+@dataclass
+class GuardKind(MetaSymbolKind):
+    """Guard of a conditional"""
+
+    condition: Expression
+
+    def name(self) -> str:
+        return "Guard"
+    
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   condition: {self.condition}")
+
+    def __str__(self) -> str:
+        return self.condition
+    
     def __repr__(self) -> str:
         return self.__str__()
 
@@ -281,8 +300,8 @@ class IfKind(MetaSymbolKind):
             lines.append(f"   else_block: {self.else_block}")
 
     def __str__(self) -> str:
-        if_str = f"if {self.if_case.condition}: {self.if_case.block}"
-        elif_str = "".join([f" elif {case.condition}: {case.block}" for case in self.elif_cases])
+        if_str = f"if {self.if_case.condition.name}: {self.if_case.block}"
+        elif_str = "".join([f" elif {case.condition.name}: {case.block}" for case in self.elif_cases])
         else_str = f" else: {self.else_block}" if self.else_block != [] else ""
         return f"{if_str}{elif_str}{else_str}"
 
