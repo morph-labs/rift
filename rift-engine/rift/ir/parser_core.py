@@ -994,7 +994,9 @@ class SymbolParser:
             child = node.children[0]
             if self.expression_requires_node(child) and self.parent:
                 # Don't need to create a sybmol as parsing the expression will create one
-                _code = self.recurse(child, self.scope, parent=self.parent).parse_expression(counter)
+                _code = self.recurse(child, self.scope, parent=self.parent).parse_expression(
+                    counter
+                )
                 # return the last item in the body of the parent
                 return self.parent.body[-1].symbol
 
@@ -1064,9 +1066,9 @@ class SymbolParser:
                         for arg in arguments_node.children:
                             if arg.type in ["(", ")"]:
                                 continue
-                            expression = self.recurse(arg, self.scope, parent=symbol).parse_expression(
-                                arg_counter
-                            )
+                            expression = self.recurse(
+                                arg, self.scope, parent=symbol
+                            ).parse_expression(arg_counter)
                             arguments.append(expression)
                     self.update_dummy_symbol(
                         symbol=symbol, symbol_kind=CallKind(function_name, arguments)
