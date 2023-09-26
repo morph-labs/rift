@@ -278,42 +278,26 @@ Call: call$0
    language: python
    range: ((52, 12), (52, 26))
    substring: (1018, 1032)
-   scope: with_nested_conditionals.if$0.if$1.expression$0.
-   parent: with_nested_conditionals.if$0.if$1.expression$0
+   scope: with_nested_conditionals.if$0.if$1.
+   parent: with_nested_conditionals.if$0.if$1
    function_name: print
    arguments: ['"hello"']
-Expression: expression$0
-   language: python
-   range: ((52, 12), (52, 26))
-   substring: (1018, 1032)
-   scope: with_nested_conditionals.if$0.if$1.
-   body: [call$0]
-   parent: with_nested_conditionals.if$0.if$1
-   code: call$0
 Call: call$1
    language: python
    range: ((53, 12), (53, 26))
    substring: (1045, 1059)
-   scope: with_nested_conditionals.if$0.if$1.expression$1.
-   parent: with_nested_conditionals.if$0.if$1.expression$1
+   scope: with_nested_conditionals.if$0.if$1.
+   parent: with_nested_conditionals.if$0.if$1
    function_name: print
    arguments: ['"world"']
-Expression: expression$1
-   language: python
-   range: ((53, 12), (53, 26))
-   substring: (1045, 1059)
-   scope: with_nested_conditionals.if$0.if$1.
-   body: [call$1]
-   parent: with_nested_conditionals.if$0.if$1
-   code: call$1
 If: if$1
    language: python
    range: ((51, 8), (53, 26))
    substring: (990, 1059)
    scope: with_nested_conditionals.if$0.
-   body: [expression$0, expression$1]
+   body: [call$0, call$1]
    parent: with_nested_conditionals.if$0
-   if_case: Case(cond == "c", [expression$0, expression$1])
+   if_case: Case(cond == "c", [call$0, call$1])
 If: if$0
    language: python
    range: ((48, 4), (53, 26))
@@ -608,11 +592,9 @@ File: test.py
   def with_nested_conditionals(cond: str) -> None:
     if$0 = `if cond == "a": [if$0, if$1]`
       if$0 = `if cond == "b": ['pass_statement']`
-      if$1 = `if cond == "c": [expression$0, expression$1]`
-        expression$0 = `call$0`
-          call$0 = `print("hello")`
-        expression$1 = `call$1`
-          call$1 = `print("world")`
+      if$1 = `if cond == "c": [call$0, call$1]`
+        call$0 = `print("hello")`
+        call$1 = `print("world")`
 File: test.cpp
   namespace namespace_name
     void add(int& someRef, int* somePtr)

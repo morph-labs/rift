@@ -991,12 +991,19 @@ class SymbolParser:
                 return symbol
 
         elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
-            symbol = self.mk_dummy_metasymbol(counter, "expression")
             child = node.children[0]
-            code = self.recurse(child, self.scope, parent=symbol).parse_expression(counter)
-            self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code))
-            self.file.add_symbol(symbol)
-            return symbol
+            if self.expression_requires_node(child) and self.parent:
+                # Don't need to create a sybmol as parsing the expression will create one
+                _code = self.recurse(child, self.scope, parent=self.parent).parse_expression(counter)
+                # return the last item in the body of the parent
+                return self.parent.body[-1].symbol
+
+            else:
+                symbol = self.mk_dummy_metasymbol(counter, "expression")
+                code = self.recurse(child, self.scope, parent=symbol).parse_expression(counter)
+                self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code))
+                self.file.add_symbol(symbol)
+                return symbol
 
     def parse_expression(self, counter: Counter) -> Expression:
         """
@@ -1028,37 +1035,45 @@ class SymbolParser:
 
         return code
 
+    @classmethod
+    def expression_requires_node(cls, node: Node) -> bool:
+        if node.type in ["call"]:
+            return True
+        else:
+            return False
+
     def walk_expression(self, counter: Counter) -> None:
         node = self.node
         symbol: Optional[Symbol] = None
-        if node.type == "call":
-            function_node = node.child_by_field_name("function")
-            if function_node is None:
-                logger.warning(f"Unexpected call node structure: {node.text.decode()}")
+        if self.expression_requires_node(node):
+            if node.type == "call":
+                function_node = node.child_by_field_name("function")
+                if function_node is None:
+                    logger.warning(f"Unexpected call node structure: {node.text.decode()}")
+                else:
+                    function_name = function_node.text.decode()
+
+                    count = counter.next("call")
+                    symbol = self.mk_dummy_symbol(id=f"call${count}", parents=[node])
+                    self.scope = self.scope + "call."
+
+                    arguments: List[Expression] = []
+                    arguments_node = node.child_by_field_name("arguments")
+                    if arguments_node is not None:
+                        arg_counter = Counter()
+                        for arg in arguments_node.children:
+                            if arg.type in ["(", ")"]:
+                                continue
+                            expression = self.recurse(arg, self.scope, parent=symbol).parse_expression(
+                                arg_counter
+                            )
+                            arguments.append(expression)
+                    self.update_dummy_symbol(
+                        symbol=symbol, symbol_kind=CallKind(function_name, arguments)
+                    )
+                    self.file.add_symbol(symbol)
             else:
-                function_name = function_node.text.decode()
-
-                count = counter.next("call")
-                symbol = self.mk_dummy_symbol(id=f"call${count}", parents=[node])
-                self.scope = self.scope + "call."
-
-                arguments: List[Expression] = []
-                arguments_node = node.child_by_field_name("arguments")
-                if arguments_node is not None:
-                    arg_counter = Counter()
-                    for arg in arguments_node.children:
-                        if arg.type in ["(", ")"]:
-                            continue
-                        expression = self.recurse(arg, self.scope, parent=symbol).parse_expression(
-                            arg_counter
-                        )
-                        arguments.append(expression)
-                self.update_dummy_symbol(
-                    symbol=symbol, symbol_kind=CallKind(function_name, arguments)
-                )
-                self.file.add_symbol(symbol)
-        else:
-            logger.warning(f"Unexpected expression: {node.type}")
+                logger.warning(f"Unexpected expression: {node.type}")
 
     def parse_statement(
         self, counter: Counter
