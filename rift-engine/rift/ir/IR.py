@@ -215,11 +215,11 @@ class MetaSymbolKind(SymbolKind):
 
 @dataclass
 class Case:
-    condition: "Symbol"
-    block: Block
+    guard: "Symbol"
+    body: "Symbol"
 
     def __str__(self) -> str:
-        return f"Case({self.condition.name}, {self.block})"
+        return f"Case({self.guard.name}, {self.body.name})"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -233,13 +233,32 @@ class GuardKind(MetaSymbolKind):
 
     def name(self) -> str:
         return "Guard"
-    
+
     def dump(self, lines: List[str]) -> None:
         lines.append(f"   condition: {self.condition}")
 
     def __str__(self) -> str:
         return self.condition
-    
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+@dataclass
+class BodyKind(MetaSymbolKind):
+    """Body of a branch"""
+
+    block: Block
+
+    def name(self) -> str:
+        return "Body"
+
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   block: {self.block}")
+
+    def __str__(self) -> str:
+        return f"{self.block}"
+
     def __repr__(self) -> str:
         return self.__str__()
 
@@ -287,7 +306,7 @@ class ExpressionKind(MetaSymbolKind):
 class IfKind(MetaSymbolKind):
     if_case: Case
     elif_cases: List[Case]
-    else_block: Block
+    else_body: Optional["Symbol"]
 
     def name(self) -> str:
         return "If"
@@ -296,13 +315,15 @@ class IfKind(MetaSymbolKind):
         lines.append(f"   if_case: {self.if_case}")
         if self.elif_cases != []:
             lines.append(f"   elif_cases: {self.elif_cases}")
-        if self.else_block != []:
-            lines.append(f"   else_block: {self.else_block}")
+        if self.else_body:
+            lines.append(f"   else_body: {self.else_body.name}")
 
     def __str__(self) -> str:
-        if_str = f"if {self.if_case.condition.name}: {self.if_case.block}"
-        elif_str = "".join([f" elif {case.condition.name}: {case.block}" for case in self.elif_cases])
-        else_str = f" else: {self.else_block}" if self.else_block != [] else ""
+        if_str = f"if {self.if_case.guard.name}: {self.if_case.body.name}"
+        elif_str = "".join(
+            [f" elif {case.guard.name}: {case.body.name}" for case in self.elif_cases]
+        )
+        else_str = f" else: {self.else_body.name}" if self.else_body else ""
         return f"{if_str}{elif_str}{else_str}"
 
     def __repr__(self) -> str:
