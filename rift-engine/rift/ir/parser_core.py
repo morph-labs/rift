@@ -948,16 +948,18 @@ class SymbolParser:
         else:
             return []
 
-    def parse_guard(self, counter: Counter) -> Symbol:
+    def parse_guard(self) -> Symbol:
         """Parse the guard of a conditional"""
+        counter = Counter()
         guard_symbol = self.mk_dummy_metasymbol(counter, "guard")
         condition = self.parse_expression(counter)
         self.update_dummy_symbol(symbol=guard_symbol, symbol_kind=GuardKind(condition))
         self.file.add_symbol(guard_symbol)
         return guard_symbol
 
-    def parse_body(self, counter: Counter) -> Symbol:
+    def parse_body(self) -> Symbol:
         """Parse the body of a conditional branch"""
+        counter = Counter()
         body_symbol = self.mk_dummy_metasymbol(counter, "body")
         block = self.recurse(self.node, self.scope, parent=body_symbol).parse_block()
         self.update_dummy_symbol(symbol=body_symbol, symbol_kind=BodyKind(block))
@@ -969,17 +971,14 @@ class SymbolParser:
         language = self.language
 
         if node.type == "if_statement" and language == "python":
-            condition_node = node.child_by_field_name("condition")
-            consequence_node = node.child_by_field_name("consequence")
-            if condition_node is not None and consequence_node is not None:
+            guard_n = node.child_by_field_name("condition")
+            body_n = node.child_by_field_name("consequence")
+            if guard_n is not None and body_n is not None:
                 if_symbol = self.mk_dummy_metasymbol(counter, "if")
+                scope = self.scope
 
-                if_guard = self.recurse(condition_node, self.scope, parent=if_symbol).parse_guard(
-                    counter
-                )
-                if_body = self.recurse(consequence_node, self.scope, parent=if_symbol).parse_body(
-                    counter
-                )
+                if_guard = self.recurse(guard_n, scope, parent=if_symbol).parse_guard()
+                if_body = self.recurse(body_n, scope, parent=if_symbol).parse_body()
 
                 if_case = Case(guard=if_guard, body=if_body)
                 alternative_nodes = node.children_by_field_name("alternative")
@@ -987,27 +986,18 @@ class SymbolParser:
                 else_body: Optional[Symbol] = None
                 for an in alternative_nodes:
                     if an.type == "elif_clause":
-                        condition_node = an.child_by_field_name("condition")
-                        consequence_node = an.child_by_field_name("consequence")
-                        if condition_node is None or consequence_node is None:
+                        guard_n = an.child_by_field_name("condition")
+                        body_n = an.child_by_field_name("consequence")
+                        if guard_n is None or body_n is None:
                             continue
-
-                        elif_guard = self.recurse(
-                            condition_node, self.scope, parent=if_symbol
-                        ).parse_guard(counter)
-
-                        elif_body = self.recurse(
-                            consequence_node, self.scope, parent=if_symbol
-                        ).parse_body(counter)
-
-                        elif_cases.append(Case(guard=elif_guard, body=elif_body))
+                        guard = self.recurse(guard_n, scope, parent=if_symbol).parse_guard()
+                        body = self.recurse(body_n, scope, parent=if_symbol).parse_body()
+                        elif_cases.append(Case(guard=guard, body=body))
                     elif an.type == "else_clause":
-                        else_body_node = an.child_by_field_name("body")
+                        else_n = an.child_by_field_name("body")
                         # TODO: there can be comments in the else clause before the body
-                        if else_body_node is not None:
-                            else_body = self.recurse(
-                                else_body_node, self.scope, parent=if_symbol
-                            ).parse_body(counter)
+                        if else_n is not None:
+                            else_body = self.recurse(else_n, scope, parent=if_symbol).parse_body()
                 if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_body=else_body)
                 self.update_dummy_symbol(symbol=if_symbol, symbol_kind=if_kind)
                 self.file.add_symbol(if_symbol)
