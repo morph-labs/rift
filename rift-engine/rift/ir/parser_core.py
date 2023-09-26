@@ -1074,6 +1074,10 @@ class SymbolParser:
                     self.file.add_symbol(symbol)
             else:
                 logger.warning(f"Unexpected expression: {node.type}")
+        elif node.type in ["assignment", "binary_operator"]:
+            for child in node.children:
+                self.node = child
+                self.walk_expression(counter)
 
     def parse_statement(
         self, counter: Counter

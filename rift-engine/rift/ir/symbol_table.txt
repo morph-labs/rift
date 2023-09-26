@@ -266,18 +266,42 @@ Function: some_conditionals
    body: [expression$0, if$0, 'comment', if$1]
    parameters: [cond:str]
    return_type: None
+Call: call$0
+   language: python
+   range: ((50, 16), (50, 22))
+   substring: (981, 987)
+   scope: with_nested_conditionals.if$0.if$0.expression$0.
+   parent: with_nested_conditionals.if$0.if$0.expression$0
+   function_name: foo
+   arguments: ['1']
+Call: call$1
+   language: python
+   range: ((50, 25), (50, 31))
+   substring: (990, 996)
+   scope: with_nested_conditionals.if$0.if$0.expression$0.call.
+   parent: with_nested_conditionals.if$0.if$0.expression$0
+   function_name: bar
+   arguments: ['2']
+Expression: expression$0
+   language: python
+   range: ((50, 12), (50, 31))
+   substring: (977, 996)
+   scope: with_nested_conditionals.if$0.if$0.
+   body: [call$0, call$1]
+   parent: with_nested_conditionals.if$0.if$0
+   code: x = call$0 + call$1
 If: if$0
    language: python
-   range: ((49, 8), (50, 16))
-   substring: (949, 981)
+   range: ((49, 8), (50, 31))
+   substring: (949, 996)
    scope: with_nested_conditionals.if$0.
-   body: ['pass_statement']
+   body: [expression$0]
    parent: with_nested_conditionals.if$0
-   if_case: Case(cond == "b", ['pass_statement'])
+   if_case: Case(cond == "b", [expression$0])
 Call: call$0
    language: python
    range: ((52, 12), (52, 26))
-   substring: (1018, 1032)
+   substring: (1033, 1047)
    scope: with_nested_conditionals.if$0.if$1.
    parent: with_nested_conditionals.if$0.if$1
    function_name: print
@@ -285,7 +309,7 @@ Call: call$0
 Call: call$1
    language: python
    range: ((53, 12), (53, 26))
-   substring: (1045, 1059)
+   substring: (1060, 1074)
    scope: with_nested_conditionals.if$0.if$1.
    parent: with_nested_conditionals.if$0.if$1
    function_name: print
@@ -293,7 +317,7 @@ Call: call$1
 If: if$1
    language: python
    range: ((51, 8), (53, 26))
-   substring: (990, 1059)
+   substring: (1005, 1074)
    scope: with_nested_conditionals.if$0.
    body: [call$0, call$1]
    parent: with_nested_conditionals.if$0
@@ -301,7 +325,7 @@ If: if$1
 If: if$0
    language: python
    range: ((48, 4), (53, 26))
-   substring: (925, 1059)
+   substring: (925, 1074)
    scope: with_nested_conditionals.
    body: [if$0, if$1]
    parent: with_nested_conditionals
@@ -309,8 +333,8 @@ If: if$0
 Function: with_nested_conditionals
    language: python
    range: ((47, 0), (53, 26))
-   substring: (872, 1059)
-   body_sub: (925, 1059)
+   substring: (872, 1074)
+   body_sub: (925, 1074)
    body: [if$0]
    parameters: [cond:str]
    return_type: None
@@ -591,7 +615,10 @@ File: test.py
     if$1 = `if 34 == 34: ['pass_statement', 'pass_statement']`
   def with_nested_conditionals(cond: str) -> None:
     if$0 = `if cond == "a": [if$0, if$1]`
-      if$0 = `if cond == "b": ['pass_statement']`
+      if$0 = `if cond == "b": [expression$0]`
+        expression$0 = `x = call$0 + call$1`
+          call$0 = `foo(1)`
+          call$1 = `bar(2)`
       if$1 = `if cond == "c": [call$0, call$1]`
         call$0 = `print("hello")`
         call$1 = `print("world")`

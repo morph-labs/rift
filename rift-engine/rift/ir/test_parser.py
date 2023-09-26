@@ -132,7 +132,7 @@ class Tests:
         def with_nested_conditionals(cond: str) -> None:
             if cond == "a":
                 if cond == "b":
-                    pass
+                    x = foo(1) + bar(2)
                 if cond == "c":
                     print("hello")
                     print("world")
