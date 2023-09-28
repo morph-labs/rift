@@ -368,6 +368,10 @@ def test_parsing():
     with open(symbol_table_file, "r") as f:
         old_symbol_table = f.read()
     project = get_test_project()
+    # project = parser.parse_files_in_paths(
+    #     [os.path.dirname(__file__)],
+    #     metasymbols=True,
+    # )
 
     lines: List[str] = []
     for file in project.get_files():

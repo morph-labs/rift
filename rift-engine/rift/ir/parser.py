@@ -37,7 +37,7 @@ def parse_code_block(
 
 
 def parse_path(
-    path: str, project: IR.Project, filter_file: Optional[Callable[[str], bool]] = None
+    path: str, project: IR.Project, filter_file: Optional[Callable[[str], bool]] = None, metasymbols: bool = False
 ) -> None:
     """
     Parses a single file and adds it to the provided Project instance.
@@ -48,12 +48,12 @@ def parse_path(
         with open(path, "r", encoding="utf-8") as f:
             code = IR.Code(f.read().encode("utf-8"))
         file_ir = IR.File(path=path_from_root)
-        parse_code_block(file=file_ir, code=code, language=language)
+        parse_code_block(file=file_ir, code=code, language=language, metasymbols=metasymbols)
         project.add_file(file=file_ir)
 
 
 def parse_files_in_paths(
-    paths: List[str], filter_file: Optional[Callable[[str], bool]] = None
+    paths: List[str], filter_file: Optional[Callable[[str], bool]] = None, metasymbols: bool = False
 ) -> IR.Project:
     """
     Parses all files with known extensions in the provided list of paths.
@@ -67,11 +67,11 @@ def parse_files_in_paths(
     project = IR.Project(root_path=root_path)
     for path in paths:
         if os.path.isfile(path):
-            parse_path(path, project, filter_file)
+            parse_path(path, project, filter_file, metasymbols)
         else:
             for root, dirs, files in os.walk(path):
                 dirs[:] = [d for d in dirs if d not in ["node_modules", ".git"]]
                 for file in files:
                     full_path = os.path.join(root, file)
-                    parse_path(full_path, project, filter_file)
+                    parse_path(full_path, project, filter_file, metasymbols)
     return project

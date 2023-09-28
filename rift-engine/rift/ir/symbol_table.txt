@@ -241,12 +241,50 @@ Expression: expression$0
    code: """explanation"""
 Guard: guard$0
    language: python
+   range: ((33, 7), (33, 18))
+   substring: (672, 683)
+   scope: some_conditionals.if$0.
+   parent: some_conditionals.if$0
+   condition: cond == "a"
+Body: body$0
+   language: python
+   range: ((34, 8), (34, 12))
+   substring: (693, 697)
+   scope: some_conditionals.if$0.
+   body: ['pass_statement']
+   parent: some_conditionals.if$0
+   block: ['pass_statement']
+Guard: guard$1
+   language: python
+   range: ((35, 9), (35, 20))
+   substring: (707, 718)
+   scope: some_conditionals.if$0.
+   parent: some_conditionals.if$0
+   condition: cond == "b"
+Body: body$1
+   language: python
+   range: ((36, 8), (36, 12))
+   substring: (728, 732)
+   scope: some_conditionals.if$0.
+   body: ['pass_statement']
+   parent: some_conditionals.if$0
+   block: ['pass_statement']
+Guard: guard$2
+   language: python
    range: ((37, 9), (37, 20))
    substring: (742, 753)
    scope: some_conditionals.if$0.
    parent: some_conditionals.if$0
    condition: cond == "c"
-Body: body$0
+Body: body$2
+   language: python
+   range: ((38, 8), (38, 12))
+   substring: (763, 767)
+   scope: some_conditionals.if$0.
+   body: ['pass_statement']
+   parent: some_conditionals.if$0
+   block: ['pass_statement']
+Body: body$3
    language: python
    range: ((40, 8), (41, 12))
    substring: (786, 803)
@@ -259,19 +297,19 @@ If: if$0
    range: ((33, 4), (41, 12))
    substring: (669, 803)
    scope: some_conditionals.
-   body: [guard$0, body$0, guard$0, body$0, guard$0, body$0, body$0]
+   body: [guard$0, body$0, guard$1, body$1, guard$2, body$2, body$3]
    parent: some_conditionals
    if_case: Case(guard$0, body$0)
-   elif_cases: [Case(guard$0, body$0), Case(guard$0, body$0)]
-   else_body: body$0
-Guard: guard$0
+   elif_cases: [Case(guard$1, body$1), Case(guard$2, body$2)]
+   else_body: body$3
+Guard: guard$3
    language: python
    range: ((43, 7), (43, 15))
    substring: (835, 843)
    scope: some_conditionals.if$1.
    parent: some_conditionals.if$1
    condition: 34 == 34
-Body: body$0
+Body: body$4
    language: python
    range: ((44, 8), (45, 12))
    substring: (853, 870)
@@ -284,9 +322,9 @@ If: if$1
    range: ((43, 4), (45, 12))
    substring: (832, 870)
    scope: some_conditionals.
-   body: [guard$0, body$0]
+   body: [guard$3, body$4]
    parent: some_conditionals
-   if_case: Case(guard$0, body$0)
+   if_case: Case(guard$3, body$4)
 Function: some_conditionals
    language: python
    range: ((31, 0), (45, 12))
@@ -350,7 +388,7 @@ If: if$0
    body: [guard$0, body$0]
    parent: with_nested_conditionals.if$0.body$0
    if_case: Case(guard$0, body$0)
-Guard: guard$0
+Guard: guard$1
    language: python
    range: ((51, 11), (51, 22))
    substring: (1008, 1019)
@@ -361,19 +399,19 @@ Call: call$0
    language: python
    range: ((52, 12), (52, 26))
    substring: (1033, 1047)
-   scope: with_nested_conditionals.if$0.body$0.if$1.body$0.
-   parent: with_nested_conditionals.if$0.body$0.if$1.body$0
+   scope: with_nested_conditionals.if$0.body$0.if$1.body$1.
+   parent: with_nested_conditionals.if$0.body$0.if$1.body$1
    function_name: print
    arguments: ['"hello"']
 Call: call$1
    language: python
    range: ((53, 12), (53, 26))
    substring: (1060, 1074)
-   scope: with_nested_conditionals.if$0.body$0.if$1.body$0.
-   parent: with_nested_conditionals.if$0.body$0.if$1.body$0
+   scope: with_nested_conditionals.if$0.body$0.if$1.body$1.
+   parent: with_nested_conditionals.if$0.body$0.if$1.body$1
    function_name: print
    arguments: ['"world"']
-Body: body$0
+Body: body$1
    language: python
    range: ((52, 12), (53, 26))
    substring: (1033, 1074)
@@ -386,9 +424,9 @@ If: if$1
    range: ((51, 8), (53, 26))
    substring: (1005, 1074)
    scope: with_nested_conditionals.if$0.body$0.
-   body: [guard$0, body$0]
+   body: [guard$1, body$1]
    parent: with_nested_conditionals.if$0.body$0
-   if_case: Case(guard$0, body$0)
+   if_case: Case(guard$1, body$1)
 Body: body$0
    language: python
    range: ((49, 8), (53, 26))
@@ -686,17 +724,17 @@ File: test.py
     def inner_fun() -> None:
   def some_conditionals(cond: str) -> None:
     expression$0 = `"""explanation"""`
-    if$0 = `if guard$0: body$0 elif guard$0: body$0 elif guard$0: body$0 else: body$0`
+    if$0 = `if guard$0: body$0 elif guard$1: body$1 elif guard$2: body$2 else: body$3`
       guard$0 = `cond == "a"`
       body$0 = `['pass_statement']`
-      guard$0 = `cond == "b"`
-      body$0 = `['pass_statement']`
-      guard$0 = `cond == "c"`
-      body$0 = `['pass_statement']`
-      body$0 = `['pass_statement', 'pass_statement']`
-    if$1 = `if guard$0: body$0`
-      guard$0 = `34 == 34`
-      body$0 = `['pass_statement', 'pass_statement']`
+      guard$1 = `cond == "b"`
+      body$1 = `['pass_statement']`
+      guard$2 = `cond == "c"`
+      body$2 = `['pass_statement']`
+      body$3 = `['pass_statement', 'pass_statement']`
+    if$1 = `if guard$3: body$4`
+      guard$3 = `34 == 34`
+      body$4 = `['pass_statement', 'pass_statement']`
   def with_nested_conditionals(cond: str) -> None:
     if$0 = `if guard$0: body$0`
       guard$0 = `cond == "a"`
@@ -707,9 +745,9 @@ File: test.py
             expression$0 = `x = call$0 + call$1`
               call$0 = `foo(1)`
               call$1 = `bar(2)`
-        if$1 = `if guard$0: body$0`
-          guard$0 = `cond == "c"`
-          body$0 = `[call$0, call$1]`
+        if$1 = `if guard$1: body$1`
+          guard$1 = `cond == "c"`
+          body$1 = `[call$0, call$1]`
             call$0 = `print("hello")`
             call$1 = `print("world")`
 File: test.cpp
