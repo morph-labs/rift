@@ -21,7 +21,7 @@ from typing import (
 from urllib.parse import parse_qs, urlparse
 
 import aiohttp
-from pydantic import BaseModel, BaseSettings, SecretStr
+from pydantic import BaseModel, SecretStr
 
 import rift.lsp.types as lsp
 import rift.util.asyncgen as asg
@@ -47,6 +47,7 @@ I = TypeVar("I", bound=BaseModel)
 O = TypeVar("O", bound=BaseModel)
 
 from tiktoken import get_encoding
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENCODER = get_encoding("cl100k_base")
 ENCODER_LOCK = Lock()
@@ -329,11 +330,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
     api_key: Optional[SecretStr] = None
     api_url: str = "https://api.openai.com/v1"
     default_model: Optional[str] = None
-
-    class Config:
-        env_prefix = "OPENAI_"
-        env_file = ".env"
-        keep_untouched = (cached_property,)
+    model_config = SettingsConfigDict(env_prefix="OPENAI_", env_file=".env", ignored_types=(cached_property,))
 
     def __str__(self):
         k = self.api_key.get_secret_value()
