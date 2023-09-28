@@ -135,7 +135,7 @@ def get_parameters(language: Language, node: Node) -> List[Parameter]:
         if child.type == "identifier":
             name = child.text.decode()
             parameters.append(Parameter(name=name))
-        elif child.type == "typed_parameter":
+        elif child.type in ["typed_parameter", "typed_default_parameter"]:
             name = ""
             type: Optional[Type] = None
             for grandchild in child.children:
@@ -143,7 +143,10 @@ def get_parameters(language: Language, node: Node) -> List[Parameter]:
                     name = grandchild.text.decode()
                 elif grandchild.type == "type":
                     type = parse_type(language, grandchild)
-            parameters.append(Parameter(name=name, type=type))
+            value_node = child.child_by_field_name("value")
+
+            default_value = value_node.text.decode() if value_node is not None else None
+            parameters.append(Parameter(name=name, default_value=default_value, type=type))
         elif child.type == "parameter_declaration":
             if language in ["c", "cpp"]:
                 parameters.append(get_c_cpp_parameter(language, child))
