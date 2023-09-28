@@ -183,7 +183,7 @@ Function: insert_code
    body_sub: (307, 311)
    body: ['pass_statement']
    parent: B
-   parameters: [self, document:str, cursor_offset:int]
+   parameters: [self, document:str, cursor_offset:int, goal:Optional<str>=None]
    return_type: InsertCodeResult
 Function: load
    language: python
