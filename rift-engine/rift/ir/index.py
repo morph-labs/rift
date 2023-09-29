@@ -8,7 +8,6 @@ import openai
 import os
 import pickle
 import time
-import aiohttp
 import numpy as np
 import numpy.typing as npt
 import tiktoken
@@ -35,7 +34,7 @@ version = "0.0.1"
 PathWithId = Tuple[str, IR.QualifiedId]
 
 
-EmbeddingFunction = Callable[[aiohttp.ClientSession, str], Awaitable[Embedding]]
+EmbeddingFunction = Callable[[str], Embedding]
 
 
 @dataclass
@@ -97,15 +96,18 @@ class Index:
                 documents.append(document)
                 paths_with_ids.append(path_with_id)
 
+        async def async_get_embedding(document: str) -> Awaitable[Embedding]:
+            loop = asyncio.get_running_loop()
+            return loop.run_in_executor(None, embed_fun, document)
+
         # Parallel server requests
-        async with aiohttp.ClientSession() as session:
-            embedded_results = await asyncio.gather(
-                *(embed_fun(session, code) for code in documents)
-            )
+        embedded_results: List[Awaitable[Embedding]] = await asyncio.gather(
+            *(async_get_embedding(document) for document in documents)
+        )
 
         # Assign embeddings
         for path_with_id, embedding in zip(paths_with_ids, embedded_results):
-            embeddings[path_with_id] = embedding
+            embeddings[path_with_id] = await embedding
 
         return cls(embeddings=embeddings, project=project)
 
@@ -117,7 +119,7 @@ def token_length(string: str) -> int:
     return len(Encoder.encode(string))
 
 
-async def openai_embedding(session: aiohttp.ClientSession, document: str) -> Embedding:
+def openai_embedding(document: str) -> Embedding:
     print("openai embedding for", document[:20], "...")
     if token_length(document) > 8192:
         print("Truncating document to 8192 tokens")
@@ -138,7 +140,7 @@ def get_embedding_function(openai: bool) -> EmbeddingFunction:
 
         nlp = spacy.load("en_core_web_md")
 
-        async def nlp_embedding(session: aiohttp.ClientSession, document: str) -> Embedding:
+        def nlp_embedding(document: str) -> Embedding:
             return Embedding(np.array(nlp(document).vector))
 
         return nlp_embedding
@@ -181,19 +183,18 @@ async def test_index() -> None:
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
 
-    async with aiohttp.ClientSession() as session:
-        test_sentence = "Creates an instance of the Index class"
-        query = await embed_fun(session, test_sentence)
-        scores = index.search(query)
+    test_sentence = "Creates an instance of the Index class"
+    query = embed_fun(test_sentence)
+    scores = index.search(query)
 
-        print("\nSemantic Search Results:")
-        for n, x in scores:
-            print(f"{n}  {x:.3f}")
+    print("\nSemantic Search Results:")
+    for n, x in scores:
+        print(f"{n}  {x:.3f}")
 
-        # bench search
-        repetitions = 100
-        start = time.time()
-        for _ in range(repetitions):
-            index.search(query)
-        elapsed = time.time() - start
-        print(f"\nSearched {repetitions} times in {elapsed:.2f} seconds")
+    # bench search
+    repetitions = 100
+    start = time.time()
+    for _ in range(repetitions):
+        index.search(query)
+    elapsed = time.time() - start
+    print(f"\nSearched {repetitions} times in {elapsed:.2f} seconds")
