@@ -4,6 +4,7 @@
 
 import asyncio
 from dataclasses import dataclass
+import math
 import openai
 import os
 import pickle
@@ -26,7 +27,10 @@ class Embedding:
         norm_other = np.linalg.norm(other.embedding)
         if norm_self == 0 or norm_other == 0:
             return 0.0
-        return dot_product / (norm_self * norm_other)
+        result = dot_product / (norm_self * norm_other)
+        if math.isnan(result):
+            return 0.0
+        return result
 
 
 version = "0.0.1"
@@ -44,7 +48,9 @@ class Index:
     version: str = version
 
     def search(self, query: Embedding, num_results: int = 5) -> List[Tuple[PathWithId, float]]:
-        scores = [(name, query.similarity(e)) for name, e in self.embeddings.items()]
+        scores: List[Tuple[PathWithId, float]] = [
+            (pathWithId, query.similarity(e)) for pathWithId, e in self.embeddings.items()
+        ]
         scores = sorted(scores, key=lambda x: x[1], reverse=True)
         return scores[:num_results]
 
@@ -119,12 +125,17 @@ def token_length(string: str) -> int:
     return len(Encoder.encode(string))
 
 
+MAX_TOKENS = 8192
+
+
 def openai_embedding(document: str) -> Embedding:
     print("openai embedding for", document[:20], "...")
-    if token_length(document) > 8192:
+    if token_length(document) >= MAX_TOKENS:
         print("Truncating document to 8192 tokens")
         tokens = Encoder.encode(document)
-        tokens = tokens[:8192]
+        tokens = tokens[
+            : MAX_TOKENS - 1
+        ]  # less than max tokens otherwise the embedding is full of nan
         document = Encoder.decode(tokens)
     model = "text-embedding-ada-002"
     vector = openai.Embedding.create(input=[document], model=model)["data"][0]["embedding"]  # type: ignore
@@ -153,7 +164,9 @@ import pytest
 async def test_index() -> None:
     this_dir = os.path.dirname(__file__)
     project_root = __file__  # this file only
-    # project_root = os.path.dirname(os.path.dirname(this_dir)) # the whole rift project
+    # project_root = os.path.dirname(
+    #     os.path.dirname(os.path.dirname(this_dir))
+    # )  # the whole rift project
     openai = False
 
     index_file = os.path.join(this_dir, "index.rci")
