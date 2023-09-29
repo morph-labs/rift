@@ -1,3 +1,4 @@
+# for tests:
 # pip install spacy
 # python -m spacy download en_core_web_md
 
@@ -5,7 +6,6 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 from typing import Dict, List, Tuple
-
 
 
 @dataclass
@@ -94,6 +94,7 @@ def test_index() -> None:
     ]
 
     import spacy
+
     # Load the spaCy model
     nlp = spacy.load("en_core_web_md")
 
