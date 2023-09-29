@@ -3,7 +3,9 @@
 # python -m spacy download en_core_web_md
 
 from dataclasses import dataclass
+import os
 import pickle
+import time
 import numpy as np
 import numpy.typing as npt
 from typing import Callable, Dict, List, Tuple
@@ -84,9 +86,24 @@ def test_index() -> None:
     def nlp_embedding(x: str) -> Embedding:
         return Embedding(np.array(nlp(x).vector))
 
-    project = get_test_python_project()
+    this_dir = os.path.dirname(__file__)
+    index_file = os.path.join(this_dir, "index.rci")
 
-    index = Index.create(embed=nlp_embedding, project=project)
+    if os.path.exists(index_file):
+        start = time.time()
+        print(f"Loading index from file... {index_file}")
+        index = Index.load(index_file)
+        print(f"Loaded index in {time.time() - start:.2f} seconds")
+    else:
+        print("Creating index...")
+        project = get_test_python_project()
+        start = time.time()
+        index = Index.create(embed=nlp_embedding, project=project)
+        print(f"Created index in {time.time() - start:.2f} seconds")
+        print(f"Saving index to file... {index_file}")
+        start = time.time()
+        index.save(index_file)
+        print(f"Saved index in {time.time() - start:.2f} seconds")
 
     test_sentence = "goal"
 
