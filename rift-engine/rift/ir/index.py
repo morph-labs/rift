@@ -10,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 from typing import Callable, Dict, List, Tuple
 import rift.ir.IR as IR
+from rift.ir.parser import parse_files_in_paths
 from rift.ir.test_parser import get_test_python_project
 
 
@@ -95,8 +96,9 @@ def test_index() -> None:
         index = Index.load(index_file)
         print(f"Loaded index in {time.time() - start:.2f} seconds")
     else:
+        project = parse_files_in_paths([__file__])
+        #project = parse_files_in_paths([os.path.dirname(os.path.dirname(this_dir))])
         print("Creating index...")
-        project = get_test_python_project()
         start = time.time()
         index = Index.create(embed=nlp_embedding, project=project)
         print(f"Created index in {time.time() - start:.2f} seconds")
@@ -105,10 +107,18 @@ def test_index() -> None:
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
 
-    test_sentence = "goal"
+    test_sentence = "Creates an instance of the Index class"
 
     scores = index.search(nlp_embedding(test_sentence))
 
     print("\nSemantic Search Results:")
     for n, x in scores:
         print(f"{n}  {x:.3f}")
+
+    # bench search
+    repetitions = 100
+    start = time.time()
+    for _ in range(repetitions):
+        index.search(nlp_embedding(test_sentence))
+    elapsed = time.time() - start
+    print(f"\nSearched {repetitions} times in {elapsed:.2f} seconds")
