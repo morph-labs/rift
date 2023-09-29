@@ -4,12 +4,14 @@
 
 import asyncio
 from dataclasses import dataclass
+import openai
 import os
 import pickle
 import time
 import aiohttp
 import numpy as np
 import numpy.typing as npt
+import tiktoken
 from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 import rift.ir.IR as IR
 from rift.ir.parser import parse_files_in_paths
@@ -63,7 +65,7 @@ class Index:
     @classmethod
     async def create(
         cls,
-        embed: EmbeddingFunction,
+        embed_fun: EmbeddingFunction,
         project: IR.Project,
         document_for_symbol: Optional[Callable[[IR.Symbol], str]] = None,
     ) -> "Index":
@@ -71,7 +73,7 @@ class Index:
         Creates an instance of the Index class.
 
         Parameters:
-        - embed: A callable that embeds source code strings.
+        - embed_fun: A funcion that computes the embedding of a string.
         - project: The project containing files and function declarations.
         - document_for_symbol: An optional callable that returns a document for a given symbol.
             The document is used for semantic search.
@@ -97,7 +99,9 @@ class Index:
 
         # Parallel server requests
         async with aiohttp.ClientSession() as session:
-            embedded_results = await asyncio.gather(*(embed(session, code) for code in documents))
+            embedded_results = await asyncio.gather(
+                *(embed_fun(session, code) for code in documents)
+            )
 
         # Assign embeddings
         for path_with_id, embedding in zip(paths_with_ids, embedded_results):
@@ -106,30 +110,59 @@ class Index:
         return cls(embeddings=embeddings, project=project)
 
 
+Encoder = tiktoken.get_encoding("cl100k_base")
+
+
+def token_length(string: str) -> int:
+    return len(Encoder.encode(string))
+
+
+async def openai_embedding(session: aiohttp.ClientSession, document: str) -> Embedding:
+    print("openai embedding for", document[:20], "...")
+    if token_length(document) > 8192:
+        print("Truncating document to 8192 tokens")
+        tokens = Encoder.encode(document)
+        tokens = tokens[:8192]
+        document = Encoder.decode(tokens)
+    model = "text-embedding-ada-002"
+    vector = openai.Embedding.create(input=[document], model=model)["data"][0]["embedding"]  # type: ignore
+    embedding = Embedding(np.array(vector))  # type: ignore
+    return embedding
+
+
+def get_embedding_function(openai: bool) -> EmbeddingFunction:
+    if openai:
+        return openai_embedding
+    else:
+        import spacy
+
+        nlp = spacy.load("en_core_web_md")
+
+        async def nlp_embedding(session: aiohttp.ClientSession, document: str) -> Embedding:
+            return Embedding(np.array(nlp(document).vector))
+
+        return nlp_embedding
+
+
 import pytest
 
 
 @pytest.mark.asyncio
 async def test_index() -> None:
-    import spacy
-
-    # Load the spaCy model
-    nlp = spacy.load("en_core_web_md")
-
-    async def nlp_embedding(session: aiohttp.ClientSession, x: str) -> Embedding:
-        return Embedding(np.array(nlp(x).vector))
-
     this_dir = os.path.dirname(__file__)
-    index_file = os.path.join(this_dir, "index.rci")
+    project_root = __file__  # this file only
+    # project_root = os.path.dirname(os.path.dirname(this_dir)) # the whole rift project
+    openai = False
 
+    index_file = os.path.join(this_dir, "index.rci")
+    embed_fun = get_embedding_function(openai=openai)
     if os.path.exists(index_file):
         start = time.time()
         print(f"Loading index from file... {index_file}")
         index = Index.load(index_file)
         print(f"Loaded index in {time.time() - start:.2f} seconds")
     else:
-        project = parse_files_in_paths([__file__])
-        # project = parse_files_in_paths([os.path.dirname(os.path.dirname(this_dir))])
+        project = parse_files_in_paths([project_root])
         print("Creating index...")
         start = time.time()
 
@@ -138,7 +171,7 @@ async def test_index() -> None:
 
         index = await Index.create(
             document_for_symbol=document_for_symbol,
-            embed=nlp_embedding,
+            embed_fun=embed_fun,
             project=project,
         )
 
@@ -150,7 +183,7 @@ async def test_index() -> None:
 
     async with aiohttp.ClientSession() as session:
         test_sentence = "Creates an instance of the Index class"
-        query = await nlp_embedding(session, test_sentence)
+        query = await embed_fun(session, test_sentence)
         scores = index.search(query)
 
         print("\nSemantic Search Results:")
