@@ -2,13 +2,15 @@
 # pip install spacy
 # python -m spacy download en_core_web_md
 
+import asyncio
 from dataclasses import dataclass
 import os
 import pickle
 import time
+import aiohttp
 import numpy as np
 import numpy.typing as npt
-from typing import Callable, Dict, List, Tuple
+from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 import rift.ir.IR as IR
 from rift.ir.parser import parse_files_in_paths
 
@@ -31,14 +33,17 @@ version = "0.0.1"
 PathWithId = Tuple[str, IR.QualifiedId]
 
 
+EmbeddingFunction = Callable[[aiohttp.ClientSession, str], Awaitable[Embedding]]
+
+
 @dataclass
 class Index:
     embeddings: Dict[PathWithId, Embedding]  # (file_path, id) -> embedding
     project: IR.Project
     version: str = version
 
-    def search(self, embedding: Embedding, num_results: int = 5) -> List[Tuple[PathWithId, float]]:
-        scores = [(name, embedding.similarity(y)) for name, y in self.embeddings.items()]
+    def search(self, query: Embedding, num_results: int = 5) -> List[Tuple[PathWithId, float]]:
+        scores = [(name, query.similarity(e)) for name, e in self.embeddings.items()]
         scores = sorted(scores, key=lambda x: x[1], reverse=True)
         return scores[:num_results]
 
@@ -56,34 +61,62 @@ class Index:
         return index
 
     @classmethod
-    def create(cls, embed: Callable[[str], Embedding], project: IR.Project) -> "Index":
+    async def create(
+        cls,
+        embed: EmbeddingFunction,
+        project: IR.Project,
+        document_for_symbol: Optional[Callable[[IR.Symbol], str]] = None,
+    ) -> "Index":
         """
         Creates an instance of the Index class.
 
         Parameters:
         - embed: A callable that embeds source code strings.
         - project: The project containing files and function declarations.
+        - document_for_symbol: An optional callable that returns a document for a given symbol.
+            The document is used for semantic search.
 
         Returns:
         - An instance of the Index class.
         """
         embeddings: Dict[PathWithId, Embedding] = {}
+
+        # Collect all document first
+        documents: List[str] = []
+        paths_with_ids: List[PathWithId] = []
         for file in project.get_files():
             for f in file.get_function_declarations():
                 file_path = file.path
                 path_with_id = (file_path, f.get_qualified_id())
-                code: str = f.get_substring().decode()
-                embeddings[path_with_id] = embed(code)
+                if document_for_symbol:
+                    document = document_for_symbol(f)
+                else:
+                    document = f.get_substring().decode()
+                documents.append(document)
+                paths_with_ids.append(path_with_id)
+
+        # Parallel server requests
+        async with aiohttp.ClientSession() as session:
+            embedded_results = await asyncio.gather(*(embed(session, code) for code in documents))
+
+        # Assign embeddings
+        for path_with_id, embedding in zip(paths_with_ids, embedded_results):
+            embeddings[path_with_id] = embedding
+
         return cls(embeddings=embeddings, project=project)
 
 
-def test_index() -> None:
+import pytest
+
+
+@pytest.mark.asyncio
+async def test_index() -> None:
     import spacy
 
     # Load the spaCy model
     nlp = spacy.load("en_core_web_md")
 
-    def nlp_embedding(x: str) -> Embedding:
+    async def nlp_embedding(session: aiohttp.ClientSession, x: str) -> Embedding:
         return Embedding(np.array(nlp(x).vector))
 
     this_dir = os.path.dirname(__file__)
@@ -99,25 +132,35 @@ def test_index() -> None:
         # project = parse_files_in_paths([os.path.dirname(os.path.dirname(this_dir))])
         print("Creating index...")
         start = time.time()
-        index = Index.create(embed=nlp_embedding, project=project)
+
+        def document_for_symbol(symbol: IR.Symbol) -> str:
+            return symbol.get_substring().decode()
+
+        index = await Index.create(
+            document_for_symbol=document_for_symbol,
+            embed=nlp_embedding,
+            project=project,
+        )
+
         print(f"Created index in {time.time() - start:.2f} seconds")
         print(f"Saving index to file... {index_file}")
         start = time.time()
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
 
-    test_sentence = "Creates an instance of the Index class"
+    async with aiohttp.ClientSession() as session:
+        test_sentence = "Creates an instance of the Index class"
+        query = await nlp_embedding(session, test_sentence)
+        scores = index.search(query)
 
-    scores = index.search(nlp_embedding(test_sentence))
+        print("\nSemantic Search Results:")
+        for n, x in scores:
+            print(f"{n}  {x:.3f}")
 
-    print("\nSemantic Search Results:")
-    for n, x in scores:
-        print(f"{n}  {x:.3f}")
-
-    # bench search
-    repetitions = 100
-    start = time.time()
-    for _ in range(repetitions):
-        index.search(nlp_embedding(test_sentence))
-    elapsed = time.time() - start
-    print(f"\nSearched {repetitions} times in {elapsed:.2f} seconds")
+        # bench search
+        repetitions = 100
+        start = time.time()
+        for _ in range(repetitions):
+            index.search(query)
+        elapsed = time.time() - start
+        print(f"\nSearched {repetitions} times in {elapsed:.2f} seconds")
