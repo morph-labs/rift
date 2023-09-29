@@ -3,9 +3,12 @@
 # python -m spacy download en_core_web_md
 
 from dataclasses import dataclass
+import pickle
 import numpy as np
 import numpy.typing as npt
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
+import rift.ir.IR as IR
+from rift.ir.test_parser import get_test_python_project
 
 
 @dataclass
@@ -16,83 +19,63 @@ class Embedding:
         dot_product = self.embedding.dot(other.embedding)
         norm_self = np.linalg.norm(self.embedding)
         norm_other = np.linalg.norm(other.embedding)
+        if norm_self == 0 or norm_other == 0:
+            return 0.0
         return dot_product / (norm_self * norm_other)
+
+
+version = "0.0.1"
+
+PathWithId = Tuple[str, IR.QualifiedId]
 
 
 @dataclass
 class Index:
-    index: Dict[str, Embedding]
+    embeddings: Dict[PathWithId, Embedding]  # (file_path, id) -> embedding
+    project: IR.Project
+    version: str = version
 
-    def search(self, x: Embedding) -> List[Tuple[str, float]]:
-        scores = [(name, x.similarity(y)) for name, y in self.index.items()]
+    def search(self, embedding: Embedding, num_results: int = 5) -> List[Tuple[PathWithId, float]]:
+        scores = [(name, embedding.similarity(y)) for name, y in self.embeddings.items()]
         scores = sorted(scores, key=lambda x: x[1], reverse=True)
-        return scores
+        return scores[:num_results]
+
+    def save(self, path: str) -> None:
+        with open(path, "wb") as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def load(cls, path: str) -> "Index":
+        with open(path, "rb") as f:
+            index = pickle.load(f)
+        # check version
+        if index.version != version:
+            raise ValueError(f"Index version {index.version} is not supported.")
+        return index
+
+    @classmethod
+    def create(cls, embed: Callable[[str], Embedding], project: IR.Project) -> "Index":
+        """
+        Creates an instance of the Index class.
+
+        Parameters:
+        - embed: A callable that embeds source code strings.
+        - project: The project containing files and function declarations.
+
+        Returns:
+        - An instance of the Index class.
+        """
+        embeddings: Dict[PathWithId, Embedding] = {}
+        for file in project.get_files():
+            for f in file.get_function_declarations():
+                file_path = file.path
+                path_with_id = (file_path, f.get_qualified_id())
+                code: str = f.get_substring().decode()
+                embeddings[path_with_id] = embed(code)
+        return cls(embeddings=embeddings, project=project)
 
 
 def test_index() -> None:
-    @dataclass
-    class Entry:
-        name: str
-        code: str
-        comment: str
-
-        @property
-        def text(self) -> str:
-            return self.code + " " + self.comment
-
-    entries: List[Entry] = [
-        Entry(
-            "foo",
-            "def foo(x): return x+1",
-            """
-        This function adds 1 to the input parameter 'x'.
-        
-        :param x: The input value.
-        :return: The result of adding 1 to 'x'.
-        """,
-        ),
-        Entry(
-            "bar",
-            "def bar(x): return x*2",
-            """
-        This function multiplies the input parameter 'x' by 2.
-        
-        :param x: The input value.
-        :return: The result of multiplying 'x' by 2.
-        """,
-        ),
-        Entry(
-            "baz",
-            "def baz(x): return x-3",
-            """
-        This function subtracts 3 from the input parameter 'x'.
-        
-        :param x: The input value.
-        :return: The result of subtracting 3 from 'x'.
-        """,
-        ),
-        Entry(
-            "qux",
-            "def qux(x): return x/4",
-            """
-        This function divides the input parameter 'x' by 4.
-        
-        :param x: The input value.
-        :return: The result of dividing 'x' by 4.
-        """,
-        ),
-        Entry(
-            "quux",
-            "def quux(y): return y**2",
-            """
-        This function calculates the square of the input parameter 'y'.
-        
-        :param y: The input value.
-        :return: The square of 'y'.
-        """,
-        ),
-    ]
-
     import spacy
 
     # Load the spaCy model
@@ -101,12 +84,11 @@ def test_index() -> None:
     def nlp_embedding(x: str) -> Embedding:
         return Embedding(np.array(nlp(x).vector))
 
-    def index_from_entries(entries: List[Entry]) -> Index:
-        return Index({x.name: nlp_embedding(x.text) for x in entries})
+    project = get_test_python_project()
 
-    index: Index = index_from_entries(entries)
+    index = Index.create(embed=nlp_embedding, project=project)
 
-    test_sentence = "I am looking for a function that exponentiates a number."
+    test_sentence = "goal"
 
     scores = index.search(nlp_embedding(test_sentence))
 
