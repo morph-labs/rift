@@ -11,7 +11,6 @@ import numpy.typing as npt
 from typing import Callable, Dict, List, Tuple
 import rift.ir.IR as IR
 from rift.ir.parser import parse_files_in_paths
-from rift.ir.test_parser import get_test_python_project
 
 
 @dataclass
@@ -97,7 +96,7 @@ def test_index() -> None:
         print(f"Loaded index in {time.time() - start:.2f} seconds")
     else:
         project = parse_files_in_paths([__file__])
-        #project = parse_files_in_paths([os.path.dirname(os.path.dirname(this_dir))])
+        # project = parse_files_in_paths([os.path.dirname(os.path.dirname(this_dir))])
         print("Creating index...")
         start = time.time()
         index = Index.create(embed=nlp_embedding, project=project)
