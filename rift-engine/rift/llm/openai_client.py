@@ -52,6 +52,7 @@ from tiktoken import get_encoding
 ENCODER = get_encoding("cl100k_base")
 ENCODER_LOCK = Lock()
 
+
 class MissingKeyError(Exception):
     ...
 
@@ -689,12 +690,17 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         )
         # logger.info(f"{messages=}")
 
-        event = asyncio.Event()        
+        event = asyncio.Event()
+
         def error_callback(e):
             event.set()
 
         stream = TextStream.from_aiter(
-            asg.map(lambda c: c.text, self.chat_completions(messages, stream=True), error_callback=error_callback)
+            asg.map(
+                lambda c: c.text,
+                self.chat_completions(messages, stream=True),
+                error_callback=error_callback,
+            )
         )
 
         logger.info("constructed stream")

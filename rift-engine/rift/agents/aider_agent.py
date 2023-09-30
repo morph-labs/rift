@@ -1,7 +1,9 @@
+import logging
 import os
 import re
 from concurrent import futures
 
+aider_available = False
 try:
     import aider
     import aider.coders
@@ -9,17 +11,20 @@ try:
     import aider.io
     import aider.main
     from aider.coders.base_coder import ExhaustedContextWindow
+
+    try:
+        aider.__author__
+        aider_available = True
+    except AttributeError:
+        raise Exception(
+            'Wrong version of `aider` installed. Please try `pip install -e "rift-engine[aider]" --force-reinstall` from the Rift root directory.'
+        )
+
 except ImportError:
-    raise Exception(
-        '`aider` not found. Try `pip install -e "rift-engine[aider]"` from the Rift root directory.'
+    print(
+        "aider not available, is git in your path? Installation will continue without aider support."
     )
 
-try:
-    aider.__author__
-except AttributeError:
-    raise Exception(
-        'Wrong version of `aider` installed. Please try `pip install -e "rift-engine[aider]" --force-reinstall` from the Rift root directory.'
-    )
 
 import asyncio
 import logging
@@ -85,6 +90,8 @@ class Aider(agent.ThirdPartyAgent):
         :param server: The server where the Aider agent is running.
         :return: An instance of the Aider class.
         """
+        if not aider_available:
+            raise Exception("aider not available, is git in your path?")
         state = AiderAgentState(
             params=params,
             messages=[],
@@ -169,10 +176,37 @@ class Aider(agent.ThirdPartyAgent):
                     agent.RequestChatRequest(messages=self.state.messages)
                 )
 
-                def refactor_uri_match(resp):
-                    pattern = f"\[uri\]\({self.state.params.workspaceFolderPath}/(\S+)\)"
-                    replacement = r"`\1`"
-                    resp = re.sub(pattern, replacement, resp)
+                def refactor_uri_match(resp) -> str:
+
+                    dropped_symbols = False
+
+                    def replacement(m: re.Match[str]):
+                        parsed_uri = m.group(1)
+                        if "#" in uri:
+                            nonlocal dropped_symbols
+                            dropped_symbols = True
+                            uri, symbol = parsed_uri.split("#")[0], parsed_uri.split("#")[1]
+                        else:
+                            uri = parsed_uri
+                        
+
+                        reference = IR.Reference.from_uri(uri)
+                        file_path = reference.file_path
+                        relative_path = os.path.relpath(
+                            file_path, self.state.params.workspaceFolderPath
+                        )
+                        if not resp.startswith("/add"):
+                            return f"`{relative_path}`" if not dropped_symbols else f"{symbol} @ `{relative_path}`"
+                        else:
+                            return f"{relative_path}" if not dropped_symbols else f"{symbol} @ {relative_path}"
+                    
+                    # def process_path(path):
+                    #     relative_path = os.path.relpath(path, self.state.params.workspaceFolderPath)
+                    #     if not resp.startswith("/add"):  # /add does not like a quoted path
+                    #         relative_path = f"`{relative_path}`"
+                    #     return relative_path
+
+                    resp = re.sub(f"\[uri\]\((\S+)\)", lambda m: replacement(m), resp)
                     return resp
 
                 try:

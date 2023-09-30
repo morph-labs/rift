@@ -4,7 +4,7 @@ import os
 from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, ClassVar, Dict, List, Optional, Type
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 from pydantic import BaseModel
 
@@ -13,6 +13,7 @@ import rift.lsp.types as lsp
 from rift.agents.agenttask import AgentTask
 from rift.llm.openai_types import Message as ChatMessage
 from rift.lsp import LspServer as BaseLspServer
+from rift.util.TextStream import TextStream
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ class AgentParams:
     selection: Optional[lsp.Selection]
     position: Optional[lsp.Position]
     workspaceFolderPath: Optional[str]
+    visibleEditorMetadata: Optional[List[lsp.EditorMetadata]]
 
 
 @dataclass
@@ -212,8 +214,15 @@ class Agent:
             logger.error(f"[request_chat] failed, caught {exception=}")
             raise exception
 
-    async def send_chat_update(self, msg: str, prepend: bool = False):
-        await self.send_progress(dict(response=msg))
+    async def send_chat_update(self, msg: Union[str, TextStream], prepend: bool = False):
+        if not isinstance(msg, TextStream):
+            await self.send_progress(dict(response=msg))
+        else:
+            all_deltas = []
+            async for delta in msg:
+                all_deltas.append(delta)
+                await self.send_progress(dict(response="".join(all_deltas)))
+            msg = "".join(all_deltas)
         if not prepend:
             self.state.messages += [openai.Message.assistant(msg)]
         else:
@@ -278,7 +287,9 @@ class Agent:
         settings = settings[0]
 
         if "openaiKey" in settings and settings["openaiKey"]:
-            logger.info("found `rift.openaiKey` in settings, setting `OPENAI_API_KEY` environment variable")
+            logger.info(
+                "found `rift.openaiKey` in settings, setting `OPENAI_API_KEY` environment variable"
+            )
             os.environ["OPENAI_API_KEY"] = settings["openaiKey"]
 
     async def main(self):
@@ -347,13 +358,21 @@ class ThirdPartyAgent(Agent):
 
             # run `self.run`
             result_t = asyncio.create_task(self.task.run())
+
+            async def cb():
+                # await self.send_update('yeehaw')
+                await self.send_update("finished")
+                # try:
+                #     logging.getLogger().error(self.task._error)
+                # except Exception as e:
+                #     logging.getLogger().info(f"caught {e=}")
+
             result_t.add_done_callback(
-                lambda fut: asyncio.run_coroutine_threadsafe(
-                    self.send_update("finished"), loop=asyncio.get_running_loop()
-                )
+                lambda fut: asyncio.run_coroutine_threadsafe(cb(), loop=asyncio.get_running_loop())
             )
             await self.send_progress()
 
+            logger.info("awaiting")
             result = await result_t
             # Send the progress of the task
             await self.send_progress()

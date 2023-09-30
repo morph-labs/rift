@@ -91,7 +91,7 @@ class SmolAgent(ThirdPartyAgent):
     params_cls: ClassVar[Any] = SmolAgentParams
 
     @classmethod
-    async def create(cls, params: SmolAgentParams, server):
+    async def create(cls, params: SmolAgentParams, server: Any) -> ThirdPartyAgent:
         state = SmolAgentState(
             params=params,
             _done=False,
@@ -104,7 +104,7 @@ class SmolAgent(ThirdPartyAgent):
         )
         return obj
 
-    async def _run_chat_thread(self, response_stream):
+    async def _run_chat_thread(self, response_stream: str) -> None:
         before, after = response_stream.split_once("感")
         try:
             async with self.state.response_lock:
@@ -325,5 +325,5 @@ class SmolAgent(ThirdPartyAgent):
                 lsp.ApplyWorkspaceEditParams(edit=workspace_edit, label="rift")
             )
 
-    async def send_result(self, result):
+    async def send_result(self, result: Any) -> None:
         ...  # unreachable

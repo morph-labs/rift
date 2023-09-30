@@ -1,6 +1,6 @@
+import functools
 import logging
 import os
-import functools
 import weakref
 from typing import Literal, Optional, Tuple
 
@@ -8,8 +8,8 @@ from pydantic import BaseModel, SecretStr
 
 from rift.llm.abstract import AbstractChatCompletionProvider, AbstractCodeCompletionProvider
 
-
 logger = logging.getLogger(__name__)
+
 
 class ModelConfig(BaseModel):
     chatModel: str
@@ -101,7 +101,9 @@ def create_client_core(
             kwargs["api_key"] = openai_api_key
         else:
             if not os.environ.get("OPENAI_API_KEY"):
-                logging.getLogger().error("Trying to create an OpenAIClient without an OpenAI key set in Rift settings or set as the OPENAI_API_KEY environment variable.")
+                logging.getLogger().error(
+                    "Trying to create an OpenAIClient without an OpenAI key set in Rift settings or set as the OPENAI_API_KEY environment variable."
+                )
         if path:
             kwargs["api_url"] = path
         return OpenAIClient.parse_obj(kwargs)
@@ -116,8 +118,9 @@ def create_client_core(
             kwargs["model_path"] = path
         settings = Gpt4AllSettings.parse_obj(kwargs)
         return Gpt4AllModel(settings)
-    elif type == "llama": # llama-cpp-python
+    elif type == "llama":  # llama-cpp-python
         from rift.llm.llama_client import LlamaClient
+
         return LlamaClient(name=name, model_path=path if path else None)
     else:
         raise ValueError(f"Unknown model: {config}")

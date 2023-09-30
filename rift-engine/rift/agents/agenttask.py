@@ -1,8 +1,11 @@
 import asyncio
 import logging
+import os
 import traceback
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Union
+
+import openai
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +58,8 @@ class AgentTask:
                 if self.kwargs
                 else {}
             )
+            # new thread, openai.api_key may be unset?
+            openai.api_key = os.environ.get("OPENAI_API_KEY", "")
             self._task: asyncio.Task = asyncio.create_task(self.task(*args, **kwargs))
             if self.done_callback is not None:
                 self._task.add_done_callback(self.done_callback)

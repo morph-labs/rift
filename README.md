@@ -26,6 +26,10 @@ https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903
 
 ![smol screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/smol.gif)
 
+**Auto Docstring Generation**
+
+**Auto Type Annotation Generation**
+
 ## Tips
 - Press Command+M to focus the Rift Omnibar.
   - Once focused, you can either engage with the current chat or use a slash-command (e.g. `/aider`) to spawn a new agent.

@@ -1,0 +1,172 @@
+[
+    {
+        "path": "test.py",
+        "symbols": [
+            {
+                "name": "py",
+                "scope": "A.",
+                "kind": "Function",
+                "range": [
+                    [
+                        6,
+                        4
+                    ],
+                    [
+                        8,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "A",
+                "scope": "",
+                "kind": "Class",
+                "range": [
+                    [
+                        0,
+                        0
+                    ],
+                    [
+                        8,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "insert_code",
+                "scope": "B.",
+                "kind": "Function",
+                "range": [
+                    [
+                        11,
+                        4
+                    ],
+                    [
+                        14,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "load",
+                "scope": "B.",
+                "kind": "Function",
+                "range": [
+                    [
+                        15,
+                        4
+                    ],
+                    [
+                        16,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "nested",
+                "scope": "B.Nested.",
+                "kind": "Function",
+                "range": [
+                    [
+                        18,
+                        8
+                    ],
+                    [
+                        19,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "Nested",
+                "scope": "B.",
+                "kind": "Class",
+                "range": [
+                    [
+                        17,
+                        4
+                    ],
+                    [
+                        19,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "B",
+                "scope": "",
+                "kind": "Class",
+                "range": [
+                    [
+                        9,
+                        0
+                    ],
+                    [
+                        19,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "inner_fun",
+                "scope": "outer_fun.",
+                "kind": "Function",
+                "range": [
+                    [
+                        28,
+                        4
+                    ],
+                    [
+                        29,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "outer_fun",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        27,
+                        0
+                    ],
+                    [
+                        29,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "some_conditionals",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        31,
+                        0
+                    ],
+                    [
+                        45,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "with_nested_conditionals",
+                "scope": "",
+                "kind": "Function",
+                "range": [
+                    [
+                        47,
+                        0
+                    ],
+                    [
+                        53,
+                        26
+                    ]
+                ]
+            }
+        ]
+    }
+]

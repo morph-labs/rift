@@ -1,7 +1,6 @@
 import type * as vscode from "vscode";
 import type { TextDocumentIdentifier } from "vscode-languageclient/node";
 
-
 export interface Task {
   description: string;
   status: AgentStatus;
@@ -32,20 +31,20 @@ export type AgentRegistryItem = {
 export class WebviewAgent {
   type: string;
   hasNotification: boolean;
-  isDeleted: boolean = false;
+  isDeleted = false;
   chatHistory: ChatMessage[];
   inputRequest?: InputRequest | null;
   taskWithSubtasks?: TaskWithSubtasks;
-  isStreaming: boolean = false;
-  streamingText: string = "";
-  doesShowAcceptRejectBar: boolean = false;
+  isStreaming = false;
+  streamingText = "";
+  doesShowAcceptRejectBar = false;
 
   constructor(
     type: string,
     hasNotification?: boolean,
     chatHistory?: ChatMessage[],
     inputRequest?: InputRequest | null,
-    tasks?: TaskWithSubtasks
+    tasks?: TaskWithSubtasks,
   ) {
     this.type = type;
     this.hasNotification = hasNotification ?? false;
@@ -66,6 +65,7 @@ export type WebviewState = {
     recentlyOpenedFiles: AtableFile[];
     nonGitIgnoredFiles: AtableFile[];
   };
+  symbols: AtableFile[];
 };
 
 export const DEFAULT_STATE: WebviewState = {
@@ -84,12 +84,19 @@ export const DEFAULT_STATE: WebviewState = {
     recentlyOpenedFiles: [],
     nonGitIgnoredFiles: [],
   },
+  symbols: [],
 };
 
 export type OptionalTextDocument = {
   uri: string;
   version: number;
 } | null;
+
+export type EditorMetadata = {
+  selection: vscode.Selection | null;
+  position: vscode.Position | null;
+  textDocument: OptionalTextDocument;
+};
 
 export interface AgentParams {
   agent_type: string;
@@ -98,6 +105,7 @@ export interface AgentParams {
   selection: vscode.Selection | null;
   textDocument: OptionalTextDocument;
   workspaceFolderPath: string | null;
+  visibleEditorMetadata: EditorMetadata[];
 }
 
 export interface RunChatParams {
@@ -191,11 +199,21 @@ export type AgentResult = {
   id: string;
   type: string;
 }; //is just an ID rn
+export type AgentSymbols = {
+  path: string;
+  symbols: {
+    name: string;
+    scope: string;
+    kind: string;
+    range: [[number, number], [number, number]];
+  }[];
+}[];
 
 export interface AtableFile {
   fileName: string; //example.ts
   fullPath: string; //Users/brent/dev/project/src/example.ts
   fromWorkspacePath: string; //project/src/example.ts
+  symbolName?: string; // MainNamespace.SomeClass.someMethod
 }
 
 export interface AtableFileWithCommand extends AtableFile {

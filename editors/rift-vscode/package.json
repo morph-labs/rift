@@ -4,7 +4,7 @@
   "publisher": "morph",
   "displayName": "Rift",
   "description": "Rift: an AI-native language server for your personal AI software engineer.",
-  "version": "0.0.24",
+  "version": "2.1.1",
   "icon": "resources/vsce-icon.png",
   "engines": {
     "vscode": "^1.71.0"
@@ -39,28 +39,21 @@
           ]
         },
         "rift.openaiKey": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null,
+          "type": "string",
+          "default": "",
           "description": "OpenAI API key"
         },
         "rift.riftPath": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null,
-          "description": "Optional path to Rift executable"
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "Path to Rift Code Engine executable, if built locally.\n\nFor a virtual env named `venv`, this should be set to:\n - `{path-to-venv}/bin/rift` on Mac or Linux \n\n - `{path-to-venv}\\Scripts\\rift` on Windows."
         },
         "rift.riftServerPort": {
-          "type": [
-            "number"
-          ],
+          "type": "number",
           "default": 7797,
           "description": "Default port for the Rift Code Engine. Defaults to 7797."
-        },        
+        },
         "rift.codeEditModel": {
           "type": "string",
           "default": "openai:gpt-4",
@@ -82,9 +75,9 @@
         "rift.chatModel": {
           "type": "string",
           "default": "openai:gpt-3.5-turbo",
-            "enum": [
+          "enum": [
             "openai:gpt-3.5-turbo",
-            "openai:gpt-4",                
+            "openai:gpt-4",
             "gpt4all:ggml-mpt-7b-chat",
             "gpt4all:ggml-model-gpt4all-falcon-q4_0",
             "gpt4all:wizardlm-13b-v1.1-superhot-8k.ggmlv3.q4_0",
@@ -125,16 +118,6 @@
         }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "RiftChat",
-        "contents": "Chat with a local code model."
-      },
-      {
-        "view": "RiftLogs",
-        "contents": "Agent logging."
-      }
-    ],
     "menus": {
       "view/title": [
         {
@@ -148,6 +131,10 @@
       {
         "command": "rift.restart",
         "title": "Rift: Restart"
+      },
+      {
+        "command": "rift.build-server",
+        "title": "Rift: Build Server Locally"
       },
       {
         "command": "rift.reset_chat",
@@ -172,7 +159,7 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint --ext ts src",
-    "format": "prettier --write .",
+    "format": "prettier --write --plugin prettier-plugin-svelte .",
     "test": "node ./out/test/runTest.js",
     "clean": "rm -rf out/compiled & rm -rf dist/*"
   },
@@ -181,6 +168,7 @@
     "@rollup/plugin-node-resolve": "^11.0.1",
     "@rollup/plugin-typescript": "^8.1.0",
     "@tsconfig/svelte": "^1.0.10",
+    "@types/decompress": "^4.2.4",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
@@ -198,7 +186,8 @@
     "eslint-plugin-import": "^2.27.5",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
-    "prettier": "^3.0.0",
+    "prettier": "^3.0.3",
+    "prettier-plugin-svelte": "^3.0.3",
     "rollup": "^2.3.4",
     "rollup-plugin-svelte": "^6.0.0",
     "rollup-plugin-terser": "^7.0.2",
@@ -221,6 +210,7 @@
     "@vscode/python-extension": "^1.0.4",
     "@vscode/vsce": "^2.20.1",
     "@vscode/webview-ui-toolkit": "^1.2.2",
+    "decompress": "^4.2.1",
     "delay": "^6.0.0",
     "fkill": "^8.1.1",
     "gitignore-parser": "^0.0.2",

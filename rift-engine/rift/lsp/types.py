@@ -489,3 +489,10 @@ class DidChangeConfigurationParams:
 class Document:
     uri: DocumentUri
     document: DocumentContext
+
+
+@dataclass
+class EditorMetadata:
+    selection: Optional[Selection]
+    position: Optional[Position]
+    textDocument: Optional[TextDocumentIdentifier]

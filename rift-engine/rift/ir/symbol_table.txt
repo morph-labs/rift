@@ -1,0 +1,749 @@
+=== Symbol Table for test.c ===
+Function: aa
+   language: c
+   range: ((0, 0), (2, 1))
+   substring: (0, 24)
+   body_sub: (9, 24)
+   return_type: int
+Function: foo
+   language: c
+   range: ((4, 0), (6, 1))
+   substring: (52, 84)
+   docstring: /** This is a docstring */
+   body_sub: (71, 84)
+   parameters: [x:int**]
+   return_type: int*
+Function: bb
+   language: c
+   range: ((8, 0), (10, 1))
+   substring: (86, 110)
+   body_sub: (95, 110)
+   return_type: int
+Function: main
+   language: c
+   range: ((12, 0), (17, 1))
+   substring: (112, 169)
+   body_sub: (123, 169)
+   return_type: int
+=== Symbol Table for test.js ===
+Function: f1
+   language: javascript
+   range: ((1, 0), (1, 27))
+   substring: (22, 49)
+   docstring: /** Some docstring */
+   body_sub: (36, 49)
+   has_return: True
+Function: f2
+   language: javascript
+   range: ((3, 0), (3, 18))
+   substring: (93, 111)
+   docstring: /** Some docstring on an arrow function */
+=== Symbol Table for test.java ===
+Function: braking
+   language: java
+   range: ((7, 4), (9, 5))
+   substring: (124, 203)
+   scope: Bicycle.
+   body_sub: (146, 203)
+   parent: Bicycle
+   return_type: void
+Class: Bicycle
+   language: java
+   range: ((1, 0), (10, 1))
+   substring: (21, 205)
+   docstring: // This is docstring
+   body_sub: (42, 205)
+   body: ['{', 'line_comment', 'field_declaration', 'line_comment', braking, '}']
+Function: sum
+   language: java
+   range: ((14, 4), (17, 5))
+   substring: (255, 343)
+   scope: Math.
+   body_sub: (291, 343)
+   parent: Math
+   parameters: [int a:int, int b:int]
+   return_type: int
+   has_return: True
+Class: Math
+   language: java
+   range: ((13, 0), (18, 1))
+   substring: (231, 345)
+   docstring: /* This is docstring */
+   body_sub: (249, 345)
+   body: ['{', sum, '}']
+Interface: Animal
+   language: java
+   range: ((20, 0), (23, 1))
+   substring: (347, 451)
+   body_sub: (364, 451)
+=== Symbol Table for test.ts ===
+TypeDefinition: a
+   language: typescript
+   range: ((0, 0), (0, 24))
+   substring: (0, 24)
+Function: ts
+   language: typescript
+   range: ((1, 0), (1, 56))
+   substring: (25, 81)
+   body_sub: (69, 81)
+   parameters: [x:number, opt?:string]
+   return_type: number
+   has_return: True
+Function: ts2
+   language: typescript
+   range: ((2, 7), (2, 51))
+   substring: (89, 133)
+   exported: True
+   body_sub: (120, 133)
+   return_type: array<number>
+   has_return: True
+Function: constructor
+   language: typescript
+   range: ((4, 4), (4, 20))
+   substring: (155, 171)
+   scope: A.
+   body_sub: (169, 171)
+   parent: A
+Function: load
+   language: typescript
+   range: ((5, 4), (7, 5))
+   substring: (176, 222)
+   scope: A.
+   body_sub: (198, 222)
+   parent: A
+   parameters: [v:number]
+   has_return: True
+Class: A
+   language: typescript
+   range: ((3, 7), (8, 1))
+   substring: (141, 224)
+   exported: True
+   body_sub: (149, 224)
+   body: ['{', constructor, load, '}']
+Interface: RunHelperSyncResult
+   language: typescript
+   range: ((9, 0), (12, 1))
+   substring: (225, 290)
+   body_sub: (255, 290)
+TypeDefinition: HelperStatus
+   language: typescript
+   range: ((13, 0), (13, 74))
+   substring: (291, 365)
+=== Symbol Table for test.tsx ===
+Function: tsx
+   language: tsx
+   range: ((1, 0), (1, 27))
+   substring: (23, 50)
+   body_sub: (38, 50)
+   has_return: True
+=== Symbol Table for test.py ===
+Expression: expression$0
+   language: python
+   range: ((1, 4), (4, 7))
+   substring: (18, 69)
+   scope: A.
+   parent: A
+   code: """
+    This is a docstring
+    for class A
+    """
+Expression: expression$0
+   language: python
+   range: ((7, 8), (7, 33))
+   substring: (97, 122)
+   scope: A.py.
+   parent: A.py
+   code: """This is a docstring"""
+Function: py
+   language: python
+   range: ((6, 4), (8, 16))
+   substring: (75, 139)
+   scope: A.
+   docstring: """This is a docstring"""
+   body_sub: (97, 139)
+   body: [expression$0, 'return_statement']
+   parent: A
+   parameters: [x, y]
+   has_return: True
+Class: A(C,D)
+   language: python
+   range: ((0, 0), (8, 16))
+   substring: (0, 139)
+   docstring: """
+    This is a docstring
+    for class A
+    """
+   body_sub: (18, 139)
+   body: [expression$0, py]
+Function: insert_code
+   language: python
+   range: ((11, 4), (14, 12))
+   substring: (173, 311)
+   scope: B.
+   body_sub: (307, 311)
+   body: ['pass_statement']
+   parent: B
+   parameters: [self, document:str, cursor_offset:int]
+   return_type: InsertCodeResult
+Function: load
+   language: python
+   range: ((15, 4), (16, 12))
+   substring: (316, 353)
+   scope: B.
+   body_sub: (349, 353)
+   body: ['pass_statement']
+   parent: B
+   parameters: [self, v]
+Function: nested
+   language: python
+   range: ((18, 8), (19, 16))
+   substring: (380, 410)
+   scope: B.Nested.
+   body_sub: (406, 410)
+   body: ['pass_statement']
+   parent: B.Nested
+Class: Nested
+   language: python
+   range: ((17, 4), (19, 16))
+   substring: (358, 410)
+   scope: B.
+   body_sub: (380, 410)
+   body: [nested]
+   parent: B
+Class: B
+   language: python
+   range: ((9, 0), (19, 16))
+   substring: (140, 410)
+   body_sub: (153, 410)
+   body: [insert_code, load, Nested]
+Function: inner_fun
+   language: python
+   range: ((28, 4), (29, 12))
+   substring: (562, 599)
+   scope: outer_fun.
+   body_sub: (595, 599)
+   body: ['pass_statement']
+   parent: outer_fun
+   return_type: None
+Function: outer_fun
+   language: python
+   range: ((27, 0), (29, 12))
+   substring: (533, 599)
+   body_sub: (562, 599)
+   body: [inner_fun]
+   return_type: None
+Expression: expression$0
+   language: python
+   range: ((32, 4), (32, 21))
+   substring: (647, 664)
+   scope: some_conditionals.
+   parent: some_conditionals
+   code: """explanation"""
+Guard: guard$0
+   language: python
+   range: ((37, 9), (37, 20))
+   substring: (742, 753)
+   scope: some_conditionals.if$0.
+   parent: some_conditionals.if$0
+   condition: cond == "c"
+Body: body$0
+   language: python
+   range: ((40, 8), (41, 12))
+   substring: (786, 803)
+   scope: some_conditionals.if$0.
+   body: ['pass_statement', 'pass_statement']
+   parent: some_conditionals.if$0
+   block: ['pass_statement', 'pass_statement']
+If: if$0
+   language: python
+   range: ((33, 4), (41, 12))
+   substring: (669, 803)
+   scope: some_conditionals.
+   body: [guard$0, body$0, guard$0, body$0, guard$0, body$0, body$0]
+   parent: some_conditionals
+   if_case: Case(guard$0, body$0)
+   elif_cases: [Case(guard$0, body$0), Case(guard$0, body$0)]
+   else_body: body$0
+Guard: guard$0
+   language: python
+   range: ((43, 7), (43, 15))
+   substring: (835, 843)
+   scope: some_conditionals.if$1.
+   parent: some_conditionals.if$1
+   condition: 34 == 34
+Body: body$0
+   language: python
+   range: ((44, 8), (45, 12))
+   substring: (853, 870)
+   scope: some_conditionals.if$1.
+   body: ['pass_statement', 'pass_statement']
+   parent: some_conditionals.if$1
+   block: ['pass_statement', 'pass_statement']
+If: if$1
+   language: python
+   range: ((43, 4), (45, 12))
+   substring: (832, 870)
+   scope: some_conditionals.
+   body: [guard$0, body$0]
+   parent: some_conditionals
+   if_case: Case(guard$0, body$0)
+Function: some_conditionals
+   language: python
+   range: ((31, 0), (45, 12))
+   substring: (601, 870)
+   docstring: """explanation"""
+   body_sub: (647, 870)
+   body: [expression$0, if$0, 'comment', if$1]
+   parameters: [cond:str]
+   return_type: None
+Guard: guard$0
+   language: python
+   range: ((48, 7), (48, 18))
+   substring: (928, 939)
+   scope: with_nested_conditionals.if$0.
+   parent: with_nested_conditionals.if$0
+   condition: cond == "a"
+Guard: guard$0
+   language: python
+   range: ((49, 11), (49, 22))
+   substring: (952, 963)
+   scope: with_nested_conditionals.if$0.body$0.if$0.
+   parent: with_nested_conditionals.if$0.body$0.if$0
+   condition: cond == "b"
+Call: call$0
+   language: python
+   range: ((50, 16), (50, 22))
+   substring: (981, 987)
+   scope: with_nested_conditionals.if$0.body$0.if$0.body$0.expression$0.
+   parent: with_nested_conditionals.if$0.body$0.if$0.body$0.expression$0
+   function_name: foo
+   arguments: ['1']
+Call: call$1
+   language: python
+   range: ((50, 25), (50, 31))
+   substring: (990, 996)
+   scope: with_nested_conditionals.if$0.body$0.if$0.body$0.expression$0.call.
+   parent: with_nested_conditionals.if$0.body$0.if$0.body$0.expression$0
+   function_name: bar
+   arguments: ['2']
+Expression: expression$0
+   language: python
+   range: ((50, 12), (50, 31))
+   substring: (977, 996)
+   scope: with_nested_conditionals.if$0.body$0.if$0.body$0.
+   body: [call$0, call$1]
+   parent: with_nested_conditionals.if$0.body$0.if$0.body$0
+   code: x = call$0 + call$1
+Body: body$0
+   language: python
+   range: ((50, 12), (50, 31))
+   substring: (977, 996)
+   scope: with_nested_conditionals.if$0.body$0.if$0.
+   body: [expression$0]
+   parent: with_nested_conditionals.if$0.body$0.if$0
+   block: [expression$0]
+If: if$0
+   language: python
+   range: ((49, 8), (50, 31))
+   substring: (949, 996)
+   scope: with_nested_conditionals.if$0.body$0.
+   body: [guard$0, body$0]
+   parent: with_nested_conditionals.if$0.body$0
+   if_case: Case(guard$0, body$0)
+Guard: guard$0
+   language: python
+   range: ((51, 11), (51, 22))
+   substring: (1008, 1019)
+   scope: with_nested_conditionals.if$0.body$0.if$1.
+   parent: with_nested_conditionals.if$0.body$0.if$1
+   condition: cond == "c"
+Call: call$0
+   language: python
+   range: ((52, 12), (52, 26))
+   substring: (1033, 1047)
+   scope: with_nested_conditionals.if$0.body$0.if$1.body$0.
+   parent: with_nested_conditionals.if$0.body$0.if$1.body$0
+   function_name: print
+   arguments: ['"hello"']
+Call: call$1
+   language: python
+   range: ((53, 12), (53, 26))
+   substring: (1060, 1074)
+   scope: with_nested_conditionals.if$0.body$0.if$1.body$0.
+   parent: with_nested_conditionals.if$0.body$0.if$1.body$0
+   function_name: print
+   arguments: ['"world"']
+Body: body$0
+   language: python
+   range: ((52, 12), (53, 26))
+   substring: (1033, 1074)
+   scope: with_nested_conditionals.if$0.body$0.if$1.
+   body: [call$0, call$1]
+   parent: with_nested_conditionals.if$0.body$0.if$1
+   block: [call$0, call$1]
+If: if$1
+   language: python
+   range: ((51, 8), (53, 26))
+   substring: (1005, 1074)
+   scope: with_nested_conditionals.if$0.body$0.
+   body: [guard$0, body$0]
+   parent: with_nested_conditionals.if$0.body$0
+   if_case: Case(guard$0, body$0)
+Body: body$0
+   language: python
+   range: ((49, 8), (53, 26))
+   substring: (949, 1074)
+   scope: with_nested_conditionals.if$0.
+   body: [if$0, if$1]
+   parent: with_nested_conditionals.if$0
+   block: [if$0, if$1]
+If: if$0
+   language: python
+   range: ((48, 4), (53, 26))
+   substring: (925, 1074)
+   scope: with_nested_conditionals.
+   body: [guard$0, body$0]
+   parent: with_nested_conditionals
+   if_case: Case(guard$0, body$0)
+Function: with_nested_conditionals
+   language: python
+   range: ((47, 0), (53, 26))
+   substring: (872, 1074)
+   body_sub: (925, 1074)
+   body: [if$0]
+   parameters: [cond:str]
+   return_type: None
+=== Symbol Table for test.cpp ===
+Function: add
+   language: cpp
+   range: ((2, 4), (2, 43))
+   substring: (32, 71)
+   scope: namespace_name::
+   body_sub: (69, 71)
+   parent: namespace_name
+   parameters: [someRef:int&, somePtr:int*]
+   return_type: void
+Function: print
+   language: cpp
+   range: ((5, 12), (5, 25))
+   substring: (120, 133)
+   scope: namespace_name::student.
+   parent: namespace_name::student
+   return_type: void
+Class: student
+   language: cpp
+   range: ((3, 4), (6, 5))
+   substring: (76, 139)
+   scope: namespace_name::
+   body_sub: (90, 139)
+   body: ['{', 'access_specifier', print, '}']
+   parent: namespace_name
+Namespace: namespace_name
+   language: cpp
+   range: ((0, 0), (7, 1))
+   substring: (0, 142)
+   body_sub: (26, 142)
+   body: ['{', add, student, ';', '}']
+=== Symbol Table for test.cs ===
+Function: sum
+   language: c_sharp
+   range: ((6, 8), (10, 9))
+   substring: (110, 215)
+   scope: SampleNamespace::SampleClass.
+   body_sub: (149, 215)
+   parent: SampleNamespace::SampleClass
+   parameters: [int a:int, int b:int]
+   return_type: int
+   has_return: True
+Class: SampleClass
+   language: c_sharp
+   range: ((4, 4), (11, 5))
+   substring: (78, 221)
+   scope: SampleNamespace::
+   docstring: // This is docstring
+   body_sub: (100, 221)
+   body: ['{', sum, '}']
+   parent: SampleNamespace
+Namespace: SampleNamespace
+   language: c_sharp
+   range: ((1, 0), (12, 1))
+   substring: (21, 223)
+   docstring: // This is docstring
+   body_sub: (47, 223)
+   body: ['{', 'comment', SampleClass, '}']
+Interface: IEquatable
+   language: c_sharp
+   range: ((14, 0), (17, 1))
+   substring: (225, 276)
+   body_sub: (249, 276)
+=== Symbol Table for test.ml ===
+Function: divide
+   language: ocaml
+   range: ((0, 0), (0, 28))
+   substring: (0, 28)
+   body_sub: (21, 28)
+   parameters: [x:int, y]
+Function: callback
+   language: ocaml
+   range: ((1, 0), (1, 27))
+   substring: (29, 56)
+   body_sub: (52, 56)
+   parameters: [():unit]
+   return_type: unit
+Function: bump
+   language: ocaml
+   range: ((3, 4), (3, 37))
+   substring: (79, 112)
+   scope: M.
+   body_sub: (102, 112)
+   parent: M
+   parameters: [?step:typeof(1), x]
+Function: hline
+   language: ocaml
+   range: ((4, 4), (4, 42))
+   substring: (117, 155)
+   scope: M.
+   body_sub: (142, 155)
+   parent: M
+   parameters: [~x, ~x, ~y]
+Module: M
+   language: ocaml
+   range: ((2, 0), (5, 3))
+   substring: (57, 159)
+   body_sub: (66, 159)
+   body: ['struct', bump, hline, 'end']
+Function: with_named_args
+   language: ocaml
+   range: ((7, 4), (7, 81))
+   substring: (182, 259)
+   scope: N.
+   body_sub: (234, 259)
+   parent: N
+   parameters: [~named_arg1:int, ?named_arg2]
+Function: f1
+   language: ocaml
+   range: ((9, 4), (9, 34))
+   substring: (265, 295)
+   scope: N.
+   body_sub: (290, 295)
+   parent: N
+   parameters: [x:int, x:int]
+   return_type: int
+Function: f2
+   language: ocaml
+   range: ((10, 4), (10, 30))
+   substring: (300, 326)
+   scope: N.
+   body_sub: (321, 326)
+   parent: N
+   parameters: [x:int, x:int]
+   return_type: int
+Value: v1
+   language: ocaml
+   range: ((12, 4), (12, 14))
+   substring: (332, 342)
+   scope: N.
+   body_sub: (339, 342)
+   parent: N
+Value: v2
+   language: ocaml
+   range: ((13, 4), (13, 18))
+   substring: (347, 361)
+   scope: N.
+   body_sub: (358, 361)
+   parent: N
+   type: int
+Module: N
+   language: ocaml
+   range: ((6, 0), (14, 3))
+   substring: (160, 365)
+   body_sub: (169, 365)
+   body: ['struct', with_named_args, f1, f2, v1, v2, 'end']
+=== Symbol Table for test.rb ===
+Function: sum
+   language: ruby
+   range: ((0, 0), (3, 11))
+   substring: (0, 77)
+   body_sub: (26, 77)
+   parameters: [a, b]
+Function: output
+   language: ruby
+   range: ((5, 8), (7, 11))
+   substring: (87, 134)
+   body_sub: (110, 134)
+Function: greetings
+   language: ruby
+   range: ((9, 8), (13, 11))
+   substring: (144, 220)
+   body_sub: (164, 220)
+   parameters: [a]
+Function: swap
+   language: ruby
+   range: ((15, 8), (20, 11))
+   substring: (230, 340)
+   body_sub: (257, 340)
+   parameters: [a, b]
+Function: initialize
+   language: ruby
+   range: ((26, 12), (29, 15))
+   substring: (461, 558)
+   scope: Person::
+   body_sub: (503, 558)
+   parent: Person
+   parameters: [name, age]
+Function: introduce
+   language: ruby
+   range: ((31, 12), (33, 15))
+   substring: (572, 668)
+   scope: Person::
+   body_sub: (602, 668)
+   parent: Person
+Class: Person
+   language: ruby
+   range: ((23, 8), (34, 11))
+   substring: (397, 680)
+   docstring: # This is a docstring for class Person
+   body_sub: (422, 680)
+   body: ['class', 'constant', 'call', initialize, introduce, 'end']
+Function: cream?
+   language: ruby
+   range: ((37, 12), (39, 15))
+   substring: (715, 762)
+   scope: Cream::
+   body_sub: (742, 762)
+   parent: Cream
+Module: Cream
+   language: ruby
+   range: ((36, 8), (40, 11))
+   substring: (690, 774)
+   body_sub: (715, 774)
+   body: ['module', 'constant', cream?, 'end']
+Function: pour
+   language: ruby
+   range: ((44, 16), (48, 19))
+   substring: (833, 987)
+   scope: Foo::Bar::
+   body_sub: (881, 987)
+   parent: Foo::Bar
+   parameters: [container, liquid]
+Class: Bar
+   language: ruby
+   range: ((43, 12), (49, 15))
+   substring: (807, 1003)
+   scope: Foo::
+   body_sub: (833, 1003)
+   body: ['class', 'constant', pour, 'end']
+   parent: Foo
+Module: Foo
+   language: ruby
+   range: ((42, 8), (50, 11))
+   substring: (784, 1015)
+   body_sub: (807, 1015)
+   body: ['module', 'constant', Bar, 'end']
+
+=== Project Map ===
+File: test.c
+  int aa()
+  int * foo(int **x)
+  int bb()
+  int main()
+File: test.js
+  function f1()
+  let f2 = x => x+1;
+File: test.java
+  public class Bicycle
+    public void braking()
+  public class Math
+    public static int sum(int a, int b)
+  interface Animal
+File: test.ts
+  type a = readonly b[][];
+  function ts(x:number, opt?:string) : number
+  function ts2() : array<number>
+  class A
+    constructor()
+    async load(v: number)
+  interface RunHelperSyncResult
+  type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
+File: test.tsx
+  function tsx()
+File: test.py
+  class A(C,D):
+    expression$0 = `"""
+    This is a docstring
+    for class A
+    """`
+    def py(x, y):
+      expression$0 = `"""This is a docstring"""`
+  class B:
+    async def insert_code(
+            self, document: str, cursor_offset: int, goal: Optional[str] = None
+        ) -> InsertCodeResult:
+    async def load(self, v):
+    class Nested:
+      def nested():
+  def outer_fun() -> None:
+    def inner_fun() -> None:
+  def some_conditionals(cond: str) -> None:
+    expression$0 = `"""explanation"""`
+    if$0 = `if guard$0: body$0 elif guard$0: body$0 elif guard$0: body$0 else: body$0`
+      guard$0 = `cond == "a"`
+      body$0 = `['pass_statement']`
+      guard$0 = `cond == "b"`
+      body$0 = `['pass_statement']`
+      guard$0 = `cond == "c"`
+      body$0 = `['pass_statement']`
+      body$0 = `['pass_statement', 'pass_statement']`
+    if$1 = `if guard$0: body$0`
+      guard$0 = `34 == 34`
+      body$0 = `['pass_statement', 'pass_statement']`
+  def with_nested_conditionals(cond: str) -> None:
+    if$0 = `if guard$0: body$0`
+      guard$0 = `cond == "a"`
+      body$0 = `[if$0, if$1]`
+        if$0 = `if guard$0: body$0`
+          guard$0 = `cond == "b"`
+          body$0 = `[expression$0]`
+            expression$0 = `x = call$0 + call$1`
+              call$0 = `foo(1)`
+              call$1 = `bar(2)`
+        if$1 = `if guard$0: body$0`
+          guard$0 = `cond == "c"`
+          body$0 = `[call$0, call$1]`
+            call$0 = `print("hello")`
+            call$1 = `print("world")`
+File: test.cpp
+  namespace namespace_name
+    void add(int& someRef, int* somePtr)
+    class student
+      void print();
+File: test.cs
+  namespace SampleNamespace
+    class SampleClass
+      public int sum(int a, int b)
+  interface IEquatable<T>
+File: test.ml
+  let divide (x:int) y
+  let callback () : unit
+  module M
+    let bump ?(step = 1) x
+    let hline ~x:x1 ~x:x2 ~y
+  module N
+    let with_named_args ~(named_arg1 : int) ?named_arg2
+    let rec f1 (x:int) : int
+    and f2 (x:int) : int
+    let v1
+    let v2:int
+File: test.rb
+  def sum(a, b)
+  def output
+  def greetings(a)
+  def swap(a, b)
+  class Person
+    def initialize(name, age)
+    def introduce
+  module Cream
+    def cream?
+  module Foo
+    class Bar
+      def pour(container, liquid)

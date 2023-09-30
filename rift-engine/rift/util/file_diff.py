@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.request import pathname2url
 
 from diff_match_patch import diff_match_patch
 
@@ -38,7 +39,7 @@ def get_file_change(path: str, new_content: str) -> FileChange:
     Returns:
     A FileChange instance that represents the changes to be made in the source file.
     """
-    uri = TextDocumentIdentifier(uri="file://" + path, version=0)
+    uri = TextDocumentIdentifier(uri=pathname2url(path), version=0)
     if os.path.isfile(path):
         with open(path, "r") as f:
             old_content = f.read()

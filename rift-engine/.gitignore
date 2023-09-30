@@ -7,5 +7,5 @@ dist/
 
 .p39/
 
-*.spec
+*.egg-info
 venv

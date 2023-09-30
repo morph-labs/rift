@@ -1,0 +1,21 @@
+```bash
+# Nuke everything and reinstall deps
+rm -rf venv build dist
+python3 -m venv venv
+./venv/bin/pip install -e .
+```
+
+```bash
+# Build portable bundle
+./venv/bin/pyinstaller -y rift.spec
+```
+
+```bash
+# Run the server!
+./dist/rift/core
+```
+
+```bash
+# Stop the server!
+lsof -t -i tcp:7797 | xargs kill
+```

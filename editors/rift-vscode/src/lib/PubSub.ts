@@ -1,4 +1,4 @@
-let registry: { [key: string]: Function | null } = {};
+const registry: { [key: string]: (...args: any) => void | null } = {};
 
 export const pub = (key: string, ...args: any) => {
   console.log("pubbing");
@@ -6,7 +6,7 @@ export const pub = (key: string, ...args: any) => {
   //   if (!registry[key]) return;
   const fn = registry[key];
   if (!fn) throw new Error("published to an unawaited key");
-  fn.apply(null, args);
+  fn(...args);
 };
 
 export const sub = (key: string, fn: (...args: any) => void) => {

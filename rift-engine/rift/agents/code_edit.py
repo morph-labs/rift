@@ -2,7 +2,7 @@ import asyncio
 import logging
 from asyncio import Future
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 import rift.agents.registry as registry
 import rift.llm.openai_types as openai
@@ -69,7 +69,7 @@ class CodeEditAgent(Agent):
     params_cls: ClassVar[Any] = CodeEditAgentParams
 
     @classmethod
-    async def create(cls, params: CodeEditAgentParams, server):
+    async def create(cls, params: CodeEditAgentParams, server: Any) -> Agent:
         logger.info(f"{params=}")
         model = await server.ensure_code_edit_model()  # TODO: not right, fix
         state = CodeEditAgentState(
@@ -163,7 +163,7 @@ class CodeEditAgent(Agent):
                         if edit_code_result.thoughts:
                             async for delta in edit_code_result.thoughts:
                                 response_stream.feed_data(delta)
-
+ 
                     async def cleanup():
                         response_stream.feed_eof()
 
@@ -274,7 +274,7 @@ class CodeEditAgent(Agent):
 
                     async def generate_code():
                         # async def watch_event():
-                        #     if edit_code_result.event:                            
+                        #     if edit_code_result.event:
                         #         while True:
                         #             # logger.info(f"{edit_code_result.event=}")
                         #             if edit_code_result.event.is_set():
@@ -299,7 +299,7 @@ class CodeEditAgent(Agent):
                                 else:
                                     await send_diff(x)
 
-                        diff_queue_task = asyncio.create_task(_watch_queue())                        
+                        diff_queue_task = asyncio.create_task(_watch_queue())
                         while True:
                             # logger.info("looping")
                             if after.at_eof():
@@ -365,7 +365,7 @@ class CodeEditAgent(Agent):
         before: lsp.TextDocumentItem,
         after: lsp.TextDocumentItem,
         changes: lsp.DidChangeTextDocumentParams,
-    ):
+    ) -> None:
         if self.task.status != "running":
             return
         """
@@ -417,10 +417,10 @@ class CodeEditAgent(Agent):
 
         self.state.document = after
 
-    async def send_result(self, result):
+    async def send_result(self, result: Any) -> None:
         ...  # unreachable
 
-    def accepted_diff_text(self, diff):
+    def accepted_diff_text(self, diff: List[Tuple[int, str]]) -> str:
         result = ""
         for op, text in diff:
             if op == -1:  # remove
@@ -431,7 +431,7 @@ class CodeEditAgent(Agent):
                 result += text
         return result
 
-    async def accept(self):
+    async def accept(self) -> None:
         logger.info(f"{self} user accepted result")
 
         await self.server.apply_range_edit(
@@ -447,7 +447,7 @@ class CodeEditAgent(Agent):
         )
         self.state._done.set()
 
-    def rejected_diff_text(self, diff):
+    def rejected_diff_text(self, diff: List[Tuple[int, str]]) -> str:
         # result = ""
         # for op, text in diff:
         #     if op == -1:  # remove
@@ -459,7 +459,7 @@ class CodeEditAgent(Agent):
         # return result
         return self.selection_text
 
-    async def reject(self):
+    async def reject(self) -> None:
         logger.info(f"{self} user rejected result")
 
         await self.server.apply_range_edit(

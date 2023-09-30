@@ -1,13 +1,23 @@
 <script lang="ts">
-  import FileIconSvg from "../../icons/FileIconSvg.svelte";
+  import CodeIcon from "../../icons/CodeIconSvg.svelte";
+  import FileIcon from "../../icons/FileIconSvg.svelte";
 
+  export let type: "symbol" | "file" = "file";
   export let focused: boolean = false;
   export let onClick: (...args: any) => any;
   export let displayName = "example.ts";
   export let description = "/project/server/example.ts";
+
+  let ref: HTMLDivElement | undefined = undefined;
+
+  $: {
+    if (focused && ref) {
+      ref.scrollIntoView({ block: "center" });
+    }
+  }
 </script>
 
-<div class="bg-[var(--vscode-editor-background)]">
+<div bind:this={ref} class="bg-[var(--vscode-editor-background)]">
   <!-- me and my homies love a11y -->
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div
@@ -19,9 +29,13 @@
     }`}
     on:click={onClick}
   >
-    <div class="flex flex-row ml-[6px] items-center">
+    <div class="flex flex-row ml-[6px] items-center truncate overflow-hidden">
       <div class="mr-[3px]">
-        <FileIconSvg />
+        {#if type === "file"}
+          <FileIcon />
+        {:else}
+          <CodeIcon />
+        {/if}
       </div>
       {displayName}
     </div>

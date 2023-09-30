@@ -26,7 +26,6 @@ class EditCodeResult:
 class ChatResult:
     text: TextStream
     event: Optional[asyncio.Event] = None
-    
 
 
 class AbstractCodeCompletionProvider(ABC):

@@ -120,7 +120,9 @@ def model_name_to_tokenizer(name: str):
         try:
             return transformers.AutoTokenizer.from_pretrained("psmathur/orca_mini_3b")
         except ImportError as e:
-            logging.getLogger().error(f"ImportError: {e} - you may need to install the protobuf package")
+            logging.getLogger().error(
+                f"ImportError: {e} - you may need to install the protobuf package"
+            )
             raise e
     else:
         error_msg = f"WARNING: No tokenizer found for model={name}. Defaulting to MPT tokenizer."

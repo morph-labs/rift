@@ -155,7 +155,7 @@ class EngineerAgent(ThirdPartyAgent):
         steps_config: Any = None,
         verbose: bool = typer.Option(False, "--verbose", "-v"),
         **kwargs,
-    ):
+    ) -> None:
         """
         Main function for the EngineerAgent. It initializes the AI model and starts the engineering process.
 
@@ -230,6 +230,12 @@ class EngineerAgent(ThirdPartyAgent):
 
         _colored = lambda x, y: x
         gpt_engineer.ai.print = send_chat_update_wrapper
+        gpt_engineer.ai.StreamingStdOutCallbackHandler.on_llm_new_token = (
+            lambda self, token, **kwargs: send_chat_update_wrapper(token)
+        )
+        gpt_engineer.ai.StreamingStdOutCallbackHandler.on_llm_end = (
+            lambda self, token, **kwargs: send_chat_update_wrapper()
+        )
         gpt_engineer.steps.colored = _colored
         gpt_engineer.steps.print = functools.partial(send_chat_update_wrapper, sync=True)
         gpt_engineer.steps.input = functools.partial(request_chat_wrapper, loop=loop)
@@ -240,7 +246,7 @@ class EngineerAgent(ThirdPartyAgent):
         logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
         model = fallback_model(model)
         ai = AI(
-            model=model,
+            model_name=model,
             temperature=temperature,
         )
 
@@ -290,7 +296,7 @@ class EngineerAgent(ThirdPartyAgent):
                 await asyncio.sleep(0.1)
                 messages = await loop.run_in_executor(pool, step, ai, dbs)
                 await asyncio.sleep(0.1)
-                dbs.logs[step.__name__] = json.dumps(messages)
+                dbs.logs[step.__name__] = AI.serialize_messages(messages)
                 items = list(dbs.workspace.in_memory_dict.items())
                 updates = [x for x in items if x[0] not in SEEN]
                 if len(updates) > 0:
@@ -316,7 +322,7 @@ class EngineerAgent(ThirdPartyAgent):
                 await asyncio.sleep(0.5)
                 counter += 1
 
-    async def _run_chat_thread(self, response_stream):
+    async def _run_chat_thread(self, response_stream: str) -> None:
         # logger.info("Started handler thread")
         before, after = response_stream.split_once("感")
         try:
@@ -329,7 +335,7 @@ class EngineerAgent(ThirdPartyAgent):
             logger.info(f"[_run_chat_thread] caught exception={e}, exiting")
 
     @classmethod
-    async def create(cls, params: EngineerAgentParams, server):
+    async def create(cls, params: EngineerAgentParams, server: Any) -> ThirdPartyAgent:
         state = EngineerAgentState(
             params=params,
             messages=[openai.Message.assistant("What do you want to build?")],

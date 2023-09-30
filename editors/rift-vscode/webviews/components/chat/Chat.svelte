@@ -39,7 +39,7 @@
       }
       fixedToBottom = Boolean(
         chatWindow.clientHeight + chatWindow.scrollTop >=
-          chatWindow.scrollHeight - 10
+          chatWindow.scrollHeight - 10,
       );
     });
   });
