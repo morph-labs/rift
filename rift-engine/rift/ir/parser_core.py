@@ -11,6 +11,7 @@ from rift.ir.IR import (
     Case,
     ClassKind,
     Code,
+    DefKind,
     Expression,
     ExpressionKind,
     GuardKind,
@@ -26,9 +27,12 @@ from rift.ir.IR import (
     Parameter,
     Field,
     Scope,
+    SectionKind,
+    StructureKind,
     Substring,
     Symbol,
     SymbolKind,
+    TheoremKind,
     Type,
     TypeDefinitionKind,
     ValueKind,
@@ -941,6 +945,59 @@ class SymbolParser:
                 else:
                     logger.warning(f"Unexpected node type in type_declaration: {t1.type}")
                 return []
+
+        elif language == "lean":
+            if node.type == "declaration" and len(node.children) >= 1:
+                node0 = node.children[-1]
+                body_node = node0.child_by_field_name("body")
+                if body_node is not None:
+                    self.body_sub = (body_node.start_byte, body_node.end_byte)
+                name_node = node0.child_by_field_name("name")
+                if name_node is not None:
+                    symbol = None
+                    if node0.type == "def":
+                        symbol_kind = DefKind()
+                        symbol = self.mk_symbol_decl(
+                            id=name_node, parents=[node], symbol_kind=symbol_kind
+                        )
+                    elif node0.type == "structure":
+                        # a structure/class does not have a body
+                        node_after_name = name_node.next_sibling
+                        if node_after_name is not None:
+                            self.body_sub = (node_after_name.start_byte, node.end_byte)
+                        symbol_kind = StructureKind()
+                        symbol = self.mk_symbol_decl(
+                            id=name_node, parents=[node], symbol_kind=symbol_kind
+                        )
+                    elif node0.type == "theorem":
+                        symbol_kind = TheoremKind()
+                        symbol = self.mk_symbol_decl(
+                            id=name_node, parents=[node], symbol_kind=symbol_kind
+                        )
+                    else:
+                        logger.warning(f"Lean: Unknown node0 type: {node0.type}")
+                    if symbol is not None:
+                        self.file.add_symbol(symbol)
+                        return [symbol]
+            elif node.type == "comment":
+                pass
+            elif node.type in ["namespace", "section"] and node.child_count >= 3:
+                # section, id, ..., id
+                name = node.children[1]
+                self.body_sub = (name.end_byte, node.end_byte)
+                new_scope = self.scope + name.text.decode() + "."
+                symbol = self.mk_dummy_symbol(id=name, parents=[node])
+                self.recurse(node, new_scope, parent=symbol).parse_block()
+                if node.type == "namespace":
+                    self.update_dummy_symbol(symbol, NamespaceKind())
+                else:
+                    self.update_dummy_symbol(symbol, SectionKind())
+                self.file.add_symbol(symbol)
+                return [symbol]
+            elif node.type == "end":
+                pass
+            else:
+                logger.warning(f"Lean: Unknown node type: {node.type}")
 
         if self.metasymbols:
             metasymbol = self.parse_metasymbol(counter)
