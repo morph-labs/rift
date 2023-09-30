@@ -1,0 +1,23 @@
+======
+Global
+======
+
+-- Foo
+-- bar
+
+---
+
+(module (comment) (comment))
+
+=========
+Multiline
+=========
+
+/-
+Foo
+Bar
+-/
+
+---
+
+(module (comment))

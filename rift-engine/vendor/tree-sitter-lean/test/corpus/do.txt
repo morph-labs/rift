@@ -1,0 +1,494 @@
+=========
+Braceless
+=========
+
+def main : IO UInt32 := do
+  IO.println "hello"
+  IO.println "world"
+
+---
+
+(module
+  (declaration
+    (def
+      name: (identifier)
+      type:
+        (apply
+          name: (identifier)
+          arguments: (identifier))
+      body:
+        (do
+          (apply
+            name: (identifier)
+            arguments: (string))
+          (apply
+            name: (identifier)
+            arguments: (string))))))
+
+========
+Repeated
+========
+
+def main : IO UInt32 := do do
+  IO.println "hello"
+  IO.println "world"
+
+---
+
+(module
+  (declaration
+    (def
+      name: (identifier)
+      type:
+        (apply
+          name: (identifier)
+          arguments: (identifier))
+      body:
+        (do
+          (do
+            (apply
+              name: (identifier)
+              arguments: (string))
+            (apply
+              name: (identifier)
+              arguments: (string)))))))
+
+==========
+Let (Bind)
+==========
+
+def f : Unit := do
+  let c <- 2
+  let d ← 2
+  let e := 2
+
+---
+
+(module
+  (declaration
+    (def (identifier) (identifier)
+    (do
+      (let_bind (identifier) (number))
+      (let_bind (identifier) (number))
+      (let (identifier) (number))))))
+
+=============
+Let Annotated
+=============
+
+def f : Unit := do
+  let e : Nat := 2
+
+---
+
+(module
+  (declaration
+    (def
+      name: (identifier)
+      type: (identifier)
+      body:
+        (do
+          (let
+            name: (identifier)
+            type: (identifier)
+            value: (number))))))
+
+===========
+Let Mutable
+===========
+
+def bar : Unit := do
+  let mut s := 0
+
+---
+
+(module
+  (declaration
+    (def
+      name: (identifier)
+      type: (identifier)
+      body:
+        (do
+          (let_mut
+            (parameters
+              name: (identifier))
+            value: (number))))))
+
+========
+For Loop
+========
+
+def foo (xs : Array Nat) : Unit := do
+  let mut s := 0
+  for x in xs do
+    s := s + x
+
+---
+
+(module
+  (declaration
+    (def
+      name: (identifier)
+      (binders
+        (explicit_binder
+          name: (identifier)
+          type:
+            (apply
+              name: (identifier)
+              arguments: (identifier))))
+      type: (identifier)
+      body:
+        (do
+          (let_mut
+            (parameters
+              name: (identifier))
+            value: (number))
+          (for_in
+            (identifier)
+            iterable: (identifier)
+            body:
+              (do
+                (assign
+                  name: (identifier)
+                  value: (binary_expression (identifier) (identifier)))))))))
+
+================================
+For Loop With Destructuring Bind
+================================
+
+def foo (xs : Array (Nat × Nat)) : Unit := do
+  for ⟨x, y⟩ in xs do
+    panic! "foo"
+
+---
+
+(module
+  (declaration
+    (def
+      name: (identifier)
+      (binders
+        (explicit_binder
+          name: (identifier)
+          type:
+            (apply
+              name: (identifier)
+              arguments:
+                (parenthesized (product (identifier) (identifier))))))
+      type: (identifier)
+      body:
+        (do
+          (for_in
+            (anonymous_constructor (identifier) (identifier))
+            iterable: (identifier)
+            body:
+              (do
+                (apply
+                  name: (identifier)
+                  arguments: (string))))))))
+
+;=========
+;Try/Catch
+;=========
+;
+;def f : IO Unit := do
+;  try
+;    println! "foo"
+;  catch ex =>
+;    throw ex
+;
+;---
+;
+;(module
+;  (declaration
+;    (def (identifier) (apply (identifier) (identifier))
+;    (do
+;      (try
+;        (apply (identifier) (string))
+;        (catch (identifier)
+;          (throw (identifier))))))))
+;
+;=========
+;Empty Try
+;=========
+;
+;def f : IO Unit := do
+;  try
+;  catch ex =>
+;    throw ex
+;
+;---
+;
+;(module
+;  (ERROR (identifier) (apply (identifier) (identifier))
+;    (apply (identifier) (identifier)) (ERROR) (throw (identifier))))
+;
+;===========
+;Try/Finally
+;===========
+;
+;def f : IO Unit := do
+;  try
+;    println! "foo"
+;  finally
+;    println! "bar"
+;
+;---
+;
+;(module
+;  (declaration
+;    (def (identifier) (apply (identifier) (identifier))
+;    (do
+;      (try
+;        (apply (identifier) (string))
+;        (finally
+;          (apply (identifier) (string))))))))
+;
+;=================
+;Try/Catch/Finally
+;=================
+;
+;def f : IO Unit := do
+;  try
+;    println! "foo"
+;  catch ex =>
+;    throw ex
+;  finally
+;    println! "bar"
+;
+;---
+;
+;(module
+;  (declaration
+;    (def (identifier) (apply (identifier) (identifier))
+;    (do
+;      (try
+;        (apply (identifier) (string))
+;        (catch (identifier) (throw (identifier))))
+;        (finally (apply (identifier) (string)))))))
+;
+;===================
+;No Catch or Finally
+;===================
+;
+;def f : IO Unit := do
+;  try
+;    println! "foo"
+;
+;---
+;
+;(module
+;  (ERROR (identifier) (apply (identifier) (identifier))
+;    (apply (identifier) (string))))
+;
+;============
+;Try One Line
+;============
+;
+;def f : IO Unit := do try println! "foo" catch ex => throw ex finally println! "bar"
+;
+;---
+;
+;(module
+;  (declaration
+;    (def (identifier) (apply (identifier) (identifier))
+;    (do
+;      (try
+;        (apply (identifier) (string))
+;        (catch (identifier)
+;          (throw (identifier)))
+;        (finally (apply (identifier) (string))))))))
+
+======
+Return
+======
+
+def f : Nat := do
+  return 3
+
+---
+
+(module
+  (declaration
+    (def (identifier) (identifier) (do (do_return (number))))))
+
+===============
+Return One Line
+===============
+
+#check (do return PUnit.unit : PUnit)
+
+---
+
+(module
+  (hash_command
+    (parenthesized
+      (do
+        (do_return
+          value: (identifier)))
+      (type_ascription
+        type: (identifier)))))
+
+==============
+Return Nothing
+==============
+
+def f : Unit := do
+  return
+
+---
+
+(module
+  (declaration
+    (def (identifier) (identifier) (do (do_return)))))
+
+======
+Unless
+======
+
+def check : IO Unit := do
+  unless true do
+    println! "Bla"
+
+---
+
+(module
+  (declaration
+    (def
+      name: (identifier)
+      type:
+        (apply
+          name: (identifier)
+          arguments: (identifier))
+        body:
+          (do
+            (unless
+              (true)
+              (do
+                (apply
+                  name: (identifier)
+                  arguments: (string))))))))
+
+================
+Do In Definition
+================
+
+instance : do return ToString Nat where
+  toString (d : Nat) : String := "Foo"
+
+---
+
+(module
+  (declaration
+    (instance
+      type:
+        (do
+          (do_return
+            value:
+              (apply
+                name: (identifier)
+                arguments: (identifier))))
+      body:
+        (where_decl
+          name: (identifier)
+          binders:
+            (explicit_binder
+              name: (identifier)
+              type: (identifier))
+          type: (identifier)
+          body: (string)))))
+
+;=======
+;If/Then
+;=======
+;
+;#check (do if true then return PUnit.unit : PUnit)
+;
+;---
+;
+;(module
+;  (hash_command
+;    (parenthesized
+;      (do
+;        (conditional_when
+;          (true)
+;          (do_return (identifier))))
+;      (type_ascription (identifier)))))
+
+===================
+Nested If/Then/Else
+===================
+
+#check if true then do if false then false else false else true
+
+---
+
+(module
+  (hash_command
+    (if_then_else
+      (true)
+      (do (if_then_else (false) (false) (false)))
+      (true))))
+
+===============
+Bare Identifier
+===============
+
+#check (do true : Bool)
+
+---
+
+(module
+  (hash_command
+    (parenthesized (do (true)) (type_ascription (identifier)))))
+
+=================================
+If Condition Function Application
+=================================
+
+#check (if foo 2 then do PUnit.unit else PUnit.unit : PUnit)
+
+---
+
+(module
+  (hash_command
+    (parenthesized
+      (if_then_else
+        (apply (identifier) (number))
+        (do (identifier))
+        (identifier))
+      (type_ascription (identifier)))))
+
+;==========
+;Left Arrow
+;==========
+;
+;#check (do if ← foo then return PUnit.unit : PUnit)
+;
+;---
+;
+;(module
+;  (hash_command
+;    (parenthesized
+;      (do
+;        (conditional_when
+;            (unary_expression (identifier))
+;            (do_return (identifier))))
+;        (type_ascription (identifier)))))
+;
+;=====
+;Match
+;=====
+;
+;#check (do match 0 with
+;  | 0 => 1
+;  | _ => 2 : Nat)
+;
+;---
+;
+;(module
+;  (hash_command
+;    (parenthesized
+;      (do (match (number)
+;        (match_alt (number) (number))
+;        (match_alt (hole) (number))
+;        (type_ascription (identifier)))))))
