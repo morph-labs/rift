@@ -28,7 +28,11 @@ https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903
 
 **Auto Docstring Generation**
 
+![auto doc screencast](https://github.com/morph-labs/rift/blob/pranav/dev2/assets/auto-doc.gif)
+
 **Auto Type Annotation Generation**
+
+![type inference screencast](https://github.com/morph-labs/rift/blob/pranav/dev2/assets/type-inference.gif)
 
 ## Tips
 - Press Command+M to focus the Rift Omnibar.
