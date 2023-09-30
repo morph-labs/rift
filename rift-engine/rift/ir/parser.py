@@ -14,6 +14,10 @@ def get_parser(language: IR.Language) -> Parser:
         parser = custom_parser.parser
         parser.set_language(custom_parser.ReScript)
         return parser
+    elif language == "lean" and custom_parser.active:
+        parser = custom_parser.parser
+        parser.set_language(custom_parser.Lean)
+        return parser
     else:
         return get_tree_sitter_parser(language)
 

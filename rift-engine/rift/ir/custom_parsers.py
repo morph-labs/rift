@@ -9,10 +9,12 @@ TREE_SITTER_LANGUAGES_PATH = os.path.join(RIFT_PROJECT_DIR, "build", "tree-sitte
 VENDOR_PATH = os.path.join(RIFT_PROJECT_DIR, "vendor")
 
 active = False
+
 ReScript = None
 Lean = None
 
 logger = logging.getLogger(__name__)
+
 
 def activate():
     try:
@@ -28,6 +30,7 @@ def activate():
         active = True
     except Exception as e:
         logger.error("Failed to activate custom parsers: %s", e)
+
 
 if active:
     activate()
