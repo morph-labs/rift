@@ -1,0 +1,224 @@
+========================
+Theorem With Tactic Body
+========================
+
+theorem foo {m n : Nat} : 2 * m + 2 * n = 2 * (n + m) := by
+  rewrite Nat.add_comm
+  exact (Nat.left_distrib 2 n m).symm
+
+---
+
+(module
+  (declaration
+    (theorem
+      name: (identifier)
+      (binders
+        (implicit_binder
+          name: (identifier)
+          name: (identifier)
+          type: (identifier)))
+      type:
+        (binary_expression
+          (binary_expression
+            (binary_expression (number) (identifier))
+            (binary_expression (number) (identifier)))
+          (binary_expression
+            (number)
+            (parenthesized (binary_expression (identifier) (identifier)))))
+      body:
+        (tactics
+          (rewrite (identifier))
+          (term
+            (proj
+              term:
+                (parenthesized
+                  (apply
+                    name: (identifier)
+                    arguments: (number)
+                    arguments: (identifier)
+                    arguments: (identifier)))
+              name: (identifier)))))))
+
+=================
+Tactic Expression
+=================
+
+variable {m n : Nat}
+#check (by
+  rewrite Nat.add_comm
+  exact (Nat.left_distrib 2 n m).symm : 2 * m + 2 * n = 2 * (n + m))
+
+---
+
+(module
+  (variable
+    (implicit_binder
+      name: (identifier)
+      name: (identifier)
+      type: (identifier)))
+  (hash_command
+    (parenthesized
+      (tactics (rewrite (identifier))
+        (term
+          (proj
+            term:
+              (parenthesized
+                (apply
+                  name: (identifier)
+                  arguments: (number)
+                  arguments: (identifier)
+                  arguments: (identifier)))
+            name: (identifier))))
+      (type_ascription
+        type:
+          (binary_expression
+            (binary_expression
+              (binary_expression (number) (identifier))
+              (binary_expression (number) (identifier)))
+            (binary_expression
+              (number)
+              (parenthesized
+                (binary_expression (identifier) (identifier)))))))))
+
+====
+Simp
+====
+
+example : 2 = 2 := by simp
+
+---
+
+(module
+  (declaration
+    (example (binary_expression (number) (number))
+      (tactics (simp)))))
+
+========================
+Simp With Extra Theorems
+========================
+
+example : 2 = 2 := by simp [foo, bar]
+
+---
+
+(module
+  (declaration
+    (example
+      type: (binary_expression (number) (number))
+      body:
+        (tactics
+          (simp
+            extra: (list (identifier) (identifier)))))))
+
+=====
+Intro
+=====
+
+example : ∀ x y : Nat, x + y = x + y := by
+  intro x y
+  rfl
+
+---
+
+(module
+  (declaration
+    (example
+      (forall
+        (binders
+          (identifier)
+          (identifier)
+          (identifier))
+        (binary_expression
+          (binary_expression
+            (identifier)
+            (identifier))
+          (binary_expression
+            (identifier)
+            (identifier))))
+      (tactics
+        (intro
+          (identifier)
+          (identifier))
+        (rfl)))))
+
+=====
+Apply
+=====
+
+example : true ↔ true := by apply Iff.intro
+
+---
+
+(module
+  (declaration
+    (example (binary_expression (true) (true))
+      (tactics (apply_tactic (identifier))))))
+
+========================
+Some Unknown User Tactic
+========================
+
+example : true ↔ true := by
+  foo
+  bar baz
+  baz
+
+---
+
+(module
+  (declaration
+    (example (binary_expression (true) (true))
+      (tactics
+        (identifier)
+        (apply (identifier) (identifier))
+        (identifier)))))
+
+==========
+Semicolons
+==========
+
+example : (true ↔ true) ↔ (true ↔ true) := by
+  apply Iff.intro;
+  intro h;
+  exact h;
+  intro h;
+  exact h;
+
+---
+
+(module
+  (declaration
+    (example
+      (binary_expression
+        (parenthesized (binary_expression (true) (true)))
+        (parenthesized (binary_expression (true) (true))))
+      (tactics
+        (apply_tactic (identifier))
+        (intro (identifier))
+        (term (identifier))
+        (intro (identifier))
+        (term (identifier))))))
+
+==============
+Synthetic Hole
+==============
+
+example {x : Nat} : x = x := by refine Eq.refl ?_
+
+---
+
+(module
+  (declaration
+    (example
+      (binders
+        (implicit_binder
+          (identifier)
+          (identifier)))
+      (binary_expression
+        (identifier)
+        (identifier))
+      (tactics
+        (apply
+          (identifier)
+          (identifier)
+          (synthetic_hole (hole)))))))

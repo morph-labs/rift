@@ -1,0 +1,1331 @@
+======
+Number
+======
+
+#eval 2
+
+---
+
+(module (hash_command (number)))
+
+=====
+Float
+=====
+
+#eval 23.279
+#eval 2.
+
+---
+
+(module (hash_command (float)) (hash_command (float)))
+
+=====
+Range
+=====
+
+#check [0:foo 3:1]
+
+---
+
+(module
+  (hash_command
+    (range
+      start: (number)
+      stop:
+        (apply
+          name: (identifier)
+          arguments: (number))
+      step: (number))))
+
+=============
+Range No Step
+=============
+
+#check [0:10]
+
+---
+
+(module
+  (hash_command
+    (range
+      start: (number)
+      stop: (number))))
+
+=============
+Range No Start
+=============
+
+#check [:3]
+
+---
+
+(module
+  (hash_command
+    (range
+      stop: (number))))
+
+====
+List
+====
+
+#check [1, 2, 3]
+#check []
+
+---
+
+(module
+  (hash_command (list (number) (number) (number)))
+  (hash_command (list)))
+
+=========
+Array Ref
+=========
+
+#check foo[bar 3]
+
+---
+
+(module
+  (hash_command
+    (subarray
+      term: (identifier)
+      value:
+        (apply
+          name: (identifier)
+          arguments: (number)))))
+
+========
+Subarray
+========
+
+#check foo[0:bar 3]
+
+---
+
+(module
+  (hash_command
+    (subarray
+      term: (identifier)
+      start: (number)
+      stop:
+        (apply
+          name: (identifier)
+          arguments: (number)))))
+
+================
+Subarray No Stop
+================
+
+#check foo[0:]
+
+---
+
+(module
+  (hash_command
+    (subarray
+      term: (identifier)
+      start: (number))))
+
+=================
+Subarray No Start
+=================
+
+#check foo[:3]
+
+---
+
+(module
+  (hash_command
+    (subarray
+      term: (identifier)
+      stop: (number))))
+
+======================
+Subarray of Expression
+======================
+
+#check (foo 37)[:3]
+
+---
+
+(module
+  (hash_command
+    (subarray
+      term:
+        (parenthesized
+          (apply
+            name: (identifier)
+            arguments: (number)))
+      stop: (number))))
+
+===========================
+Subarray Does Not Have Step
+===========================
+
+#check foo[1:2:3]
+
+---
+
+(module
+  (hash_command
+    (subarray
+      (identifier) (number) (ERROR (number)) (number))))
+
+===========================
+Subarray Does Not Have Copy
+===========================
+
+#check foo[:]
+
+---
+
+(module
+  (hash_command
+    (subarray (identifier) (identifier (MISSING _identifier)))))
+
+==================
+Subarray vs. Range
+==================
+
+#check foo [1:2]
+
+---
+
+(module
+  (hash_command
+    (apply
+      name: (identifier)
+      arguments:
+        (range
+          start: (number)
+          stop: (number)))))
+
+=====
+Array
+=====
+
+#check #[1, 2, 3]
+#check #[]
+
+---
+
+(module
+  (hash_command (array (number) (number) (number)))
+  (hash_command (array)))
+
+=====================
+Inductive Constructor
+=====================
+
+example : Foo := ⟨1, 2, 3⟩
+example : Foo := ⟨1⟩
+example : Foo := ⟨⟩
+
+---
+
+(module
+  (declaration (example (identifier) (anonymous_constructor (number) (number) (number))))
+  (declaration (example (identifier) (anonymous_constructor (number))))
+  (declaration (example (identifier) (anonymous_constructor))))
+
+=============================
+Invalid Inductive Constructor
+=============================
+
+example : Foo := ⟨,⟩
+example : Foo := ⟨, 1⟩
+example : Foo := ⟨, 2,⟩
+
+---
+
+(module
+  (declaration (example (identifier) (anonymous_constructor (ERROR))))
+  (declaration (example (identifier) (anonymous_constructor (ERROR) (number))))
+  (declaration (example (identifier) (anonymous_constructor (ERROR) (number) (ERROR)))))
+
+===========
+Identifiers
+===========
+
+#eval foo₁
+#eval x'
+#eval foo!
+#eval foo?
+#eval 𝒞
+
+---
+
+(module
+  (hash_command (identifier))
+  (hash_command (identifier))
+  (hash_command (identifier))
+  (hash_command (identifier))
+  (hash_command (identifier)))
+
+===============
+Non-Identifiers
+===============
+
+#eval ₁foo
+#eval 'x
+#eval !foo
+#eval foo.
+
+---
+
+(module
+  (hash_command (ERROR (UNEXPECTED 8321)) (identifier))
+  (hash_command (char (MISSING "'")))
+  (hash_command (unary_expression (identifier)))
+  (hash_command (identifier)) (ERROR))
+
+=======
+Product
+=======
+
+#check (10, "foo", 30, 40)
+
+---
+
+(module
+  (hash_command
+    (parenthesized (number) (tuple_tail (string) (number) (number)))))
+
+=============
+Function Type
+=============
+
+#check foo → bar
+#check foo → bar → baz
+
+---
+
+(module
+  (hash_command (arrow (identifier) (identifier)))
+  (hash_command (arrow (identifier) (arrow (identifier) (identifier)))))
+
+============
+Product Type
+============
+
+#check A × B
+#check A × B × C
+#check (A × B) × C
+
+---
+
+(module
+  (hash_command (product (identifier) (identifier)))
+  (hash_command (product (identifier) (product (identifier) (identifier))))
+  (hash_command
+    (product
+      (parenthesized (product (identifier) (identifier))) (identifier))))
+
+=======================
+Product Type Precedence
+=======================
+
+#check f 3 × C
+
+---
+
+; FIXME: This is wrong (backwards)... but apply's precedence needs fixing
+
+(module
+  (hash_command (apply (identifier) (product (number) (identifier)))))
+
+============
+If/Then/Else
+============
+
+#eval if true then "foo" else "bar"
+
+---
+
+(module (hash_command (if_then_else (true) (string) (string))))
+
+=============
+If Needs Else
+=============
+
+#eval if true then "foo"
+
+---
+
+(module (ERROR (true) (string)))
+
+===================
+Nested If/Then/Else
+===================
+
+#eval if true then if false then "foo" else "bar" else "baz"
+
+---
+
+(module
+  (hash_command
+    (if_then_else (true)
+      (if_then_else (false) (string) (string))
+      (string))))
+
+==========
+- Negation
+==========
+
+#eval -2
+#eval -2.0
+#eval -foo
+#eval - -2
+#eval - -foo
+#eval -(2 + 2)
+#eval - -(2 + 2)
+
+---
+
+(module
+  (hash_command (neg (number)))
+  (hash_command (neg (float)))
+  (hash_command (neg (identifier)))
+  (hash_command (neg (neg (number))))
+  (hash_command (neg (neg (identifier))))
+  (hash_command
+    (neg
+      (parenthesized (binary_expression (number) (number)))))
+  (hash_command
+    (neg
+      (neg
+        (parenthesized (binary_expression (number) (number)))))))
+
+=======================
+- Negation But Comments
+=======================
+
+#eval --2
+#eval --foo
+
+---
+
+(module (ERROR (comment) (comment)))
+
+==========
+! Negation
+==========
+
+#eval !true
+#eval !!!true
+#eval !foo
+
+---
+
+(module
+  (hash_command (unary_expression (true)))
+  (hash_command
+    (unary_expression (unary_expression (unary_expression (true)))))
+  (hash_command (unary_expression (identifier))))
+
+==========
+¬ Negation
+==========
+
+#eval ¬true
+#eval ¬¬¬true
+#eval ¬foo
+
+---
+
+(module
+  (hash_command (unary_expression (true)))
+  (hash_command
+    (unary_expression (unary_expression (unary_expression (true)))))
+  (hash_command (unary_expression (identifier))))
+
+==================
+Binary Expressions
+==================
+
+#eval 2 + 3
+#eval 2 - 3
+#eval 2 * 3
+#eval 2 / 3
+#eval 2 % 3
+#eval 2 ^ 3
+#eval 2 = 3
+#eval 2 ≠ 3
+#eval true ∧ true
+#eval true ∨ true
+#eval true ↔ true
+#eval true && true
+#eval true || true
+#eval "foo" ++ "bar"
+#eval [] :: [["foo"]]
+#eval 100 |> add1 |> times2
+#eval foo |>.map bar |>.baz.quux 7
+#eval times2 <| add1 <| 100
+#eval foo <|> bar
+#eval 'B' == 'B' || 'B' == 'C'
+#check f ∘ g ∘ h
+
+---
+(module
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (binary_expression (true) (true)))
+  (hash_command (binary_expression (true) (true)))
+  (hash_command (binary_expression (true) (true)))
+  (hash_command (binary_expression (true) (true)))
+  (hash_command (binary_expression (true) (true)))
+  (hash_command (binary_expression (string) (string)))
+  (hash_command (binary_expression (list) (list (list (string)))))
+  (hash_command
+    (binary_expression
+      (binary_expression (number) (identifier))
+      (identifier)))
+  (hash_command
+    (binary_expression
+      (binary_expression (identifier) (apply (identifier) (identifier)))
+      (apply (identifier) (number))))
+  (hash_command
+    (binary_expression
+      (identifier)
+      (binary_expression (identifier) (number))))
+  (hash_command (binary_expression (identifier) (identifier)))
+  (hash_command
+    (binary_expression
+      (binary_expression (char) (char))
+      (binary_expression (char) (char))))
+  (hash_command
+    (binary_expression
+      (identifier)
+      (binary_expression (identifier) (identifier)))))
+
+==========
+Precedence
+==========
+
+#eval 4 == 4 - 0
+#eval 4 == 3 + 1
+#eval 4 == 4 * 1
+#eval 4 == 4 / 1
+#eval 4 == 4 % 5
+example : 4 = 4 - 0 := rfl
+example : 4 = 3 + 1 := rfl
+example : 4 = 4 * 1 := rfl
+example : 4 = 4 / 1 := rfl
+example : 4 = 4 % 5 := rfl
+#eval false && false || true
+#eval true || false && false
+#eval 2 ^ 3 * 7 + 2
+#eval -2.0 ^ 3 * 7
+
+---
+
+(module
+  (hash_command
+    (binary_expression (number) (binary_expression (number) (number))))
+  (hash_command
+    (binary_expression (number) (binary_expression (number) (number))))
+  (hash_command
+    (binary_expression (number) (binary_expression (number) (number))))
+  (hash_command
+    (binary_expression (number) (binary_expression (number) (number))))
+  (hash_command
+    (binary_expression (number) (binary_expression (number) (number))))
+  (declaration
+    (example
+      type:
+        (binary_expression (number) (binary_expression (number) (number)))
+      body:
+        (identifier)))
+  (declaration
+    (example
+      type:
+        (binary_expression (number) (binary_expression (number) (number)))
+      body:
+        (identifier)))
+  (declaration
+    (example
+      type:
+        (binary_expression (number) (binary_expression (number) (number)))
+      body:
+        (identifier)))
+  (declaration
+    (example
+      type:
+        (binary_expression (number) (binary_expression (number) (number)))
+      body:
+        (identifier)))
+  (declaration
+    (example
+      type:
+        (binary_expression (number) (binary_expression (number) (number)))
+      body:
+        (identifier)))
+  (hash_command
+    (binary_expression (binary_expression (false) (false)) (true)))
+  (hash_command
+    (binary_expression (true) (binary_expression (false) (false))))
+  (hash_command
+    (binary_expression
+      (binary_expression
+        (binary_expression (number) (number))
+        (number))
+      (number)))
+  (hash_command
+    (binary_expression
+      (binary_expression (neg (float)) (number))
+      (number))))
+
+==========
+Comparison
+==========
+
+#check 2 < 3
+#check 2 ≤ 3
+#check 2 <= 3
+#check 2 > 3
+#check 2 ≥ 3
+#check 2 >= 3
+
+---
+
+(module
+  (hash_command (comparison (number) (number)))
+  (hash_command (comparison (number) (number)))
+  (hash_command (comparison (number) (number)))
+  (hash_command (comparison (number) (number)))
+  (hash_command (comparison (number) (number)))
+  (hash_command (comparison (number) (number))))
+
+=====================
+Comparison Precedence
+=====================
+
+example : id 2 < 3 = true := rfl
+example : 2 > id 3 = false := rfl
+example : id 2 ≤ 3 = true := rfl
+example : 2 ≥ id 3 = false := rfl
+
+---
+
+(module
+  (declaration
+    (example
+      (binary_expression
+        (comparison
+          (apply (identifier) (number))
+          (number))
+        (true))
+      (identifier)))
+  (declaration
+    (example
+      (binary_expression
+        (comparison
+          (number)
+          (apply (identifier) (number)))
+        (false))
+      (identifier)))
+  (declaration
+    (example
+      (binary_expression
+        (comparison
+          (apply (identifier) (number))
+          (number))
+        (true))
+      (identifier)))
+  (declaration
+    (example
+      (binary_expression
+        (comparison
+          (number)
+          (apply (identifier) (number)))
+        (false))
+      (identifier))))
+
+===========================
+Multiple Function Arguments
+===========================
+
+#check foo 2 3 4
+
+---
+
+(module
+  (hash_command
+    (apply (identifier) (number) (number) (number))))
+
+===============
+Named Arguments
+===============
+
+#check foo (bar := 3)
+
+---
+
+(module
+  (hash_command
+    (apply (identifier) (named_argument (identifier) (number)))))
+
+=====================
+Mixed Named Arguments
+=====================
+
+#check foo 1 (bar := 3) 2 (baz := 4)
+
+---
+
+(module
+  (hash_command
+    (apply (identifier)
+        (number)
+        (named_argument (identifier) (number))
+        (number)
+        (named_argument (identifier) (number)))))
+
+============
+Field Access
+============
+
+#check FooBar.foo
+#check foo.12
+
+---
+
+(module
+  (hash_command (identifier))
+  (hash_command
+    (proj
+      term: (identifier)
+      name: (number))))
+
+===================
+Nested Field Access
+===================
+
+#check Foo.bar.baz.quux
+
+---
+
+(module (hash_command (identifier)))
+
+=======================
+Expression Field Access
+=======================
+
+#check (Foo.bar baz).baz
+
+---
+
+(module
+  (hash_command
+    (proj
+      (parenthesized (apply (identifier) (identifier)))
+      (identifier))))
+
+=====
+Match
+=====
+
+def foo (d : Bar) : Baz :=
+  match d with
+  | quux => 1
+
+---
+
+(module
+  (declaration
+    (def
+      name: (identifier)
+      (binders
+        (explicit_binder
+          name: (identifier)
+          type: (identifier)))
+      type: (identifier)
+      body:
+        (match
+          value: (identifier)
+          patterns:
+            (match_alt
+              lhs: (identifier)
+              (number))))))
+
+==============
+Match Multiple
+==============
+
+def foo (a b c : Nat) :=
+  match a, b, c with
+  | _, _, _ => true
+
+---
+
+(module
+  (declaration
+    (def
+      name: (identifier)
+      (binders
+        (explicit_binder
+          name: (identifier)
+          name: (identifier)
+          name: (identifier)
+          type: (identifier)))
+      body:
+        (match
+          value: (identifier)
+          value: (identifier)
+          value: (identifier)
+          patterns:
+            (match_alt
+              lhs: (hole)
+              lhs: (hole)
+              lhs: (hole)
+              (true))))))
+
+=========================
+Match Multiple With Apply
+=========================
+
+#eval match 0 with
+| 0 => id 2
+| _ => id 4
+
+---
+
+(module
+  (hash_command
+    (match (number)
+      (match_alt (number) (apply (identifier) (number)))
+      (match_alt (hole) (apply (identifier) (number))))))
+
+================
+Match Expression
+================
+
+#eval match Nat.succ 3 with
+  | _ => true
+
+---
+
+(module
+  (hash_command
+    (match
+      value:
+        (apply
+          name: (identifier)
+          arguments: (number))
+      patterns:
+        (match_alt
+          lhs: (hole)
+          (true)))))
+
+=============
+$ Application
+=============
+
+#eval foo bar (baz (1 + 1))
+#eval foo bar $ baz (1 + 1)
+#eval foo bar $ baz $ 1 + 1
+
+---
+
+(module
+  (hash_command
+    (apply (identifier) (identifier)
+      (parenthesized
+        (apply (identifier)
+          (parenthesized (binary_expression (number) (number)))))))
+  (hash_command
+    (apply
+      (apply (identifier) (identifier))
+        (apply (identifier)
+          (parenthesized (binary_expression (number) (number))))))
+  (hash_command
+    (apply
+      (apply (identifier) (identifier))
+        (apply (identifier) (binary_expression (number) (number))))))
+
+==================
+Anonymous Function
+==================
+
+#check fun x => x + 2
+
+---
+
+(module
+  (hash_command
+    (fun
+      (parameters (identifier))
+      (binary_expression (identifier) (number)))))
+
+=============================
+Anonymous Function via Lambda
+=============================
+
+#check λ x => x
+
+---
+
+(module
+  (hash_command
+    (fun (parameters (identifier)) (identifier))))
+
+==========================================
+Anonymous Function With Destructuring Bind
+==========================================
+
+#check λ ⟨a⟩ v ⟨w, x, y⟩ z => a
+
+---
+
+(module
+  (hash_command
+    (fun
+      (parameters
+        (anonymous_constructor (identifier))
+        name: (identifier)
+        (anonymous_constructor (identifier) (identifier) (identifier))
+        name: (identifier))
+      (identifier))))
+
+==============================
+Anonymous Function Application
+==============================
+
+#eval (fun x => x + 2) 10
+
+---
+
+(module
+  (hash_command
+    (apply
+      (parenthesized
+        (fun
+          (parameters (identifier))
+          (binary_expression (identifier) (number))))
+      (number))))
+
+=================================================
+Anonymous Function Match With Additional Argument
+=================================================
+
+#eval foo 0 fun
+  | 0 => 0
+  | n => 1
+  37
+
+---
+
+(module
+  (hash_command
+    (apply
+      name: (identifier)
+      arguments: (number)
+      arguments:
+        (fun
+          lhs: (number)
+          (number)
+          lhs: (identifier)
+          (number))
+      arguments:
+        (number))))
+
+==========================
+Sugared Anonymous Function
+==========================
+
+#check (· + 2)
+#check (. + 2)
+#eval twice (. + 2) 10
+
+---
+
+(module
+  (hash_command
+    (parenthesized (binary_expression (cdot) (number))))
+  (hash_command
+    (parenthesized (binary_expression (cdot) (number))))
+  (hash_command
+    (apply
+      (identifier)
+      (parenthesized (binary_expression (cdot) (number))) (number))))
+
+=================
+Explicit Function
+=================
+
+#check @ident
+#check @ident α
+#check @ident Bool true
+#check @foo.bar
+
+---
+
+(module
+  (hash_command (explicit (identifier)))
+  (hash_command (apply (explicit (identifier)) (identifier)))
+  (hash_command (apply (explicit (identifier)) (identifier) (true)))
+  (hash_command (explicit (identifier))))
+
+===============
+Type Ascription
+===============
+
+#check (2 : Nat)
+#check (foo bar : Nat)
+#check (foo bar : baz quux)
+
+---
+
+(module
+  (hash_command
+    (parenthesized
+      (number)
+      (type_ascription
+        type: (identifier))))
+  (hash_command
+    (parenthesized
+      (apply
+        name: (identifier)
+        arguments: (identifier))
+      (type_ascription
+        type: (identifier))))
+  (hash_command
+    (parenthesized
+      (apply
+        name: (identifier)
+        arguments: (identifier))
+      (type_ascription
+        type:
+          (apply
+            name: (identifier)
+            arguments: (identifier))))))
+
+=================================
+Application Across Multiple Lines
+=================================
+
+#eval f
+2
+3
+
+  4
+
+---
+
+(module
+  (hash_command
+    (apply
+      name: (identifier)
+      arguments: (number)
+      arguments: (number)
+      arguments: (number))))
+
+=================
+Structure Literal
+=================
+
+#check {x := 12}
+#check {x := 12, y := (fun z => z)}
+
+---
+
+(module
+  (hash_command
+    (structure_instance
+      name: (identifier)
+      value: (number)))
+  (hash_command
+    (structure_instance
+      name: (identifier)
+      value: (number)
+      name: (identifier)
+      value:
+        (parenthesized
+          (fun
+            (parameters
+              name: (identifier))
+            (identifier))))))
+
+=======================
+Typed Structure Literal
+=======================
+
+#check {x := 12 : Foo}
+#check {x := 12, y := (fun z => z) : Foo Bar}
+#check {: Foo}
+
+---
+
+(module
+  (hash_command
+    (structure_instance
+      name: (identifier)
+      value: (number)
+      type: (identifier)))
+  (hash_command
+    (structure_instance
+      name: (identifier)
+      value: (number)
+      name: (identifier)
+      value:
+        (parenthesized
+          (fun
+            (parameters
+              name: (identifier))
+            (identifier)))
+      type:
+        (apply
+          name: (identifier)
+          arguments: (identifier))))
+  (hash_command
+    (structure_instance
+      type: (identifier))))
+
+====================
+Structure Overriding
+====================
+
+#check {foo with x := 12}
+#check {foo with x := 12, y := (fun z => z)}
+#check {foo with}
+#check {bar 37 with x := 12}
+
+---
+
+(module
+  (hash_command
+    (structure_instance
+      extends: (identifier)
+      name: (identifier)
+      value: (number)))
+  (hash_command
+    (structure_instance
+      extends: (identifier)
+      name: (identifier)
+      value: (number)
+      name: (identifier)
+      value:
+        (parenthesized
+          (fun
+            (parameters
+              name: (identifier))
+            (identifier)))))
+  (hash_command
+    (structure_instance
+      extends: (identifier)))
+  (hash_command
+    (structure_instance
+      extends:
+        (apply
+          name: (identifier)
+          arguments: (number))
+      name: (identifier)
+      value: (number))))
+
+===================
+Trailing Commas Yay
+===================
+
+example : Foo := {x := 12, y := 13,}
+
+---
+
+(module
+  (declaration
+    (example (identifier)
+      (structure_instance (identifier) (number) (identifier) (number)))))
+
+=====================
+No Trailing Commas Aw
+=====================
+
+#check (1, 2, 3,)
+#check [1, 2, 3,]
+#check #[1, 2, 3,]
+example : Foo := ⟨1, 2,⟩
+@[foo, bar,] def foo := 12
+def foo | 0, => 2 | _, => 3
+
+---
+
+(module
+  (hash_command
+    (parenthesized (number) (tuple_tail (number) (number)) (ERROR)))
+  (hash_command
+    (list (number) (number) (number) (identifier (MISSING _identifier))))
+  (hash_command
+    (array (number) (number) (number) (identifier (MISSING _identifier))))
+  (declaration
+    (example (identifier)
+      (anonymous_constructor
+        (number) (number) (identifier (MISSING _identifier)))))
+  (declaration
+    (attributes (identifier) (identifier) (identifier (MISSING _identifier)))
+    (def (identifier) (number)))
+  (declaration
+    (def (identifier)
+      (match_alt (number) (ERROR) (number))
+      (match_alt (hole) (ERROR) (number)))))
+
+=====
+Sorry
+=====
+
+#check sorry
+
+---
+
+(module (hash_command (sorry)))
+
+==================
+Escaped Identifier
+==================
+
+def «foo
+
+bar
+
+
+theorem baz : (afweio)» := 12
+
+---
+
+(module
+  (declaration
+    (def
+      name: (identifier)
+      body: (number))))
+
+======
+Unless
+======
+
+#check (unless true do PUnit.unit : PUnit)
+
+---
+
+(module
+  (hash_command
+    (parenthesized
+      (unless (true)
+        (do (identifier)))
+      (type_ascription
+        type: (identifier)))))
+
+===========
+Quantifiers
+===========
+
+#check ∀ x, ∃ y, x + y = x
+#check ∃ (x y : Nat), ∀ w, w + x + y + z = x
+
+---
+
+(module
+  (hash_command
+    (forall
+      binders:
+        (binders
+          name: (identifier))
+      body:
+        (exists
+          binders:
+            (binders
+              name: (identifier))
+          body:
+            (binary_expression
+              (binary_expression (identifier) (identifier))
+              (identifier)))))
+  (hash_command
+    (exists
+      binders:
+        (binders
+          (explicit_binder
+            name: (identifier)
+            name: (identifier)
+            type: (identifier)))
+      body:
+        (forall
+          binders:
+            (binders
+              name: (identifier))
+          body:
+            (binary_expression
+              (binary_expression
+                (binary_expression
+                  (binary_expression (identifier) (identifier))
+                  (identifier))
+                (identifier))
+              (identifier))))))
+
+========
+Borrowed
+========
+
+#check @& String
+
+---
+
+(module (hash_command (borrowed (identifier))))
+
+===========
+Quoted Name
+===========
+
+#check `String
+
+---
+
+(module (hash_command (quoted_name (identifier))))
+
+==================
+Double Quoted Name
+==================
+
+#check ``String
+
+---
+
+(module (hash_command (double_quoted_name (identifier))))
+
+===========
+Lift Method
+===========
+
+#check ← Nat
+
+---
+
+; This will runtime error (must be nested inside a 'do' expression),
+; but is valid syntax
+
+(module (hash_command (lift_method (identifier))))
+
+=======
+Subtype
+=======
+
+#check {x // x > 2}
+
+---
+
+(module
+  (hash_command
+    (subtype (identifier) (comparison (identifier) (number)))))
+
+=================
+Ellipsis Argument
+=================
+
+#check f ..
+
+---
+
+(module
+  (hash_command (apply (identifier) (ellipsis))))

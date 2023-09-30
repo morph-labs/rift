@@ -1,0 +1,230 @@
+=========
+#commands
+=========
+
+#check 2+2
+#eval 2+2
+#reduce 2+2
+#print inferInstance
+
+---
+
+(module
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (binary_expression (number) (number)))
+  (hash_command (identifier)))
+
+===================
+Same Line #commands
+===================
+
+#eval id 2 #eval 5
+
+---
+
+(module
+  (hash_command (apply (identifier) (number)))
+  (hash_command (number)))
+
+==============
+#check_failure
+==============
+
+#check_failure (inferInstance : Inhabited (Nat × _))
+
+---
+
+(module
+  (hash_command
+    (parenthesized
+      (identifier)
+      (type_ascription
+        type:
+          (apply
+            name: (identifier)
+            arguments:
+              (parenthesized (product (identifier) (hole))))))))
+
+=======
+Prelude
+=======
+
+prelude
+import Foo
+
+---
+
+(module
+  (prelude)
+  (import
+    module: (identifier)))
+
+====
+Open
+====
+
+open Foo
+open Foo.Bar
+open Foo Bar Baz.Quux
+
+---
+
+(module
+  (open
+    namespace: (identifier))
+  (open
+    namespace: (identifier))
+  (open
+    namespace: (identifier)
+    namespace: (identifier)
+    namespace: (identifier)))
+
+=======
+Open In
+=======
+
+open Foo in
+  def baz := bar
+
+---
+
+(module
+  (open
+    namespace: (identifier)
+      (declaration
+        (def
+          name: (identifier)
+          body: (identifier)))))
+
+======================
+Open With Missing Name
+======================
+
+open
+
+---
+
+(module (ERROR))
+
+======
+Import
+======
+
+import Foo
+
+---
+
+(module
+  (import
+    module: (identifier)))
+
+=============
+Import Nested
+=============
+
+import Foo.Bar.Baz
+
+---
+
+(module
+  (import
+    module: (identifier)))
+
+========================
+Import With Missing Name
+========================
+
+import
+
+---
+
+(module (ERROR))
+
+======
+Export
+======
+
+export Foo (bar baz)
+
+---
+
+(module
+  (export
+    class: (identifier)
+    (identifier)
+    (identifier)))
+
+============
+Empty Export
+============
+
+export Foo ()
+
+---
+
+(module (export (identifier) (identifier (MISSING _identifier))))
+
+========================
+Export With Missing Name
+========================
+
+export
+
+---
+
+(module (ERROR))
+
+========
+Universe
+========
+
+universe t
+universe u2 v2 w2
+
+---
+
+(module
+  (universe (identifier))
+  (universe (identifier) (identifier) (identifier)))
+
+==========================
+Universe With Missing Name
+==========================
+
+universe
+
+---
+
+(module (ERROR))
+
+=========
+Universes
+=========
+
+universes u2 v2 w2
+
+---
+
+(module (ERROR))
+
+===============
+Quoted Commands
+===============
+
+def f : Lean.Elab.Command.CommandElabM Lean.Syntax :=
+`(
+    namespace bar
+    def bar := 12
+    end bar
+  )
+
+---
+
+(module
+  (declaration
+    (def (identifier) (apply (identifier) (identifier))
+      (quoted
+        (namespace (identifier)
+          (declaration (def (identifier) (number)))
+         (identifier))))))
