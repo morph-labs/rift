@@ -92,13 +92,21 @@ class Index:
         documents: List[str] = []
         paths_with_ids: List[PathWithId] = []
         for file in project.get_files():
-            for f in file.get_function_declarations():
+            all_symbols = file.search_symbol(lambda _: True)
+            # filter only symbols whose symbol kind is def or theorem
+            symbols = [
+                s
+                for s in all_symbols
+                if isinstance(s.symbol_kind, IR.DefKind)
+                or isinstance(s.symbol_kind, IR.TheoremKind)
+            ]
+            for s in symbols:
                 file_path = file.path
-                path_with_id = (file_path, f.get_qualified_id())
+                path_with_id = (file_path, s.get_qualified_id())
                 if document_for_symbol:
-                    document = document_for_symbol(f)
+                    document = document_for_symbol(s)
                 else:
-                    document = f.get_substring().decode()
+                    document = s.get_substring().decode()
                 documents.append(document)
                 paths_with_ids.append(path_with_id)
 
@@ -167,13 +175,14 @@ async def test_index() -> None:
     # project_root = os.path.dirname(
     #     os.path.dirname(os.path.dirname(this_dir))
     # )  # the whole rift project
-    openai = False
+    project_root = os.path.join(this_dir, "Monad")
+    openai = True
 
-    index_file = os.path.join(this_dir, "index.rci")
+    index_file = os.path.join(this_dir, "monad.rci")
     embed_fun = get_embedding_function(openai=openai)
     if os.path.exists(index_file):
         start = time.time()
-        print(f"Loading index from file... {index_file}")
+        print(f"\nLoading index from file... {index_file}")
         index = Index.load(index_file)
         print(f"Loaded index in {time.time() - start:.2f} seconds")
     else:
@@ -196,18 +205,10 @@ async def test_index() -> None:
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
 
-    test_sentence = "Creates an instance of the Index class"
+    test_sentence = "adjunction"
     query = embed_fun(test_sentence)
     scores = index.search(query)
 
-    print("\nSemantic Search Results:")
+    print(f"\nSemantic Search Results query: \"{test_sentence}\":")
     for n, x in scores:
         print(f"{n}  {x:.3f}")
-
-    # bench search
-    repetitions = 100
-    start = time.time()
-    for _ in range(repetitions):
-        index.search(query)
-    elapsed = time.time() - start
-    print(f"\nSearched {repetitions} times in {elapsed:.2f} seconds")
