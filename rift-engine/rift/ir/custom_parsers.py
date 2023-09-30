@@ -20,12 +20,13 @@ def activate():
     try:
         global active, ReScript, Lean
         Language.build_library(
-            TREE_SITTER_LANGUAGES_PATH, [os.path.join(VENDOR_PATH, "tree-sitter-rescript")]
+            TREE_SITTER_LANGUAGES_PATH,
+            [
+                os.path.join(VENDOR_PATH, "tree-sitter-rescript"),
+                os.path.join(VENDOR_PATH, "tree-sitter-lean"),
+            ],
         )
         ReScript = Language(TREE_SITTER_LANGUAGES_PATH, "rescript")
-        Language.build_library(
-            TREE_SITTER_LANGUAGES_PATH, [os.path.join(VENDOR_PATH, "tree-sitter-lean")]
-        )
         Lean = Language(TREE_SITTER_LANGUAGES_PATH, "lean")
         active = True
     except Exception as e:
