@@ -11,6 +11,7 @@ Language = Literal[
     "c_sharp",
     "java",
     "javascript",
+    "lean",
     "ocaml",
     "python",
     "rescript",
@@ -379,6 +380,24 @@ class TypeDefinitionKind(SymbolKind):
 
 
 @dataclass
+class DefKind(SymbolKind):
+    def name(self) -> str:
+        return "Def"
+
+
+@dataclass
+class StructureKind(SymbolKind):
+    def name(self) -> str:
+        return "Structure"
+
+
+@dataclass
+class TheoremKind(SymbolKind):
+    def name(self) -> str:
+        return "Theorem"
+
+
+@dataclass
 class InterfaceKind(SymbolKind):
     def name(self) -> str:
         return "Interface"
@@ -406,6 +425,12 @@ class NamespaceKind(SymbolKind):
 class ModuleKind(SymbolKind):
     def name(self) -> str:
         return "Module"
+
+
+@dataclass
+class SectionKind(SymbolKind):
+    def name(self) -> str:
+        return "Section"
 
 
 @dataclass
@@ -627,6 +652,8 @@ def language_from_file_extension(file_path: str) -> Optional[Language]:
         return "javascript"
     elif file_path.endswith(".java"):
         return "java"
+    elif file_path.endswith(".lean") and custom_parsers.active:
+        return "lean"
     elif file_path.endswith(".ml"):
         return "ocaml"
     elif file_path.endswith(".py"):

@@ -1,0 +1,223 @@
+===============
+Empty Namespace
+===============
+
+namespace Foo
+end Foo
+
+---
+
+(module (namespace (identifier) (identifier)))
+
+=============
+Empty Section
+=============
+
+section Foo
+end Foo
+
+---
+
+(module (section (identifier) (identifier)))
+
+======================
+Nested Empty Namespace
+======================
+
+namespace Foo
+namespace Bar
+end Bar
+end Foo
+
+---
+
+(module
+  (namespace (identifier)
+    (namespace (identifier) (identifier)) (identifier)))
+
+====================
+Nested Empty Section
+====================
+
+section Foo
+section Bar
+end Bar
+end Foo
+
+---
+
+(module
+  (section (identifier)
+    (section (identifier) (identifier)) (identifier)))
+
+===========================
+Namespace With Declarations
+===========================
+
+namespace Foo
+
+theorem foo : p := sorry
+theorem bar : q := sorry
+
+end Foo
+
+---
+
+(module
+  (namespace (identifier)
+    (declaration (theorem (identifier) (identifier) (sorry)))
+    (declaration (theorem (identifier) (identifier) (sorry))) (identifier)))
+
+=========================
+Section With Declarations
+=========================
+
+section Foo
+
+theorem foo : p := sorry
+theorem bar : q := sorry
+
+end Foo
+
+---
+
+(module
+  (section (identifier)
+    (declaration (theorem (identifier) (identifier) (sorry)))
+    (declaration (theorem (identifier) (identifier) (sorry)))
+    (identifier)))
+
+=======================
+Namespace With Sections
+=======================
+
+namespace Foo
+
+section Bar
+
+theorem bar : q := sorry
+
+end Bar
+
+section Baz
+
+theorem baz : r := sorry
+
+end Baz
+
+end Foo
+
+---
+
+(module
+  (namespace (identifier)
+    (section (identifier)
+      (declaration (theorem (identifier) (identifier) (sorry)))
+      (identifier))
+    (section (identifier)
+      (declaration (theorem (identifier) (identifier) (sorry)))
+      (identifier))
+    (identifier)))
+
+=================
+Anonymous Section
+=================
+
+section
+end
+
+---
+
+(module (section))
+
+=======================
+No Anonymous Namespaces
+=======================
+
+namespace
+end
+
+---
+
+(module (ERROR (identifier)))
+
+=====================
+Dotted Name Namespace
+=====================
+
+namespace Foo.Bar.Baz
+end Foo.Bar.Baz
+
+---
+
+(module (namespace (identifier) (identifier)))
+
+===================
+Dotted Name Section
+===================
+
+section Foo.Bar.Baz
+end Foo.Bar.Baz
+
+---
+
+(module (section (identifier) (identifier)))
+
+=========
+Variables
+=========
+
+variable (α β γ : Type)
+variable (g : β → γ) (f : α → β) (h : α → α)
+variable {x : α} [y : α]
+
+---
+
+(module
+  (variable
+    (explicit_binder
+      name: (identifier)
+      name: (identifier)
+      name: (identifier)
+      type: (identifier)))
+  (variable
+    (explicit_binder
+      name: (identifier)
+      type: (arrow (identifier) (identifier)))
+    (explicit_binder
+      name: (identifier)
+      type: (arrow (identifier) (identifier)))
+    (explicit_binder
+      name: (identifier)
+      type: (arrow (identifier) (identifier))))
+  (variable
+    (implicit_binder
+      name: (identifier)
+      type: (identifier))
+    (instance_binder
+      name: (identifier)
+      type: (identifier))))
+
+===============
+Empty Variables
+===============
+
+variable
+
+#check 2
+
+---
+
+(module (ERROR) (hash_command (number)))
+
+=================================
+Non-Implicit-or-Explicit Variable
+=================================
+
+variable y
+
+#check 2
+
+---
+
+(module (ERROR) (hash_command (number)))

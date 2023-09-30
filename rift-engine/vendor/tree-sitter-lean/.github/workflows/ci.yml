@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+  schedule:
+    # Daily at 1:21
+    - cron: '21 1 * * *'
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+    - uses: pre-commit/action@v2.0.3
+
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+    - run: npm install
+    - run: npm test
