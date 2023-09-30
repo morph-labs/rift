@@ -15,7 +15,6 @@ dependencies = [
   "certifi",
   "pyinstaller",
   "pydantic[dotenv]==1.*",
-  "pydantic-settings",
   "python-dotenv",
   "rich",
   "fire",
@@ -30,8 +29,8 @@ dependencies = [
   "gpt-engineer @ git+https://github.com/morph-labs/gpt-engineer@jesse/patch",
   "aider-chat @ git+https://github.com/morph-labs/aider",
   "smol_dev @ git+https://github.com/morph-labs/smol_dev",
-  "protobuf",
-  "llama-cpp-python",
+  "mentat-ai @ git+https://www.github.com/morph-labs/mentat",
+  "llama-cpp-python==0.2.7",
 ]
 
 [project.optional-dependencies]

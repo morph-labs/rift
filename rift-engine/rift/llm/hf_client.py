@@ -9,11 +9,16 @@ from typing import Any, Optional, List, Dict, Callable
 import rift.lsp.types as lsp
 import rift.util.asyncgen as asg
 
-from pydantic import BaseModel
-from pydantic_settings BaseSettings
+from pydantic import BaseModel, BaseSettings
+
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from rift.llm.abstract import AbstractCodeCompletionProvider, EditCodeResult, ChatResult, AbstractCodeEditProvider
+from rift.llm.abstract import (
+    AbstractCodeCompletionProvider,
+    EditCodeResult,
+    ChatResult,
+    AbstractCodeEditProvider,
+)
 from rift.util.TextStream import TextStream
 from rift.llm.openai_client import format_visible_files, messages_size, get_num_tokens, split_lists
 import numpy as np
@@ -72,7 +77,7 @@ class HuggingFaceClient(AbstractCodeEditProvider):
 
     async def generate(self, prompt: str, max_tokens: Optional[int] = None):
         """
-        This method generates and yields completions from a HF model based on given prompt text and cursor offset. 
+        This method generates and yields completions from a HF model based on given prompt text and cursor offset.
 
         - prompt: The text you want to generate completion for. This should be of str data type.
 
@@ -90,12 +95,12 @@ class HuggingFaceClient(AbstractCodeEditProvider):
             if past_kv is None:
                 kwargs = prompt_tokens  # type: ignore
                 buffer.append(prompt_tokens["input_ids"].squeeze().detach().numpy())
-            else: # For subsequent inferences, provide the last generated token and previously calculated key values
+            else:  # For subsequent inferences, provide the last generated token and previously calculated key values
                 input_ids = torch.tensor(np.reshape(buffer[-1][:, None], (1, -1)), dtype=torch.long)
                 attention_mask = torch.ones_like(input_ids)
                 kwargs = dict(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
                 )
                 logger.info(f"{input_ids=}")
                 logger.info(f"{attention_mask=}")
@@ -112,7 +117,7 @@ class HuggingFaceClient(AbstractCodeEditProvider):
 
             outputs: np.array = model_output.logits.detach().numpy()
             past_kv = model_output.past_key_values
-            
+
             # Extract the most probable next token from the output logits (scaled inversely by temperature for smoother gradients)
             logits = outputs[:, -1] * 1.0 / (self.temperature + 1e-8)
             out_tk = np.argmax(logits, -1)
@@ -154,27 +159,26 @@ class HuggingFaceClient(AbstractCodeEditProvider):
             # Add the generated word
             generated += new_word
 
-
-    async def chat_completions(
-        self,
-        messages: List[Message],
-        stream: bool = True
-    ):
+    async def chat_completions(self, messages: List[Message], stream: bool = True):
         MAX_LEN_SAMPLED_COMPLETION = 768
-        def prepare_prompt(): # TODO: truncation here?
+
+        def prepare_prompt():  # TODO: truncation here?
             prompt = ""
+
             def format_message(msg: Message) -> str:
                 return f"===\n[{msg.role}]\n{msg.content}\n\n"
+
             for message in messages:
                 prompt += format_message(message)
 
             prompt += "===\n[assistant]\n"
             return prompt
-        
-        async for delta in self.generate(prompt=prepare_prompt(), max_tokens=MAX_LEN_SAMPLED_COMPLETION):
+
+        async for delta in self.generate(
+            prompt=prepare_prompt(), max_tokens=MAX_LEN_SAMPLED_COMPLETION
+        ):
             logger.info(f"{delta=}")
             yield delta
-
 
     async def edit_code(
         self,
@@ -194,6 +198,7 @@ class HuggingFaceClient(AbstractCodeEditProvider):
             goal = f"""
             Generate code to replace the given `region`. Write a partial code snippet without imports if needed.
             """
+
         def create_messages(
             before_cursor: str,
             region: str,
@@ -253,6 +258,7 @@ class HuggingFaceClient(AbstractCodeEditProvider):
                 Message.assistant("Hello! How can I help you today?"),
                 Message.user(user_message),
             ]
+
         messages_skeleton = create_messages("", "", "")
         max_size = MAX_CONTEXT_SIZE - MAX_LEN_SAMPLED_COMPLETION - messages_size(messages_skeleton)
         max_size_document = int(max_size * (current_file_weight if documents else 1.0))
@@ -287,12 +293,12 @@ class HuggingFaceClient(AbstractCodeEditProvider):
             after_cursor=after_cursor,
             documents=truncated_documents,
         )
-        event = asyncio.Event()        
+        event = asyncio.Event()
+
         def error_callback(e):
             event.set()
-        stream = TextStream.from_aiter(
-            self.chat_completions(messages, stream=True)
-            )
+
+        stream = TextStream.from_aiter(self.chat_completions(messages, stream=True))
 
         logger.info("constructed stream")
         # thoughtstream = TextStream()
@@ -325,13 +331,16 @@ class HuggingFaceClient(AbstractCodeEditProvider):
         # planstream._feed_task = t
         return EditCodeResult(thoughts=None, code=stream, plan=None, event=event)
 
+
 if __name__ == "__main__":
     PROMPT = """\
 def hello_world():
     # TODO
 """
+
     async def main():
         client = HuggingFaceClient(model_name="Salesforce/codegen-350m-mono")
         async for delta in client.generate(prompt=PROMPT, max_tokens=32):
             logger.info(delta)
+
     asyncio.run(main())

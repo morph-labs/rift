@@ -60,13 +60,8 @@
           "enum": [
             "openai:gpt-3.5-turbo",
             "openai:gpt-4",
+            "llama:rift-coder-v0-7b-gguf",
             "hf:bigcode/starcoderbase-3b",
-            "llama:codellama-7b-instruct @ /Users/pv/Downloads/CodeLlama-7B-Instruct-GGUF/codellama-7b-instruct.Q5_K_M.gguf",
-            "llama:codellama-7b-instruct @ /Users/pv/zeta/flanlabs/rift/model_weights/ft-9-10-3.gguf",
-            "llama:codellama-7b-instruct @ /Users/pv/zeta/flanlabs/rift/model_weights/ft-9-10.gguf",
-            "llama:codellama-7b-instruct @ /Users/pv/zeta/flanlabs/rift/model_weights/ft-9-9.gguf",
-            "llama:codellama-7b-instruct @ /Users/pv/zeta/flanlabs/rift/model_weights/ft-9-7.gguf",
-            "llama:codellama-7b-instruct @ /Users/pv/zeta/flanlabs/rift/model_weights/ft-9-1.gguf",
             "gpt4all:orca-mini-7b.ggmlv3.q4_0",
             "gpt4all:orca-mini-3b.ggmlv3.q4_0"
           ],

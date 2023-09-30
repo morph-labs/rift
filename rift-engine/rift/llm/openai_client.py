@@ -21,8 +21,7 @@ from typing import (
 from urllib.parse import parse_qs, urlparse
 
 import aiohttp
-from pydantic import BaseModel, SecretStr
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel, BaseSettings, SecretStr
 
 import rift.lsp.types as lsp
 import rift.util.asyncgen as asg

@@ -39,12 +39,13 @@ import {
   AtableFileFromFsPath,
   AtableFileFromUri,
 } from "./util/AtableFileFunction";
+import { join } from "path";
 
 let client: LanguageClient; //LanguageClient
 
-export const port =
-  vscode.workspace.getConfiguration("rift").get<number>("riftServerPort") ||
-  7797;
+const getConfig = () => vscode.workspace.getConfiguration("rift");
+
+export const port = getConfig().get<number>("riftServerPort") || 7797;
 
 const GREEN = vscode.window.createTextEditorDecorationType({
   backgroundColor: "rgba(0,255,0,0.1)",
@@ -328,6 +329,14 @@ export class MorphLanguageClient
     console.log("refreshing webview agents");
     const availableAgents = (await this.list_agents()).reverse();
     this.webviewState.update((state) => ({ ...state, availableAgents }));
+  }
+
+  public async ensureModelDependencies() {
+    const codeEditModel = getConfig().get<string>("codeEditModel");
+    if (codeEditModel?.startsWith("llama")) {
+      const modelName = codeEditModel.split(":")[1].split("@")[0].trim();
+      const modelPath = codeEditModel.split(":")[1].split("@")[0] ?? join();
+    }
   }
 
   async create_client() {

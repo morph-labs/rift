@@ -21,8 +21,9 @@ from typing import (
 from urllib.parse import parse_qs, urlparse
 
 import aiohttp
-from pydantic import BaseModel, SecretStr
-from pydantic_settings import BaseSettings
+from llama_cpp.llama import Llama
+from llama_cpp.llama_types import CompletionChunk
+from pydantic import BaseModel, BaseSettings, SecretStr
 
 import rift.lsp.types as lsp
 import rift.util.asyncgen as asg
@@ -42,18 +43,15 @@ from rift.llm.openai_types import (
 )
 from rift.util.TextStream import TextStream
 
-from llama_cpp.llama import Llama
-from llama_cpp.llama_types import CompletionChunk
-
 logger = logging.getLogger(__name__)
 
 from rift.util.logging import configure_logger
-
 
 I = TypeVar("I", bound=BaseModel)
 O = TypeVar("O", bound=BaseModel)
 
 import transformers
+
 
 @dataclass
 class SourceCodeFileWithRegion:
@@ -115,6 +113,7 @@ class SourceCodeFileWithRegion:
 ENCODER = transformers.AutoTokenizer.from_pretrained("TheBloke/CodeLlama-7B-Instruct-fp16")
 ENCODER_LOCK = Lock()
 
+
 class MissingKeyError(Exception):
     ...
 
@@ -164,7 +163,6 @@ def split_sizes(size1: int, size2: int, max_size: int) -> tuple[int, int]:
     available2 = max_size - size1
     size2 = max(size2_bound, available2)
     return size1, size2
-
 
 
 def split_lists(list1: list, list2: list, max_size: int) -> tuple[list, list]:
@@ -388,19 +386,25 @@ def truncate_messages(
         tail_messages.insert(0, msg)
     return [messages[0]] + tail_messages
 
+
 import os
+
+
 class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider):
     name: str
     model_path: Optional[str] = None
+
     class Config:
         env_prefix = "LLAMA_"
         env_file = ".env"
-        keep_untouched = (cached_property,)    
+        keep_untouched = (cached_property,)
 
     def __init__(self, name: str, model_path: Optional[str] = None):
         logger.info("client created")
         if model_path is None:
-            raise Exception("Must specify path to GGUF model weights on filesystem in Rift settings. Try downloading e.g. `https://huggingface.co/TheBloke/CodeLlama-7B-GGUF/resolve/main/codellama-7b.Q5_K_M.gguf`")
+            raise Exception(
+                "Must specify path to GGUF model weights on filesystem in Rift settings. Try downloading e.g. `https://huggingface.co/TheBloke/CodeLlama-7B-GGUF/resolve/main/codellama-7b.Q5_K_M.gguf`"
+            )
         self.name = name
         self.model_path = model_path
 
@@ -412,6 +416,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         return Llama(
             model_path=self.model_path,
             n_ctx=MAX_CONTEXT_SIZE,
+            n_gpu_layers=1,
         )
 
     async def handle_error(self, resp: aiohttp.ClientResponse):
@@ -424,7 +429,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         #         "Please double check you have access to GPT-4 API: https://openai.com/waitlist/gpt-4-api"
         #     )
         # raise LlamaError(message=message, status=status_code)
-        pass # TODO
+        pass  # TODO
 
     async def get_error_message(self, resp):
         # if resp.content_type == "application/json":
@@ -514,6 +519,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         """
         loop = loop or asyncio.get_event_loop()
         import threading
+
         completion_stream = TextStream()
 
         def _send_chunk(chunk_str: str):
@@ -535,23 +541,29 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
 
         fut = asyncio.get_event_loop().run_in_executor(None, worker)
         completion_stream._feed_task = fut
+
         async def real_worker():
             async for delta in completion_stream:
-                logger.info(f"{delta=}")
                 yield delta
+
         return real_worker()
 
     def chat_completions(self, messages: List[Message], *, stream: bool = False, **kwargs) -> Any:
-        from rift.util.ofdict import todict, ofdict
+        from rift.util.ofdict import ofdict, todict
+
         messages = [todict(msg) for msg in messages]
+
         from llama_cpp.llama_types import ChatCompletionChunk
+
         async def wrapper():
+            resp = ""
             for chunk in self.model.create_chat_completion(
-                messages=messages,
-                stream=stream,
-                max_tokens=MAX_LEN_SAMPLED_COMPLETION
+                messages=messages, stream=stream, max_tokens=MAX_LEN_SAMPLED_COMPLETION
             ):
+                resp += chunk
                 yield chunk
+            logger.info(f"complete response: {resp}")
+
         return wrapper()
 
     async def run_chat(
@@ -598,7 +610,6 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
                 else:
                     return ""
             return ""
-
 
         stream = TextStream.from_aiter(
             asg.map(postprocess, self.chat_completions(messages, stream=True))
@@ -684,11 +695,12 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
             region=region,
             after_cursor=after_cursor,
             documents=truncated_documents,
-            goal=goal
+            goal=goal,
         )
         # logger.info(f"{messages=}")
 
         event = asyncio.Event()
+
         def error_callback(e):
             event.set()
 
@@ -703,27 +715,20 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
                     return ""
             return ""
 
-
         # stream = TextStream.from_aiter(
-            # asg.map(postprocess, self.chat_completions(messages, stream=True))
+        # asg.map(postprocess, self.chat_completions(messages, stream=True))
         # )
-
 
         def postprocess2(chunk: CompletionChunk) -> str:
             return chunk["choices"][0]["text"]
-        
+
         pre_prompt: SourceCodeFileWithRegion = SourceCodeFileWithRegion(
-            region=region,
-            before_region=before_cursor,
-            after_region=after_cursor,
-            instruction=goal
+            region=region, before_region=before_cursor, after_region=after_cursor, instruction=goal
         )
 
         prompt = pre_prompt.get_prompt()
         logger.info(f"{prompt=}")
-        stream = TextStream.from_aiter(
-            self.completion(prompt, stream=True)
-        )
+        stream = TextStream.from_aiter(self.completion(prompt, stream=True))
         # async def postprocess2(completion_chunk: CompletionChunk) -> str:
         #     if completion_chunk["choices"]:
         #         choice = completion_chunk["choices"][0]
@@ -732,7 +737,6 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         #         if choice["finish_reason"]:
         #             return ""
         #     return ""
-
 
         # commented_region = '# ' + '\n# '.join(region.split('\n'))
         # prompt = f"<PRE> {before_cursor}\n{commented_region}\n{f'# better version which accomplishes {goal}'} <SUF> {after_cursor} <MID>"
@@ -784,7 +788,6 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         # # codestream._feed_task = t
         # # planstream._feed_task = t
         # # logger.info("[edit_code] about to return")
-
 
         # codestream = TextStream()
         # async def worker():
@@ -854,7 +857,7 @@ def create_messages(
     after_cursor: str,
     documents: Optional[List[lsp.Document]] = None,
     goal: Optional[str] = None,
-    latest_region: Optional[str] = None
+    latest_region: Optional[str] = None,
 ) -> List[Message]:
     user_message = (
         f"Please generate code completing the task to replace the below region: {goal or ''}\n"
@@ -908,7 +911,6 @@ def create_messages(
         #     "I added an implementation of the rest of the `hello_world` function which uses the Python `print` statement to print 'hello_world' before returning the integer literal 0.\n"
         # ),
         # Message.assistant("Hello! How can I help you today?"),
-
         Message.system(
             "You will be presented with a *task* and a source code file split into three parts: a *prefix*, *region*, and *suffix*. "
             "The task will specify a change or new code that will replace the given region.\n You will receive the source code in the following format:\n"
@@ -922,28 +924,27 @@ def create_messages(
             f"Your solution will be added verbatim to replace the given region. Do *not* repeat the prefix or suffix in any way.\n"
             "The solution should directly replaces the given region. If the region is empty, just write something that will replace the empty string. *Do not repeat the prefix or suffix in any way*. If the region is in the middle of a function definition or class declaration, do not repeat the function signature or class declaration. Write a partial code snippet without imports if needed. Preserve indentation.\n"
         ),
-        Message.assistant("Hello! How can I help you today?"),        
+        Message.assistant("Hello! How can I help you today?"),
         Message.user(
             "==== PREFIX ====\n"
             "def hello_world():\n    \n"
             "==== REGION ====\n"
             "# TODO\n"
             "==== SUFFIX ====\n"
-            "if __name__ == '__main__':\n    hello_world()\n\n"            
+            "if __name__ == '__main__':\n    hello_world()\n\n"
         ),
         Message.assistant(
-             "    # print hello world\n"
-             "    print('hello world!')\n"
-             "    # return the integer 0\n"
-             "    return 0\n"
+            "    # print hello world\n"
+            "    print('hello world!')\n"
+            "    # return the integer 0\n"
+            "    return 0\n"
         ),
         Message.user(user_message),
     ]
 
 
 async def _main():
-
-    client = LlamaClient(name="codellama", model_path="/Users/pv/Downloads/CodeLlama-7B-Instruct-GGUF/codellama-7b-instruct.Q5_K_M.gguf")  # type: ignore
+    client = LlamaClient(name="codellama", model_path="/Users/jacksonkearl/.morph/models/rift-coder-v0-7b-gguf")  # type: ignore
     print(client)
     messages = [
         # Message.system("you are a friendly and witty chatbot."),
@@ -951,9 +952,17 @@ async def _main():
         # Message.assistant("i won't unless if you ask nicely"),
     ]
 
-    messages = create_messages("def merge_sort(xs: List[int]):\n", "    # TODO", "\nif __name__ == '__main__':\nprint(merge_sort([5,4,3,2,1]))", goal="implement the missing code", latest_region=None)
+    messages = create_messages(
+        "def merge_sort(xs: List[int]):\n",
+        "    # TODO",
+        "\nif __name__ == '__main__':\nprint(merge_sort([5,4,3,2,1]))",
+        goal="implement the missing code",
+        latest_region=None,
+    )
 
-    stream = await client.run_chat("fee fi fo fum", messages=messages[:-1], message=messages[-1].content)
+    stream = await client.run_chat(
+        "fee fi fo fum", messages=messages[:-1], message=messages[-1].content
+    )
     async for delta in stream.text:
         print(delta)
     # print("\n\n")

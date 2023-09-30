@@ -2,7 +2,10 @@ import functools
 import logging
 import os
 import weakref
+from pathlib import Path
 from typing import Literal, Optional, Tuple
+
+morph_model_dir = Path.home().joinpath(".morph", "models")
 
 from pydantic import BaseModel, SecretStr
 
@@ -23,11 +26,13 @@ class ModelConfig(BaseModel):
         return hash(self) == hash(other)
 
     def create_chat(self) -> AbstractChatCompletionProvider:
+        logger.info(f"creating chat {self.chatModel}")
         c = create_client(self.chatModel, self.openaiKey)
         assert isinstance(c, AbstractChatCompletionProvider)
         return c
 
     def create_code_edit(self) -> AbstractCodeCompletionProvider:
+        logger.info(f"creating code edit {self.codeEditModel}")
         return create_client(self.codeEditModel, self.openaiKey)
 
     @classmethod
@@ -121,6 +126,11 @@ def create_client_core(
     elif type == "llama":  # llama-cpp-python
         from rift.llm.llama_client import LlamaClient
 
-        return LlamaClient(name=name, model_path=path if path else None)
+        parsed_path = Path(path if path else name)
+        if not parsed_path.is_absolute():
+            parsed_path = morph_model_dir.joinpath(parsed_path)
+        logger.info(f"Creating LLaMa client with model located at {path}")
+
+        return LlamaClient(name=name, model_path=str(parsed_path) if path or name else None)
     else:
         raise ValueError(f"Unknown model: {config}")
