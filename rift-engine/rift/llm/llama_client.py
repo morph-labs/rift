@@ -461,9 +461,6 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         input_type: Type[I],
         stream_data_type: Type[O],
     ) -> AsyncGenerator[O, None]:
-        if not self.api_key:
-            logger.error("Missing API key")
-            raise MissingKeyError
         if not getattr(params, "stream", True):
             raise ValueError("To not use streaming please use the _post_endpoint method")
         if not isinstance(params, input_type):

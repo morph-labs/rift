@@ -40,7 +40,7 @@ function tcpServerOptions(port: number): ServerOptions {
   };
 }
 
-const exists = async (p?: string) => {
+export const exists = async (p?: string) => {
   try {
     if (p) {
       await stat(p);
@@ -67,12 +67,18 @@ const platformSpecific = <T>(options: {
   throw Error("Unsupported Platform: " + process.platform);
 };
 
-const downloadFile = async (
+export const downloadFile = async (
   url: string,
   savePath: string,
   progress: vscode.Progress<{ message?: string; increment?: number }>,
+  token?: vscode.CancellationToken,
 ): Promise<boolean> => {
-  const res = await fetch(url);
+  const signal = new AbortController();
+  token?.onCancellationRequested(() => {
+    signal.abort();
+    rm(savePath);
+  });
+  const res = await fetch(url, { signal: signal.signal });
   if (!res.ok || !res.body) {
     console.error("Error getting file", { res, url });
     return false;
