@@ -41,7 +41,6 @@ class Result(agent.AgentRunResult):
 
 @dataclass
 class State(agent.AgentState):
-    messages: list[openai_types.Message]
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 

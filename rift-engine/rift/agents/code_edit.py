@@ -44,7 +44,6 @@ class CodeEditAgentState(AgentState):
     active_range: lsp.Range
     cursor: lsp.Position
     selection: lsp.Selection
-    messages: list[openai.Message]
     additive_ranges: RangeSet = field(default_factory=RangeSet)
     negative_ranges: RangeSet = field(default_factory=RangeSet)
     change_futures: Dict[str, Future] = field(default_factory=dict)

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SampleAgentState(AgentState):
-    messages: list[openai.Message]
+    pass
 
 
 """uncomment this to register the agent and access it from the Rift extension"""

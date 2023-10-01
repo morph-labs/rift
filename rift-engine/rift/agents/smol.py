@@ -65,7 +65,6 @@ class SmolProgress(AgentProgress):
 @dataclass
 class SmolAgentState(AgentState):
     _done: bool = False
-    messages: List[openai.Message] = field(default_factory=list)
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
