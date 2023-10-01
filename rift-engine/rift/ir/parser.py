@@ -41,7 +41,10 @@ def parse_code_block(
 
 
 def parse_path(
-    path: str, project: IR.Project, filter_file: Optional[Callable[[str], bool]] = None, metasymbols: bool = False
+    path: str,
+    project: IR.Project,
+    filter_file: Optional[Callable[[str], bool]] = None,
+    metasymbols: bool = False,
 ) -> None:
     """
     Parses a single file and adds it to the provided Project instance.

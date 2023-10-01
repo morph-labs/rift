@@ -35,18 +35,12 @@ from rift.util.TextStream import TextStream
 
 
 @dataclass
-class Params(agent.AgentParams):
-    ...
-
-
-@dataclass
 class Result(agent.AgentRunResult):
     ...
 
 
 @dataclass
 class State(agent.AgentState):
-    params: Params
     messages: list[openai_types.Message]
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
@@ -185,12 +179,11 @@ def get_num_missing_in_code(code: IR.Code, language: IR.Language) -> int:
 @dataclass
 class TypeInferenceAgent(agent.ThirdPartyAgent):
     agent_type: ClassVar[str] = "missing_types"
-    params_cls: ClassVar[Any] = Params
 
     debug = Config.debug
 
     @classmethod
-    async def create(cls, params: Any, server: LspServer) -> Any:
+    async def create(cls, params: Any, server: LspServer) -> "TypeInferenceAgent":
         state = State(
             params=params,
             messages=[],
@@ -365,7 +358,8 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
         text_document = self.get_state().params.textDocument
         if text_document is not None:
             parsed = urlparse(text_document.uri)
-            current_file_uri = url2pathname(unquote(parsed.path)) # Work around bug: https://github.com/scikit-hep/uproot5/issues/325#issue-850683423
+            # Work around bug: https://github.com/scikit-hep/uproot5/issues/325#issue-850683423
+            current_file_uri = url2pathname(unquote(parsed.path))
         else:
             raise Exception("Missing textDocument")
 
