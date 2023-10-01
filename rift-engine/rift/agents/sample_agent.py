@@ -8,6 +8,7 @@ from typing import Any, ClassVar, Optional
 
 import rift.llm.openai_types as openai
 from rift.agents.abstract import Agent, AgentParams, AgentState, RequestChatRequest
+from rift.lsp.server import LspServer
 from rift.lsp.types import TextDocumentIdentifier
 
 logger = logging.getLogger(__name__)
@@ -88,7 +89,7 @@ class SampleAgent(Agent):
             logger.info(f"[_run_chat_thread] caught exception={e}, exiting")
 
     @classmethod
-    async def create(cls, params: AgentParams, server):
+    async def create(cls, params: AgentParams, server: LspServer) -> "SampleAgent":
         # Convert the parameters to a SampleAgentParams object
 
         # Create the initial state

@@ -10,6 +10,7 @@ import rift.lsp.types as lsp
 from rift.agents.abstract import AgentProgress  # AgentTask,
 from rift.agents.abstract import Agent, AgentParams, AgentRunResult, AgentState, RequestChatRequest
 from rift.llm.abstract import AbstractCodeEditProvider
+from rift.lsp.server import LspServer
 from rift.server.selection import RangeSet
 from rift.util.context import resolve_inline_uris
 from rift.util.TextStream import TextStream
@@ -61,7 +62,7 @@ class CodeEditAgent(Agent):
     agent_type: ClassVar[str] = "code_edit"
 
     @classmethod
-    async def create(cls, params: AgentParams, server: Any) -> Agent:
+    async def create(cls, params: AgentParams, server: LspServer) -> Agent:
         logger.info(f"{params=}")
         model = await server.ensure_code_edit_model()  # TODO: not right, fix
         state = CodeEditAgentState(

@@ -7,6 +7,8 @@ from concurrent import futures
 from dataclasses import dataclass, field
 from typing import ClassVar, List, Optional, Type
 
+from rift.lsp.server import LspServer
+
 logger = logging.getLogger(__name__)
 
 import mentat.app
@@ -53,7 +55,7 @@ class Mentat(agent.ThirdPartyAgent):
     state: Optional[MentatAgentState] = None
 
     @classmethod
-    async def create(cls, params: agent.AgentParams, server):
+    async def create(cls, params: agent.AgentParams, server: LspServer) -> "Mentat":
         """
         Create a new Mentat agent instance with the given parameters and server.
         :param params: The AgentParams containing agent configuration.

@@ -202,7 +202,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
     debug: bool = Config.debug
 
     @classmethod
-    async def create(cls, params: agent.AgentParams, server: LspServer) -> Any:
+    async def create(cls, params: agent.AgentParams, server: LspServer) -> "MissingDocstringAgent":
         state = State(params=params, messages=[], response_lock=asyncio.Lock())
         obj: agent.ThirdPartyAgent = cls(state=state, agent_id=params.agent_id, server=server)
         return obj

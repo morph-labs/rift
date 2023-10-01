@@ -15,6 +15,7 @@ import rift.agents.registry as registry
 import rift.llm.openai_types as openai
 import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
+from rift.lsp import LspServer
 from rift.util.TextStream import TextStream
 
 aider_available = False
@@ -74,7 +75,7 @@ class Aider(agent.ThirdPartyAgent):
     agent_type: ClassVar[str] = "aider"
 
     @classmethod
-    async def create(cls, params: agent.AgentParams, server: Any) -> agent.ThirdPartyAgent:
+    async def create(cls, params: agent.AgentParams, server: LspServer) -> agent.ThirdPartyAgent:
         """
         Class method to create an instance of the Aider class.
         :param params: Parameters for the Aider agent.

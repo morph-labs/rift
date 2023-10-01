@@ -1,6 +1,7 @@
 from concurrent import futures
 
 import rift.agents.registry as registry
+from rift.lsp.server import LspServer
 
 try:
     import gpt_engineer
@@ -328,7 +329,7 @@ class EngineerAgent(ThirdPartyAgent):
             logger.info(f"[_run_chat_thread] caught exception={e}, exiting")
 
     @classmethod
-    async def create(cls, params: AgentParams, server: Any) -> ThirdPartyAgent:
+    async def create(cls, params: AgentParams, server: LspServer) -> ThirdPartyAgent:
         state = EngineerAgentState(
             params=params,
             messages=[openai.Message.assistant("What do you want to build?")],

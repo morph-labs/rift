@@ -8,6 +8,7 @@ from typing import Any, ClassVar, Dict, Optional
 import rift.lsp.types as lsp
 from rift.agents.abstract import AgentProgress  # AgentTask,
 from rift.agents.abstract import Agent, AgentParams, AgentRunResult, AgentState, agent
+from rift.lsp.server import LspServer
 from rift.server.selection import RangeSet
 from rift.util.TextStream import TextStream
 
@@ -54,7 +55,7 @@ class ReversoAgent(Agent):
     agent_type: ClassVar[str] = "reverso"
 
     @classmethod
-    async def create(cls, params: Dict[Any, Any], server):
+    async def create(cls, params: Dict[Any, Any], server: LspServer) -> "ReversoAgent":
         state = ReversoAgentState(
             document=server.documents[params.textDocument.uri],
             active_range=lsp.Range(params.selection.start, params.selection.end),

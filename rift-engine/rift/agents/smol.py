@@ -1,6 +1,7 @@
 from concurrent import futures
 
 import rift.agents.registry as registry
+from rift.lsp.server import LspServer
 from rift.util.TextStream import TextStream
 
 try:
@@ -83,7 +84,7 @@ class SmolAgent(ThirdPartyAgent):
     agent_type: ClassVar[str] = "smol_dev"
 
     @classmethod
-    async def create(cls, params: AgentParams, server: Any) -> ThirdPartyAgent:
+    async def create(cls, params: AgentParams, server: LspServer) -> ThirdPartyAgent:
         state = SmolAgentState(
             params=params,
             _done=False,

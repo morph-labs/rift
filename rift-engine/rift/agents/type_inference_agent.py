@@ -183,7 +183,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
     debug = Config.debug
 
     @classmethod
-    async def create(cls, params: Any, server: LspServer) -> Any:
+    async def create(cls, params: Any, server: LspServer) -> "TypeInferenceAgent":
         state = State(
             params=params,
             messages=[],

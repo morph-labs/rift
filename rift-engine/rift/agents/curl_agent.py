@@ -12,6 +12,7 @@ import aiohttp
 import rift.agents.registry as registry
 import rift.llm.openai_types as openai
 from rift.agents.abstract import Agent, AgentParams, AgentState, RequestChatRequest
+from rift.lsp.server import LspServer
 from rift.lsp.types import TextDocumentIdentifier
 
 
@@ -57,7 +58,7 @@ class CurlAgent(Agent):
                     self.state.messages.append(openai.Message.assistant(response_text))
 
     @classmethod
-    async def create(cls, params: AgentParams, server):
+    async def create(cls, params: AgentParams, server: LspServer) -> "CurlAgent":
         # Create the initial state
         state = CurlAgentState(
             params=params,
