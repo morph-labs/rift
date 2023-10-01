@@ -18,7 +18,7 @@ from rift.lsp.types import TextDocumentIdentifier
 
 @dataclass
 class CurlAgentState(AgentState):
-    messages: list[openai.Message]
+    pass
 
 
 @dataclass

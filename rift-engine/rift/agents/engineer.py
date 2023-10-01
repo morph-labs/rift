@@ -121,7 +121,6 @@ class EngineerProgress(
 
 @dataclass
 class EngineerAgentState(AgentState):
-    messages: list[openai.Message]
     change_futures: Dict[str, Future] = field(default_factory=dict)
     _done: bool = False
 

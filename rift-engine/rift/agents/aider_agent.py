@@ -55,10 +55,8 @@ class AiderAgentState(agent.AgentState):
     A data class that holds the state of an Aider agent.
     It has the following attributes:
     - params : The parameters associated with the agent.
-    - messages (List[openai.Message]) : A list of messages communicated with the openai API during the agent's run.
     """
 
-    messages: list[openai.Message]
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
