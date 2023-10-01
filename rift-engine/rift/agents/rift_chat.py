@@ -33,7 +33,6 @@ class ChatProgress(
 @dataclass
 class RiftChatAgentState(AgentState):
     model: AbstractChatCompletionProvider
-    messages: list[openai.Message]
     document: lsp.TextDocumentItem
 
 

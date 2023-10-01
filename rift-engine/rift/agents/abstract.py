@@ -81,6 +81,7 @@ class AgentState(ABC):
     """
 
     params: AgentParams
+    messages: list[openai.Message]
 
 
 @dataclass

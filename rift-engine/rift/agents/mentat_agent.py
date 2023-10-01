@@ -29,7 +29,6 @@ from rift.util.TextStream import TextStream
 
 @dataclass
 class MentatAgentState(agent.AgentState):
-    messages: list[openai.Message]
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     _response_buffer: str = ""
 
