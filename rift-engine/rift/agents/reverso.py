@@ -31,19 +31,12 @@ class ReversoProgress(AgentProgress):
     negative_ranges: Optional[RangeSet] = None
 
 
-# dataclass for representing the parameters of the code completion agent
-@dataclass
-class ReversoAgentParams(AgentParams):
-    ...
-
-
 # dataclass for representing the state of the code completion agent
 @dataclass
 class ReversoAgentState(AgentState):
     document: lsp.TextDocumentItem
     active_range: lsp.Range
     cursor: lsp.Position
-    params: ReversoAgentParams
     selection: lsp.Selection
     additive_ranges: RangeSet = field(default_factory=RangeSet)
     negative_ranges: RangeSet = field(default_factory=RangeSet)

@@ -60,16 +60,9 @@ class SmolProgress(AgentProgress):
     ready: bool = False
 
 
-# dataclass for representing the parameters of the code completion agent
-@dataclass
-class SmolAgentParams(AgentParams):
-    instructionPrompt: Optional[str] = None
-
-
 # dataclass for representing the state of the code completion agent
 @dataclass
 class SmolAgentState(AgentState):
-    params: SmolAgentParams
     _done: bool = False
     messages: List[openai.Message] = field(default_factory=list)
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
@@ -88,10 +81,9 @@ class SmolAgentState(AgentState):
 class SmolAgent(ThirdPartyAgent):
     state: SmolAgentState
     agent_type: ClassVar[str] = "smol_dev"
-    params_cls: ClassVar[Any] = SmolAgentParams
 
     @classmethod
-    async def create(cls, params: SmolAgentParams, server: Any) -> ThirdPartyAgent:
+    async def create(cls, params: AgentParams, server: Any) -> ThirdPartyAgent:
         state = SmolAgentState(
             params=params,
             _done=False,

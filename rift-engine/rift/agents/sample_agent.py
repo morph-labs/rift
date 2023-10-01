@@ -14,14 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class SampleAgentParams(AgentParams):
-    textDocument: TextDocumentIdentifier
-    instructionPrompt: Optional[str] = None
-
-
-@dataclass
 class SampleAgentState(AgentState):
-    params: SampleAgentParams
     messages: list[openai.Message]
 
 
@@ -41,7 +34,6 @@ class SampleAgent(Agent):
 
     state: Optional[SampleAgentState] = None
     agent_type: str = "sample_agent"
-    params_cls: ClassVar[Any] = SampleAgentParams
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     _response_buffer: str = ""
 
@@ -96,7 +88,7 @@ class SampleAgent(Agent):
             logger.info(f"[_run_chat_thread] caught exception={e}, exiting")
 
     @classmethod
-    async def create(cls, params: SampleAgentParams, server):
+    async def create(cls, params: AgentParams, server):
         # Convert the parameters to a SampleAgentParams object
 
         # Create the initial state

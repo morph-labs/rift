@@ -54,9 +54,9 @@ AgentTaskId = str
 class AgentParams:
     agent_type: str
     agent_id: str
-    textDocument: Optional[lsp.TextDocumentIdentifier]
     selection: Optional[lsp.Selection]
     position: Optional[lsp.Position]
+    textDocument: Optional[lsp.TextDocumentIdentifier]
     workspaceFolderPath: Optional[str]
     visibleEditorMetadata: Optional[List[lsp.EditorMetadata]]
 

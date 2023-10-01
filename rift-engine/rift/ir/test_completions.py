@@ -1,7 +1,6 @@
 import difflib
 import os
 
-
 import rift.ir.completions as completions
 import rift.ir.IR as IR
 import rift.ir.parser as parser

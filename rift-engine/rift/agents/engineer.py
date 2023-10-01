@@ -111,11 +111,6 @@ class EngineerRunResult(AgentRunResult):
 
 
 @dataclass
-class EngineerAgentParams(AgentParams):
-    instructionPrompt: Optional[str] = None
-
-
-@dataclass
 class EngineerProgress(
     AgentProgress
 ):  # reports what tasks are active and responsible for reporting new tasks
@@ -125,7 +120,6 @@ class EngineerProgress(
 
 @dataclass
 class EngineerAgentState(AgentState):
-    params: EngineerAgentParams
     messages: list[openai.Message]
     change_futures: Dict[str, Future] = field(default_factory=dict)
     _done: bool = False
@@ -144,7 +138,6 @@ class EngineerAgentState(AgentState):
 class EngineerAgent(ThirdPartyAgent):
     state: EngineerAgentState
     agent_type: ClassVar[str] = "engineer"
-    params_cls: ClassVar[Any] = EngineerAgentParams
 
     async def _main(
         self,
@@ -335,7 +328,7 @@ class EngineerAgent(ThirdPartyAgent):
             logger.info(f"[_run_chat_thread] caught exception={e}, exiting")
 
     @classmethod
-    async def create(cls, params: EngineerAgentParams, server: Any) -> ThirdPartyAgent:
+    async def create(cls, params: AgentParams, server: Any) -> ThirdPartyAgent:
         state = EngineerAgentState(
             params=params,
             messages=[openai.Message.assistant("What do you want to build?")],

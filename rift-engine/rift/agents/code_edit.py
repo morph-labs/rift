@@ -35,12 +35,6 @@ class CodeEditProgress(AgentProgress):
     ready: bool = False
 
 
-# dataclass for representing the parameters of the code completion agent
-@dataclass
-class CodeEditAgentParams(AgentParams):
-    ...
-
-
 # dataclass for representing the state of the code completion agent
 @dataclass
 class CodeEditAgentState(AgentState):
@@ -48,7 +42,6 @@ class CodeEditAgentState(AgentState):
     document: lsp.TextDocumentItem
     active_range: lsp.Range
     cursor: lsp.Position
-    params: CodeEditAgentParams
     selection: lsp.Selection
     messages: list[openai.Message]
     additive_ranges: RangeSet = field(default_factory=RangeSet)
@@ -66,10 +59,9 @@ class CodeEditAgentState(AgentState):
 class CodeEditAgent(Agent):
     state: CodeEditAgentState
     agent_type: ClassVar[str] = "code_edit"
-    params_cls: ClassVar[Any] = CodeEditAgentParams
 
     @classmethod
-    async def create(cls, params: CodeEditAgentParams, server: Any) -> Agent:
+    async def create(cls, params: AgentParams, server: Any) -> Agent:
         logger.info(f"{params=}")
         model = await server.ensure_code_edit_model()  # TODO: not right, fix
         state = CodeEditAgentState(

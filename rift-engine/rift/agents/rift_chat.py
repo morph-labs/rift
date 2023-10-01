@@ -23,11 +23,6 @@ class ChatRunResult(AgentRunResult):
 
 
 @dataclass
-class RiftChatAgentParams(AgentParams):
-    ...
-
-
-@dataclass
 class ChatProgress(
     AgentProgress
 ):  # reports what tasks are active and responsible for reporting new tasks
@@ -40,7 +35,6 @@ class RiftChatAgentState(AgentState):
     model: AbstractChatCompletionProvider
     messages: list[openai.Message]
     document: lsp.TextDocumentItem
-    params: RiftChatAgentParams
 
 
 @registry.agent(
@@ -51,7 +45,6 @@ class RiftChatAgentState(AgentState):
 class RiftChatAgent(Agent):
     state: Optional[RiftChatAgentState] = None
     agent_type: ClassVar[str] = "rift_chat"
-    params_cls: ClassVar[Any] = RiftChatAgentParams
 
     @classmethod
     async def create(cls, params: AgentParams, server: BaseLspServer):

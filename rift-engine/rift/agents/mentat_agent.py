@@ -26,13 +26,7 @@ from rift.util.TextStream import TextStream
 
 
 @dataclass
-class MentatAgentParams(agent.AgentParams):
-    paths: List[str] = field(default_factory=list)
-
-
-@dataclass
 class MentatAgentState(agent.AgentState):
-    params: MentatAgentParams
     messages: list[openai.Message]
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     _response_buffer: str = ""
@@ -56,17 +50,16 @@ class MentatRunResult(agent.AgentRunResult):
 @dataclass
 class Mentat(agent.ThirdPartyAgent):
     agent_type: ClassVar[str] = "mentat"
-    run_params: Type[MentatAgentParams] = MentatAgentParams
     state: Optional[MentatAgentState] = None
 
     @classmethod
-    async def create(cls, params: MentatAgentParams, server):
+    async def create(cls, params: agent.AgentParams, server):
         """
         Create a new Mentat agent instance with the given parameters and server.
-        :param params: The MentatAgentParams containing agent configuration.
+        :param params: The AgentParams containing agent configuration.
         :param server: The server instance.
         :return: A new Mentat agent instance.
-        """        
+        """
         logger.info(f"{params=}")
         state = MentatAgentState(
             params=params,
@@ -155,7 +148,11 @@ class Mentat(agent.ThirdPartyAgent):
                         relative_path = os.path.relpath(
                             file_path, self.state.params.workspaceFolderPath
                         )
-                        return f"`{relative_path}`" if not dropped_symbols else f"{symbol} @ `{relative_path}`"
+                        return (
+                            f"`{relative_path}`"
+                            if not dropped_symbols
+                            else f"{symbol} @ `{relative_path}`"
+                        )
 
                     resp = re.sub(uri_pattern, replacement, resp)
                     return resp
