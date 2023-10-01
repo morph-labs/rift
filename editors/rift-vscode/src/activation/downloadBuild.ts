@@ -5,7 +5,7 @@ import * as path from "path";
 import * as fs from "fs";
 import * as util from "util";
 import fetch from "node-fetch";
-import { mkdir, readdir, rm, stat } from "fs/promises";
+import { mkdir, readdir, rename, rm, stat } from "fs/promises";
 import { finished } from "stream/promises";
 import * as decompress from "decompress";
 import { exec as _exec, spawn } from "child_process";
@@ -46,7 +46,7 @@ export const exists = async (p?: string) => {
       await stat(p);
       return true;
     }
-  } catch (e) {}
+  } catch (e) { }
   return false;
 };
 
@@ -73,11 +73,18 @@ export const downloadFile = async (
   progress: vscode.Progress<{ message?: string; increment?: number }>,
   token?: vscode.CancellationToken,
 ): Promise<boolean> => {
+  const tmpPath = savePath + '.tmp'
+
+  await rm(savePath).catch(() => { });
+  await rm(tmpPath).catch(() => { });
+
   const signal = new AbortController();
   token?.onCancellationRequested(() => {
     signal.abort();
-    rm(savePath);
+    rm(savePath).catch(() => { });
+    rm(tmpPath).catch(() => { });
   });
+
   const res = await fetch(url, { signal: signal.signal });
   if (!res.ok || !res.body) {
     console.error("Error getting file", { res, url });
@@ -87,7 +94,7 @@ export const downloadFile = async (
   console.log(total);
 
   await mkdir(path.dirname(savePath), { recursive: true });
-  const fileStream = fs.createWriteStream(savePath);
+  const fileStream = fs.createWriteStream(tmpPath);
 
   if (total) {
     res.body.on("data", (d: Uint8Array) => {
@@ -96,10 +103,11 @@ export const downloadFile = async (
   }
 
   await finished(res.body.pipe(fileStream));
+  await rename(tmpPath, savePath)
   return true;
 };
 
-export const startServer = async () => {};
+export const startServer = async () => { };
 
 export const isServerRunning = async (port: number) => {
   if (await tcpPortUsed.check(port)) {
@@ -160,7 +168,7 @@ export const forceResolveServerOptions = async (
       getDefaultInstallProps();
 
     if (!(await exists(bundleLocation))) {
-      await rm(zipLocation).catch(() => {});
+      await rm(zipLocation).catch(() => { });
 
       const url = `https://github.com/morph-labs/rift/releases/download/v${version}/${bundleID}.zip`;
       console.log(new Date().toISOString(), "downloading...");
@@ -237,10 +245,10 @@ function getDefaultInstallProps() {
     process.platform === "darwin"
       ? "macOS"
       : process.platform === "linux"
-      ? "Linux"
-      : process.platform === "win32"
-      ? "Windows"
-      : "unknown";
+        ? "Linux"
+        : process.platform === "win32"
+          ? "Windows"
+          : "unknown";
   if (osName === "unknown") {
     throw Error("bad os.");
   }
