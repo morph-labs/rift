@@ -1,12 +1,12 @@
-from enum import Enum
+import logging
 import re
 import textwrap
+from enum import Enum
 from typing import List, Optional, Set, Tuple
 
 import rift.ir.IR as IR
 import rift.ir.parser as parser
 import rift.ir.python_typing as python_typing
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +80,7 @@ def replace_functions_in_document(
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
     """
-    function_declarations_in_document: List[
-        IR.Symbol
-    ] = ir_doc.get_function_declarations()
+    function_declarations_in_document: List[IR.Symbol] = ir_doc.get_function_declarations()
 
     code_edits: List[IR.CodeEdit] = []
     updated_functions: List[IR.Symbol] = []

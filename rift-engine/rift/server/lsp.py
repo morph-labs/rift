@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import pydantic
 
 import rift.lsp.types as lsp
-from rift.agents import AGENT_REGISTRY, Agent, AgentParams, AgentRegistryResult
+from rift.agents import AGENT_REGISTRY, Agent, AgentRegistryResult
 from rift.ir.completions import get_symbol_completions_raw
 from rift.ir.parser import parse_files_in_paths
 from rift.llm.abstract import AbstractChatCompletionProvider, AbstractCodeCompletionProvider

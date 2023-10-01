@@ -3,9 +3,9 @@ import os
 from textwrap import dedent
 
 import rift.ir.IR as IR
-from rift.ir.missing_docstrings import functions_missing_docstrings_in_file
 import rift.ir.parser as parser
 import rift.ir.response as response
+from rift.ir.missing_docstrings import functions_missing_docstrings_in_file
 from rift.ir.missing_types import functions_missing_types_in_file
 
 

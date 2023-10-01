@@ -3,16 +3,18 @@
 # python -m spacy download en_core_web_md
 
 import asyncio
-from dataclasses import dataclass
 import math
-import openai
 import os
 import pickle
 import time
+from dataclasses import dataclass
+from typing import Awaitable, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 import numpy.typing as npt
+import openai
 import tiktoken
-from typing import Awaitable, Callable, Dict, List, Optional, Tuple
+
 import rift.ir.IR as IR
 from rift.ir.parser import parse_files_in_paths
 

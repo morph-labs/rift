@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
 import logging
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 from tree_sitter import Node
@@ -14,18 +14,18 @@ from rift.ir.IR import (
     DefKind,
     Expression,
     ExpressionKind,
-    GuardKind,
-    Item,
+    Field,
     File,
     FunctionKind,
+    GuardKind,
     IfKind,
     Import,
     InterfaceKind,
+    Item,
     Language,
     ModuleKind,
     NamespaceKind,
     Parameter,
-    Field,
     Scope,
     SectionKind,
     StructureKind,

@@ -19,10 +19,10 @@ import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
 from rift.agents.agenttask import AgentTask
 from rift.ir.missing_docstrings import (
-    FunctionMissingDocstring,
     FileMissingDocstrings,
-    functions_missing_docstrings_in_file,
+    FunctionMissingDocstring,
     files_missing_docstrings_in_project,
+    functions_missing_docstrings_in_file,
 )
 from rift.ir.response import (
     Replace,
@@ -39,18 +39,12 @@ Prompt = List[Message]
 
 
 @dataclass
-class Params(agent.AgentParams):
-    ...
-
-
-@dataclass
 class Result(agent.AgentRunResult):
     ...
 
 
 @dataclass
 class State(agent.AgentState):
-    params: Params
     messages: List[openai_types.Message]
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
@@ -59,7 +53,8 @@ class Config:
     debug = False
     model = "gpt-3.5-turbo"  # ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k"]
     temperature = 0.0
-    max_size_group_missing_docstrings = 10  # Max number of functions to process at once
+    # Max number of functions to process at once
+    max_size_group_missing_docstrings = 10
 
 
 class MissingDocStringPrompt:
@@ -204,11 +199,10 @@ class FileProcess:
 @dataclass
 class MissingDocstringAgent(agent.ThirdPartyAgent):
     agent_type: ClassVar[str] = "missing_docstring_agent"
-    params_cls: ClassVar[Any] = Params
     debug: bool = Config.debug
 
     @classmethod
-    async def create(cls, params: Any, server: LspServer) -> Any:
+    async def create(cls, params: agent.AgentParams, server: LspServer) -> "MissingDocstringAgent":
         state = State(params=params, messages=[], response_lock=asyncio.Lock())
         obj: agent.ThirdPartyAgent = cls(state=state, agent_id=params.agent_id, server=server)
         return obj
