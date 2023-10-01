@@ -2,11 +2,16 @@ import functools
 import logging
 import os
 import weakref
+from pathlib import Path
 from typing import Literal, Optional, Tuple
+
+morph_model_dir = Path.home().joinpath(".morph", "models")
 
 from pydantic import BaseModel, SecretStr
 
 from rift.llm.abstract import AbstractChatCompletionProvider, AbstractCodeCompletionProvider
+
+logger = logging.getLogger(__name__)
 
 
 class ModelConfig(BaseModel):
@@ -25,7 +30,7 @@ class ModelConfig(BaseModel):
         assert isinstance(c, AbstractChatCompletionProvider)
         return c
 
-    def create_completions(self) -> AbstractCodeCompletionProvider:
+    def create_code_edit(self) -> AbstractCodeCompletionProvider:
         return create_client(self.codeEditModel, self.openaiKey)
 
     @classmethod
@@ -83,10 +88,12 @@ def create_client_core(
     If the `type` is none of the above, it raises a `ValueError` with a message indicating that the model is unknown.
     """
     type, name, path = parse_type_name_path(config)
+    logger.info(f"{type=} {name=} {path=}")
     if type == "hf":
         from rift.llm.hf_client import HuggingFaceClient
 
-        return HuggingFaceClient(name)
+        logger.info("creating HFClient")
+        return HuggingFaceClient(model_name=name)
     elif type == "openai":
         from rift.llm.openai_client import OpenAIClient
 
@@ -114,6 +121,14 @@ def create_client_core(
             kwargs["model_path"] = path
         settings = Gpt4AllSettings.parse_obj(kwargs)
         return Gpt4AllModel(settings)
+    elif type == "llama":  # llama-cpp-python
+        from rift.llm.llama_client import LlamaClient
 
+        parsed_path = Path(path if path else name)
+        if not parsed_path.is_absolute():
+            parsed_path = morph_model_dir.joinpath(parsed_path)
+        logger.info(f"Creating LLaMa client with model located at {path}")
+
+        return LlamaClient(name=name, model_path=str(parsed_path) if path or name else None)
     else:
         raise ValueError(f"Unknown model: {config}")

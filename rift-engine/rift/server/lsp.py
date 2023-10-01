@@ -226,7 +226,8 @@ class LspServer(BaseLspServer):
         cancel_tasks = []
         for k, h in self.active_agents.items():
             cancel_tasks.append(asyncio.create_task(h.cancel("config changed")))
-        self.code_edit_model = config.create_completions()
+        logger.info("creating new models")
+        self.code_edit_model = config.create_code_edit()
         self.chat_model = config.create_chat()
         logger.info(f"created new models: {self.chat_model=} {self.code_edit_model=}")
 
@@ -234,7 +235,8 @@ class LspServer(BaseLspServer):
             self.code_edit_model.load(),
             self.chat_model.load(),
         )
-        await asyncio.wait(cancel_tasks)
+        if cancel_tasks:
+            await asyncio.wait(cancel_tasks)
         try:
             await self._loading_task
         except asyncio.CancelledError:
@@ -259,11 +261,12 @@ class LspServer(BaseLspServer):
                 await self.get_config()
             assert self.code_edit_model is not None
             return self.code_edit_model
-        except:
+        except Exception as e:
             config = ModelConfig(
                 chatModel="openai:gpt-3.5-turbo", codeEditModel="openai:gpt-3.5-turbo"
-            )
-            return config.create_completions()
+            )            
+            await self.send_error(f"caught exception={e} when trying to construct code edit model, defaulting to {config}")
+            return config.create_code_edit()
 
     async def ensure_chat_model(self):
         try:
@@ -271,10 +274,11 @@ class LspServer(BaseLspServer):
                 await self.get_config()
             assert self.chat_model is not None
             return self.chat_model
-        except:
+        except Exception as e:
             config = ModelConfig(
                 chatModel="openai:gpt-3.5-turbo", codeEditModel="openai:gpt-3.5-turbo"
-            )
+            )            
+            await self.send_error(f"caught exception={e} when trying to construct chat model, defaulting to {config}")
             return config.create_chat()
 
     @rpc_method("morph/restart_agent")

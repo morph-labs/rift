@@ -39,12 +39,19 @@ import {
   AtableFileFromFsPath,
   AtableFileFromUri,
 } from "./util/AtableFileFunction";
+import { join } from "path";
+import {
+  modelExists,
+  deleteModel,
+  downloadModel,
+  metadataForModelName,
+} from "./activation/downloadModel";
 
 let client: LanguageClient; //LanguageClient
 
-export const port =
-  vscode.workspace.getConfiguration("rift").get<number>("riftServerPort") ||
-  7797;
+const getConfig = () => vscode.workspace.getConfiguration("rift");
+
+export const port = getConfig().get<number>("riftServerPort") || 7797;
 
 const GREEN = vscode.window.createTextEditorDecorationType({
   backgroundColor: "rgba(0,255,0,0.1)",
@@ -218,7 +225,11 @@ export class MorphLanguageClient
           (id: string) => this.client?.sendNotification("morph/reject", { id }),
         ),
         vscode.workspace.onDidChangeConfiguration((e) => {
-          if (e.affectsConfiguration("rift.openaiKey")) {
+          if (
+            e.affectsConfiguration("rift.openaiKey") ||
+            e.affectsConfiguration("rift.chatModel") ||
+            e.affectsConfiguration("rift.codeEditModel")
+          ) {
             this.restart();
           }
           this.on_config_change.bind(this);
@@ -330,6 +341,48 @@ export class MorphLanguageClient
     this.webviewState.update((state) => ({ ...state, availableAgents }));
   }
 
+  public async ensureModelDependencies() {
+    const codeEditModel = getConfig().get<string>("codeEditModel");
+    const chatModel = getConfig().get<string>("chatModel");
+
+    if (codeEditModel?.startsWith("llama")) {
+      if (!(await modelExists(codeEditModel))) {
+        try {
+          await downloadModel(codeEditModel);
+        } catch (e) {
+          const { remoteURL, modelPath } = metadataForModelName(codeEditModel);
+          vscode.window.showErrorMessage(
+            `Unable to locate code edit model at ${modelPath} or ${remoteURL}.\n${
+              (e as any).message
+            }`,
+          );
+        }
+      }
+    }
+
+    if (
+      codeEditModel?.startsWith("openai") ||
+      chatModel?.startsWith("openai")
+    ) {
+      if (
+        getConfig().get("autostart") &&
+        !(getConfig().get("openaiKey") || process.env["OPENAI_API_KEY"])
+      ) {
+        const key = await vscode.window.showInputBox({
+          title: "Please Enter OpenAI API Key",
+          password: true,
+          ignoreFocusOut: true,
+          placeHolder: "sk-...",
+        });
+        if (key) {
+          vscode.workspace
+            .getConfiguration("rift")
+            .update("openaiKey", key, true);
+        }
+      }
+    }
+  }
+
   async create_client() {
     if (this.client && this.client.state != State.Stopped) {
       console.log(
@@ -337,6 +390,8 @@ export class MorphLanguageClient
       );
       return;
     }
+
+    await this.ensureModelDependencies();
 
     const clientOptions: LanguageClientOptions = {
       documentSelector: [{ language: "*" }],
@@ -435,7 +490,10 @@ export class MorphLanguageClient
     };
 
   async create(agent_type: string) {
-    if (!this.client) throw new Error();
+    if (!this.client) {
+      vscode.window.showErrorMessage("Rift: no active client");
+      throw new Error("Rift: no active client");
+    }
 
     const getEditorMetadata = (
       editor: TextEditor | undefined,

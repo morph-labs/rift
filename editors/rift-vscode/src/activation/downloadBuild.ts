@@ -5,7 +5,7 @@ import * as path from "path";
 import * as fs from "fs";
 import * as util from "util";
 import fetch from "node-fetch";
-import { mkdir, readdir, rm, stat } from "fs/promises";
+import { mkdir, readdir, rename, rm, stat } from "fs/promises";
 import { finished } from "stream/promises";
 import * as decompress from "decompress";
 import { exec as _exec, spawn } from "child_process";
@@ -40,13 +40,13 @@ function tcpServerOptions(port: number): ServerOptions {
   };
 }
 
-const exists = async (p?: string) => {
+export const exists = async (p?: string) => {
   try {
     if (p) {
       await stat(p);
       return true;
     }
-  } catch (e) {}
+  } catch (e) { }
   return false;
 };
 
@@ -67,12 +67,25 @@ const platformSpecific = <T>(options: {
   throw Error("Unsupported Platform: " + process.platform);
 };
 
-const downloadFile = async (
+export const downloadFile = async (
   url: string,
   savePath: string,
   progress: vscode.Progress<{ message?: string; increment?: number }>,
+  token?: vscode.CancellationToken,
 ): Promise<boolean> => {
-  const res = await fetch(url);
+  const tmpPath = savePath + '.tmp'
+
+  await rm(savePath).catch(() => { });
+  await rm(tmpPath).catch(() => { });
+
+  const signal = new AbortController();
+  token?.onCancellationRequested(() => {
+    signal.abort();
+    rm(savePath).catch(() => { });
+    rm(tmpPath).catch(() => { });
+  });
+
+  const res = await fetch(url, { signal: signal.signal });
   if (!res.ok || !res.body) {
     console.error("Error getting file", { res, url });
     return false;
@@ -81,7 +94,7 @@ const downloadFile = async (
   console.log(total);
 
   await mkdir(path.dirname(savePath), { recursive: true });
-  const fileStream = fs.createWriteStream(savePath);
+  const fileStream = fs.createWriteStream(tmpPath);
 
   if (total) {
     res.body.on("data", (d: Uint8Array) => {
@@ -90,10 +103,11 @@ const downloadFile = async (
   }
 
   await finished(res.body.pipe(fileStream));
+  await rename(tmpPath, savePath)
   return true;
 };
 
-export const startServer = async () => {};
+export const startServer = async () => { };
 
 export const isServerRunning = async (port: number) => {
   if (await tcpPortUsed.check(port)) {
@@ -154,7 +168,7 @@ export const forceResolveServerOptions = async (
       getDefaultInstallProps();
 
     if (!(await exists(bundleLocation))) {
-      await rm(zipLocation).catch(() => {});
+      await rm(zipLocation).catch(() => { });
 
       const url = `https://github.com/morph-labs/rift/releases/download/v${version}/${bundleID}.zip`;
       console.log(new Date().toISOString(), "downloading...");
@@ -231,10 +245,10 @@ function getDefaultInstallProps() {
     process.platform === "darwin"
       ? "macOS"
       : process.platform === "linux"
-      ? "Linux"
-      : process.platform === "win32"
-      ? "Windows"
-      : "unknown";
+        ? "Linux"
+        : process.platform === "win32"
+          ? "Windows"
+          : "unknown";
   if (osName === "unknown") {
     throw Error("bad os.");
   }

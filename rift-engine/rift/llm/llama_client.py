@@ -21,6 +21,8 @@ from typing import (
 from urllib.parse import parse_qs, urlparse
 
 import aiohttp
+from llama_cpp.llama import Llama
+from llama_cpp.llama_types import CompletionChunk
 from pydantic import BaseModel, BaseSettings, SecretStr
 
 import rift.lsp.types as lsp
@@ -43,12 +45,72 @@ from rift.util.TextStream import TextStream
 
 logger = logging.getLogger(__name__)
 
+from rift.util.logging import configure_logger
+
 I = TypeVar("I", bound=BaseModel)
 O = TypeVar("O", bound=BaseModel)
 
-from tiktoken import get_encoding
+import transformers
 
-ENCODER = get_encoding("cl100k_base")
+
+@dataclass
+class SourceCodeFileWithRegion:
+    """
+    Datastructure for a training datapoint (inference if the completion is None)
+
+    Represents a file that has been split into a region, the parts before/after the region, a natural language instruction, and a completion.
+    """
+
+    # The text before the region
+    before_region: str
+
+    # The text in the region
+    region: str
+
+    # The text after the region
+    after_region: str
+
+    # A natural language instruction for completing the task
+    instruction: Optional[str] = None
+
+    # The completion of the task
+    completion: Optional[str] = None
+
+    def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
+        """
+        Formats the source code file with region into a string that can be used for code completion.
+
+        The function takes in three arguments:
+            - `before_cursor`: The text to display before the cursor. Defaults to "PREFIX".
+            - `after_cursor`: The text to display after the cursor. Defaults to "SUFFIX".
+            - `latest_region`: The latest region of code. If not provided, it defaults to the region in this object.
+        """
+        formatted = (
+            f"[PREFIX]\n{self.before_region}\n[/PREFIX]\n"
+            f"[REGION]\n{latest_region or self.region}\n[/REGION]\n"
+            f"[SUFFIX]\n{self.after_region}\n[/SUFFIX]"
+        )
+        return formatted
+
+    def get_prompt(self):
+        """
+        Generates a prompt for code completion based on the instruction and region in this object.
+
+        The function returns a string that includes:
+            - "Please generate code completing the task which will replace the below region."
+            - The natural language instruction from this object's `instruction` attribute.
+            - The formatted source code file with region, using the latest region if not provided in this object's `region` attribute.
+        """
+        assert self.instruction, "instruction not set"
+        result = (
+            f"### INSTRUCTIONS\n\nPlease generate code completing the task which will replace the below region.\nTask: {self.instruction}\n\n"
+            + self.format()
+            + ("\n\n### RESPONSE\n\n")
+        )
+        return result
+
+
+ENCODER = transformers.AutoTokenizer.from_pretrained("TheBloke/CodeLlama-7B-Instruct-fp16")
 ENCODER_LOCK = Lock()
 
 
@@ -57,7 +119,7 @@ class MissingKeyError(Exception):
 
 
 @dataclass
-class OpenAIError(Exception):
+class LlamaError(Exception):
     """Error raised by calling the OpenAI API"""
 
     message: str
@@ -325,84 +387,72 @@ def truncate_messages(
     return [messages[0]] + tail_messages
 
 
-class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCompletionProvider):
-    api_key: Optional[SecretStr] = None
-    api_url: str = "https://api.openai.com/v1"
-    default_model: Optional[str] = None
+import os
+
+
+class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider):
+    name: str
+    model_path: Optional[str] = None
 
     class Config:
-        env_prefix = "OPENAI_"
+        env_prefix = "LLAMA_"
         env_file = ".env"
         keep_untouched = (cached_property,)
 
+    def __init__(self, name: str, model_path: Optional[str] = None):
+        logger.info("client created")
+        if model_path is None:
+            raise Exception(
+                "Must specify path to GGUF model weights on filesystem in Rift settings. Try downloading e.g. `https://huggingface.co/TheBloke/CodeLlama-7B-GGUF/resolve/main/codellama-7b.Q5_K_M.gguf`"
+            )
+        self.name = name
+        self.model_path = model_path
+
     def __str__(self):
-        k = self.api_key.get_secret_value()
-        k = f"{k[:3]}...{k[-4:]}"
-        return f"{self.__class__.__name__} {self.api_url} {k}"
-
-    @property
-    def base_url(self) -> str:
-        return urlparse(self.api_url)._replace(path="", query="", params="", fragment="").geturl()
-
-    @property
-    def url_path(self) -> str:
-        return urlparse(self.api_url).path
-
-    @property
-    def url_query(self) -> dict:
-        q = urlparse(self.api_url).query
-        return parse_qs(q)
-
-    @property
-    def headers(self):
-        return {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key.get_secret_value()}",
-            "User-Agent": __name__,
-        }
+        return f"{self.__class__.__name__} {self.model_path}"
 
     @cached_property
-    def session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(
-            base_url=self.base_url,
-            headers=self.headers,
+    def model(self) -> Llama:
+        return Llama(
+            model_path=self.model_path,
+            n_ctx=MAX_CONTEXT_SIZE,
+            n_gpu_layers=1,
         )
 
     async def handle_error(self, resp: aiohttp.ClientResponse):
-        status_code = resp.status
-        message = await self.get_error_message(resp)
-        message = f"{status_code} error from {self.base_url}: {message}"
-        logger.error(message)
-        if status_code == 404 and self.default_model == "gpt-4":
-            logger.error(
-                "Please double check you have access to GPT-4 API: https://openai.com/waitlist/gpt-4-api"
-            )
-        raise OpenAIError(message=message, status=status_code)
+        # status_code = resp.status
+        # message = await self.get_error_message(resp)
+        # message = f"{status_code} error from {self.base_url}: {message}"
+        # logger.error(message)
+        # if status_code == 404 and self.default_model == "gpt-4":
+        #     logger.error(
+        #         "Please double check you have access to GPT-4 API: https://openai.com/waitlist/gpt-4-api"
+        #     )
+        # raise LlamaError(message=message, status=status_code)
+        pass  # TODO
 
     async def get_error_message(self, resp):
-        if resp.content_type == "application/json":
-            j = await resp.json()
-        else:
-            t = await resp.text()
-            try:
-                j = json.loads(t)
-            except json.JSONDecodeError:
-                return t
-        if isinstance(j, str):
-            return j
-        for k in ["error", "message", "detail"]:
-            if k in j:
-                e = j[k]
-                if isinstance(e, str):
-                    return e
-                if "message" in e:
-                    m = e["message"]
-                    if isinstance(m, str):
-                        return m
-        raise ValueError(f"Could not parse error message from {j}")
-
-    def _make_path(self, endpoint: str) -> str:
-        return self.url_path + endpoint
+        # if resp.content_type == "application/json":
+        #     j = await resp.json()
+        # else:
+        #     t = await resp.text()
+        #     try:
+        #         j = json.loads(t)
+        #     except json.JSONDecodeError:
+        #         return t
+        # if isinstance(j, str):
+        #     return j
+        # for k in ["error", "message", "detail"]:
+        #     if k in j:
+        #         e = j[k]
+        #         if isinstance(e, str):
+        #             return e
+        #         if "message" in e:
+        #             m = e["message"]
+        #             if isinstance(m, str):
+        #                 return m
+        # raise ValueError(f"Could not parse error message from {j}")
+        raise NotImplementedError("TODO")
 
     async def _post_streaming(
         self,
@@ -411,9 +461,6 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         input_type: Type[I],
         stream_data_type: Type[O],
     ) -> AsyncGenerator[O, None]:
-        if not self.api_key:
-            logger.error("Missing API key")
-            raise MissingKeyError
         if not getattr(params, "stream", True):
             raise ValueError("To not use streaming please use the _post_endpoint method")
         if not isinstance(params, input_type):
@@ -449,22 +496,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         input_type: Type[I],
         output_type: Type[O],
     ) -> O:
-        if not self.api_key:
-            logger.error("Missing API key")
-            raise Exception("[OpenAIClient] missing API key")
-        if not isinstance(params, input_type):
-            raise TypeError(f"expected {input_type}, got {type(params)}")
-        if getattr(params, "stream", False):
-            raise ValueError("To use streaming please use the _post_streaming method")
-        payload = params.dict(exclude_none=True)
-        path = self._make_path(endpoint)
-        async with self.session.post(path, params=self.url_query, json=payload) as resp:
-            if not resp.ok:
-                await self.handle_error(resp)
-            assert resp.content_type == "application/json"
-            j = await resp.json()
-        r = output_type.parse_obj(j)  # type: ignore
-        return r  # type: ignore
+        raise Exception("unreachable")
 
     @overload
     def chat_completions(
@@ -478,34 +510,58 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
     ) -> Coroutine[Any, Any, ChatCompletionResponse]:
         ...
 
-    def chat_completions(self, messages: List[Message], *, stream: bool = False, **kwargs) -> Any:
-        # logger.info(f"{messages=}")
-        endpoint = "/chat/completions"
-        input_type = ChatCompletionRequest
-        # TODO: don't hardcode
-        logit_bias = {99750: -100}  # forbid repetition of the cursor sentinel
-        params = ChatCompletionRequest(
-            messages=messages,
-            stream=stream,
-            logit_bias=logit_bias,
-            max_tokens=MAX_LEN_SAMPLED_COMPLETION,
-            **kwargs,
-        )
-        if self.default_model:
-            params.model = self.default_model
-        output_type = ChatCompletionResponse
+    def completion(self, prompt: str, stream: bool = True, loop=None, **kwargs):
+        """
+        Runs `Llama.create_completion` and streams results back
+        """
+        loop = loop or asyncio.get_event_loop()
+        import threading
 
-        if stream:
-            return self._post_streaming(
-                endpoint,
-                params=params,
-                input_type=input_type,
-                stream_data_type=ChatCompletionChunk,
-            )
-        else:
-            return self._post_endpoint(
-                endpoint, params=params, input_type=input_type, output_type=output_type
-            )
+        completion_stream = TextStream()
+
+        def _send_chunk(chunk_str: str):
+            async def feed_data(chunk_str: str):
+                completion_stream.feed_data(chunk_str)
+
+            asyncio.run_coroutine_threadsafe(feed_data(chunk_str), loop=loop)
+
+        def worker():
+            for chunk in self.model.create_completion(
+                prompt=prompt,
+                temperature=0.1,
+                max_tokens=MAX_LEN_SAMPLED_COMPLETION,
+                stream=True,
+                mirostat_mode=2,
+            ):
+                _send_chunk(chunk["choices"][0]["text"])
+            completion_stream.feed_eof()
+
+        fut = asyncio.get_event_loop().run_in_executor(None, worker)
+        completion_stream._feed_task = fut
+
+        async def real_worker():
+            async for delta in completion_stream:
+                yield delta
+
+        return real_worker()
+
+    def chat_completions(self, messages: List[Message], *, stream: bool = False, **kwargs) -> Any:
+        from rift.util.ofdict import ofdict, todict
+
+        messages = [todict(msg) for msg in messages]
+
+        from llama_cpp.llama_types import ChatCompletionChunk
+
+        async def wrapper():
+            resp = ""
+            for chunk in self.model.create_chat_completion(
+                messages=messages, stream=stream, max_tokens=MAX_LEN_SAMPLED_COMPLETION
+            ):
+                resp += chunk
+                yield chunk
+            logger.info(f"complete response: {resp}")
+
+        return wrapper()
 
     async def run_chat(
         self,
@@ -541,8 +597,19 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
             f"Truncated {num_old_messages - len(messages)} non-system messages due to context length overflow."
         )
 
+        def postprocess(chunk):
+            if chunk["choices"]:
+                choice = chunk["choices"][0]
+                if choice["finish_reason"]:
+                    return ""
+                if "content" in choice["delta"]:
+                    return choice["delta"]["content"]
+                else:
+                    return ""
+            return ""
+
         stream = TextStream.from_aiter(
-            asg.map(lambda c: c.text, self.chat_completions(messages, stream=True))
+            asg.map(postprocess, self.chat_completions(messages, stream=True))
         )
 
         event = asyncio.Event()
@@ -579,68 +646,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
             Generate code to replace the given `region`. Write a partial code snippet without imports if needed.
             """
 
-        def create_messages(
-            before_cursor: str,
-            region: str,
-            after_cursor: str,
-            documents: Optional[List[lsp.Document]] = None,
-        ) -> List[Message]:
-            user_message = (
-                f"Please generate code completing the task which will replace the below region: {goal}\n"
-                "==== PREFIX ====\n"
-                f"{before_cursor}"
-                "==== REGION ====\n"
-                f"{latest_region or region}\n"
-                "==== SUFFIX ====\n"
-                f"{after_cursor}\n"
-            )
-            user_message = format_visible_files(documents) + user_message
-
-            return [
-                Message.system(
-                    "You are a brilliant coder and an expert software engineer and world-class systems architect with deep technical and design knowledge. You value:\n"
-                    "- Conciseness\n"
-                    "- DRY principle\n"
-                    "- Self-documenting code with plenty of comments\n"
-                    "- Modularity\n"
-                    "- Deduplicated code\n"
-                    "- Readable code\n"
-                    "- Abstracting things away to functions for reusability\n"
-                    "- Logical thinking\n"
-                    "\n\n"
-                    "You will be presented with a *task* and a source code file split into three parts: a *prefix*, *region*, and *suffix*. "
-                    "The task will specify a change or new code that will replace the given region.\n You will receive the source code in the following format:\n"
-                    "==== PREFIX ====\n"
-                    "${source code file before the region}\n"
-                    "==== REGION ====\n"
-                    "${region}\n"
-                    "==== SUFFIX ====\n"
-                    "{source code file after the region}\n\n"
-                    "When presented with a task, you will:\n(1) write a detailed and elegant plan to solve this task,\n(2) write your solution for it surrounded by triple backticks, and\n(3) write a 1-2 sentence summary of your solution.\n"
-                    f"Your solution will be added verbatim to replace the given region. Do *not* repeat the prefix or suffix in any way.\n"
-                    "The solution should directly replaces the given region. If the region is empty, just write something that will replace the empty string. *Do not repeat the prefix or suffix in any way*. If the region is in the middle of a function definition or class declaration, do not repeat the function signature or class declaration. Write a partial code snippet without imports if needed. Preserve indentation.\n"
-                    f"For example, if the source code looks like this:\n"
-                    "==== PREFIX ====\n"
-                    "def hello_world():\n    \n"
-                    "==== REGION ====\n"
-                    "\n"
-                    "==== SUFFIX ====\n"
-                    "if __name__ == '__main__':\n    hello_world()\n\n"
-                    "And the task is 'implement this function and return 0', then a good response would be\n"
-                    "We will implement hello world by first using the Python `print` statement and then returning the integer literal 0.\n"
-                    "```\n"
-                    "# print hello world\n"
-                    "    print('hello world!')\n"
-                    "    # return the integer 0\n"
-                    "    return 0\n"
-                    "```\n"
-                    "I added an implementation of the rest of the `hello_world` function which uses the Python `print` statement to print 'hello_world' before returning the integer literal 0.\n"
-                ),
-                Message.assistant("Hello! How can I help you today?"),
-                Message.user(user_message),
-            ]
-
-        messages_skeleton = create_messages("", "", "")
+        messages_skeleton = create_messages("", "", "", goal=goal, latest_region=latest_region)
         max_size = MAX_CONTEXT_SIZE - MAX_LEN_SAMPLED_COMPLETION - messages_size(messages_skeleton)
 
         # rescale `max_size_document` if we need to make room for the other documents
@@ -686,6 +692,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
             region=region,
             after_cursor=after_cursor,
             documents=truncated_documents,
+            goal=goal,
         )
         # logger.info(f"{messages=}")
 
@@ -694,16 +701,107 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         def error_callback(e):
             event.set()
 
-        stream = TextStream.from_aiter(
-            asg.map(
-                lambda c: c.text,
-                self.chat_completions(messages, stream=True),
-                error_callback=error_callback,
-            )
+        def postprocess(chunk):
+            if chunk["choices"]:
+                choice = chunk["choices"][0]
+                if choice["finish_reason"]:
+                    return ""
+                if "content" in choice["delta"]:
+                    return choice["delta"]["content"]
+                else:
+                    return ""
+            return ""
+
+        # stream = TextStream.from_aiter(
+        # asg.map(postprocess, self.chat_completions(messages, stream=True))
+        # )
+
+        def postprocess2(chunk: CompletionChunk) -> str:
+            return chunk["choices"][0]["text"]
+
+        pre_prompt: SourceCodeFileWithRegion = SourceCodeFileWithRegion(
+            region=region, before_region=before_cursor, after_region=after_cursor, instruction=goal
         )
+
+        prompt = pre_prompt.get_prompt()
+        logger.info(f"{prompt=}")
+        stream = TextStream.from_aiter(self.completion(prompt, stream=True))
+        # async def postprocess2(completion_chunk: CompletionChunk) -> str:
+        #     if completion_chunk["choices"]:
+        #         choice = completion_chunk["choices"][0]
+        #         if "text" in choice and choice["text"]:
+        #             return choice["text"]
+        #         if choice["finish_reason"]:
+        #             return ""
+        #     return ""
+
+        # commented_region = '# ' + '\n# '.join(region.split('\n'))
+        # prompt = f"<PRE> {before_cursor}\n{commented_region}\n{f'# better version which accomplishes {goal}'} <SUF> {after_cursor} <MID>"
+        # # prompt = ""
+        # logger.info(f"{prompt=}")
+        # stream = TextStream.from_aiter(
+        #     asg.map(postprocess2, self.completion(prompt, stream=True))
+        # )
 
         logger.info("constructed stream")
         # logger.info(f"{stream=}")
+        # thoughtstream = TextStream()
+        # codestream = TextStream()
+        # planstream = TextStream()
+
+        # async def worker():
+        #     logger.info("[edit_code:worker]")
+        #     try:
+        #         prelude, stream2 = stream.split_once("```")
+        #         # logger.info(f"{prelude=}")
+        #         async for delta in prelude:
+        #             # logger.info(f"plan {delta=}")
+        #             planstream.feed_data(delta)
+        #         planstream.feed_eof()
+        #         lang_tag = await stream2.readuntil("\n")
+        #         before, after = stream2.split_once("\n```")
+        #         # logger.info(f"{before=}")
+        #         logger.info("reading codestream")
+        #         async for delta in before:
+        #             # logger.info(f"code {delta=}")
+        #             codestream.feed_data(delta)
+        #         codestream.feed_eof()
+        #         # thoughtstream.feed_data("\n")
+        #         logger.info("reading thoughtstream")
+        #         async for delta in after:
+        #             thoughtstream.feed_data(delta)
+        #         thoughtstream.feed_eof()
+        #     except Exception as e:
+        #         event.set()
+        #         raise e
+        #     finally:
+        #         planstream.feed_eof()
+        #         thoughtstream.feed_eof()
+        #         codestream.feed_eof()
+        #         # logger.info("FED EOF TO ALL")
+
+        # # t = asyncio.create_task(worker())
+        # # thoughtstream._feed_task = t
+        # # codestream._feed_task = t
+        # # planstream._feed_task = t
+        # # logger.info("[edit_code] about to return")
+
+        # codestream = TextStream()
+        # async def worker():
+        #     try:
+        #         async for delta in stream:
+        #             logger.info(f"[worker] {delta=}")
+        #             codestream.feed_data(delta)
+        #         codestream.feed_eof()
+        #     except MissingKeyError as e:
+        #         event.set()
+        #         raise e
+        #     finally:
+        #         codestream.feed_eof()
+
+        # t = asyncio.create_task(worker())
+        # codestream._feed_task = t
+        # return EditCodeResult(thoughts=None, code=codestream, plan=None, event=event)
         thoughtstream = TextStream()
         codestream = TextStream()
         planstream = TextStream()
@@ -750,16 +848,118 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         raise Exception("unreachable code")
 
 
-async def _main():
-    client = OpenAIClient()  # type: ignore
-    print(client)
-    messages = [
-        Message.system("you are a friendly and witty chatbot."),
-        Message.user("please tell me a joke involving a lemon and a rubiks cube."),
-        Message.assistant("i won't unless if you ask nicely"),
+def create_messages(
+    before_cursor: str,
+    region: str,
+    after_cursor: str,
+    documents: Optional[List[lsp.Document]] = None,
+    goal: Optional[str] = None,
+    latest_region: Optional[str] = None,
+) -> List[Message]:
+    user_message = (
+        f"Please generate code completing the task to replace the below region: {goal or ''}\n"
+        "==== PREFIX ====\n"
+        f"{before_cursor}"
+        "==== REGION ====\n"
+        f"{latest_region or region}\n"
+        "==== SUFFIX ====\n"
+        f"{after_cursor}\n"
+    )
+    user_message = format_visible_files(documents) + user_message
+
+    return [
+        # Message.system(
+        #     "You are a brilliant coder and an expert software engineer and world-class systems architect with deep technical and design knowledge. You value:\n"
+        #     "- Conciseness\n"
+        #     "- DRY principle\n"
+        #     "- Self-documenting code with plenty of comments\n"
+        #     "- Modularity\n"
+        #     "- Deduplicated code\n"
+        #     "- Readable code\n"
+        #     "- Abstracting things away to functions for reusability\n"
+        #     "- Logical thinking\n"
+        #     "\n\n"
+        #     "You will be presented with a *task* and a source code file split into three parts: a *prefix*, *region*, and *suffix*. "
+        #     "The task will specify a change or new code that will replace the given region.\n You will receive the source code in the following format:\n"
+        #     "==== PREFIX ====\n"
+        #     "${source code file before the region}\n"
+        #     "==== REGION ====\n"
+        #     "${region}\n"
+        #     "==== SUFFIX ====\n"
+        #     "{source code file after the region}\n\n"
+        #     "When presented with a task, you will:\n(1) write a detailed and elegant plan to solve this task,\n(2) write your solution for it surrounded by triple backticks, and\n(3) write a 1-2 sentence summary of your solution.\n"
+        #     f"Your solution will be added verbatim to replace the given region. Do *not* repeat the prefix or suffix in any way.\n"
+        #     "The solution should directly replaces the given region. If the region is empty, just write something that will replace the empty string. *Do not repeat the prefix or suffix in any way*. If the region is in the middle of a function definition or class declaration, do not repeat the function signature or class declaration. Write a partial code snippet without imports if needed. Preserve indentation.\n"
+        #     f"For example, if the source code looks like this:\n"
+        #     "==== PREFIX ====\n"
+        #     "def hello_world():\n    \n"
+        #     "==== REGION ====\n"
+        #     "\n"
+        #     "==== SUFFIX ====\n"
+        #     "if __name__ == '__main__':\n    hello_world()\n\n"
+        #     "And the task is 'implement this function and return 0', then a good response would be\n"
+        #     "We will implement hello world by first using the Python `print` statement and then returning the integer literal 0.\n"
+        #     "```\n"
+        #     "    # print hello world\n"
+        #     "    print('hello world!')\n"
+        #     "    # return the integer 0\n"
+        #     "    return 0\n"
+        #     "```\n"
+        #     "I added an implementation of the rest of the `hello_world` function which uses the Python `print` statement to print 'hello_world' before returning the integer literal 0.\n"
+        # ),
+        # Message.assistant("Hello! How can I help you today?"),
+        Message.system(
+            "You will be presented with a *task* and a source code file split into three parts: a *prefix*, *region*, and *suffix*. "
+            "The task will specify a change or new code that will replace the given region.\n You will receive the source code in the following format:\n"
+            "==== PREFIX ====\n"
+            "${source code file before the region}\n"
+            "==== REGION ====\n"
+            "${region}\n"
+            "==== SUFFIX ====\n"
+            "{source code file after the region}\n\n"
+            "When presented with a task, you will:\n(1) write a detailed and elegant plan to solve this task,\n(2) write your solution for it surrounded by triple backticks, and\n(3) write a 1-2 sentence summary of your solution.\n"
+            f"Your solution will be added verbatim to replace the given region. Do *not* repeat the prefix or suffix in any way.\n"
+            "The solution should directly replaces the given region. If the region is empty, just write something that will replace the empty string. *Do not repeat the prefix or suffix in any way*. If the region is in the middle of a function definition or class declaration, do not repeat the function signature or class declaration. Write a partial code snippet without imports if needed. Preserve indentation.\n"
+        ),
+        Message.assistant("Hello! How can I help you today?"),
+        Message.user(
+            "==== PREFIX ====\n"
+            "def hello_world():\n    \n"
+            "==== REGION ====\n"
+            "# TODO\n"
+            "==== SUFFIX ====\n"
+            "if __name__ == '__main__':\n    hello_world()\n\n"
+        ),
+        Message.assistant(
+            "    # print hello world\n"
+            "    print('hello world!')\n"
+            "    # return the integer 0\n"
+            "    return 0\n"
+        ),
+        Message.user(user_message),
     ]
 
-    stream = await client.run_chat("fee fi fo fum", messages=messages, message="pretty please?")
+
+async def _main():
+    client = LlamaClient(name="codellama", model_path="/Users/jacksonkearl/.morph/models/rift-coder-v0-7b-gguf")  # type: ignore
+    print(client)
+    messages = [
+        # Message.system("you are a friendly and witty chatbot."),
+        # Message.user("please tell me a joke involving a lemon and a rubiks cube."),
+        # Message.assistant("i won't unless if you ask nicely"),
+    ]
+
+    messages = create_messages(
+        "def merge_sort(xs: List[int]):\n",
+        "    # TODO",
+        "\nif __name__ == '__main__':\nprint(merge_sort([5,4,3,2,1]))",
+        goal="implement the missing code",
+        latest_region=None,
+    )
+
+    stream = await client.run_chat(
+        "fee fi fo fum", messages=messages[:-1], message=messages[-1].content
+    )
     async for delta in stream.text:
         print(delta)
     # print("\n\n")
@@ -771,4 +971,5 @@ async def _main():
 
 
 if __name__ == "__main__":
+    configure_logger()
     asyncio.run(_main())
