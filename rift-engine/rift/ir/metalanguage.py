@@ -45,12 +45,10 @@ class MetaLanguage:
     def process_meta_variable(self, mv: str) -> None:
         if mv == "Class":
             if "Class" not in self.locals:
-                classes: List[IR.ClassKind] = []
+                classes: List[IR.Symbol] = []
                 for symbol in self._all_symbols:
                     if isinstance(symbol.symbol_kind, IR.ClassKind):
-                        c = symbol.symbol_kind
-                        self.set_file_path(c, self.get_file_path(symbol))
-                        classes.append(symbol.symbol_kind)
+                        classes.append(symbol)
                 self.locals["Class"] = classes
         elif mv == "Function":
             if "Function" not in self.locals:
