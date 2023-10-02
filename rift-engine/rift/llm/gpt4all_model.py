@@ -666,13 +666,13 @@ class Gpt4AllModel(AbstractCodeCompletionProvider, AbstractChatCompletionProvide
                 )
                 truncated_documents.append(doc)
 
-        messages = create_messages(
-            before_cursor=before_cursor,
-            region=region,
-            after_cursor=after_cursor,
-            documents=truncated_documents,
-            goal=goal,
-        )
+        # messages = create_messages(
+        #     before_cursor=before_cursor,
+        #     region=region,
+        #     after_cursor=after_cursor,
+        #     documents=truncated_documents,
+        #     goal=goal,
+        # )
         # logger.info(f"{messages=}")
 
         event = asyncio.Event()
