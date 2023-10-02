@@ -79,6 +79,18 @@ Block = List[Item]
 
 
 @dataclass
+class Case:
+    guard: "Symbol"
+    body: "Symbol"
+
+    def __str__(self) -> str:
+        return f"Case({self.guard.name}, {self.body.name})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+@dataclass
 class Import:
     names: List[str]  # import foo, bar, baz
     substring: Substring  # the substring of the document that corresponds to this import
@@ -185,12 +197,32 @@ class Parameter:
     __repr__ = __str__
 
 
+SymbolKindName = Literal[
+    "Body",
+    "Call",
+    "Class",
+    "Def",
+    "Expression",
+    "Function",
+    "Guard",
+    "If",
+    "Interface",
+    "Module",
+    "Namespace",
+    "Section",
+    "Structure",
+    "Theorem",
+    "TypeDefinition",
+    "Value",
+]
+
+
 @dataclass
 class SymbolKind(ABC):
     """Abstract class for symbol kinds."""
 
     @abstractmethod
-    def name(self) -> str:
+    def name(self) -> SymbolKindName:
         raise NotImplementedError
 
     def dump(self, lines: List[str]) -> None:
@@ -215,43 +247,12 @@ class MetaSymbolKind(SymbolKind):
 
 
 @dataclass
-class Case:
-    guard: "Symbol"
-    body: "Symbol"
-
-    def __str__(self) -> str:
-        return f"Case({self.guard.name}, {self.body.name})"
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-
-@dataclass
-class GuardKind(MetaSymbolKind):
-    """Guard of a conditional"""
-
-    condition: Expression
-
-    def name(self) -> str:
-        return "Guard"
-
-    def dump(self, lines: List[str]) -> None:
-        lines.append(f"   condition: {self.condition}")
-
-    def __str__(self) -> str:
-        return self.condition
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-
-@dataclass
 class BodyKind(MetaSymbolKind):
     """Body of a branch"""
 
     block: Block
 
-    def name(self) -> str:
+    def name(self) -> SymbolKindName:
         return "Body"
 
     def dump(self, lines: List[str]) -> None:
@@ -269,7 +270,7 @@ class CallKind(MetaSymbolKind):
     function_name: str
     arguments: List[Expression]
 
-    def name(self) -> str:
+    def name(self) -> SymbolKindName:
         return "Call"
 
     def dump(self, lines: List[str]) -> None:
@@ -285,12 +286,30 @@ class CallKind(MetaSymbolKind):
 
 
 @dataclass
+class ClassKind(SymbolKind):
+    superclasses: Optional[str]
+
+    def name(self) -> SymbolKindName:
+        return "Class"
+
+    def signature(self) -> Optional[str]:
+        if self.superclasses is not None:
+            return self.superclasses
+
+
+@dataclass
+class DefKind(SymbolKind):
+    def name(self) -> SymbolKindName:
+        return "Def"
+
+
+@dataclass
 class ExpressionKind(MetaSymbolKind):
     """Expression statement"""
 
     code: str
 
-    def name(self) -> str:
+    def name(self) -> SymbolKindName:
         return "Expression"
 
     def dump(self, lines: List[str]) -> None:
@@ -304,12 +323,49 @@ class ExpressionKind(MetaSymbolKind):
 
 
 @dataclass
+class FunctionKind(SymbolKind):
+    has_return: bool
+    parameters: List[Parameter]
+    return_type: Optional[Type] = None
+
+    def name(self) -> SymbolKindName:
+        return "Function"
+
+    def dump(self, lines: List[str]) -> None:
+        if self.parameters != []:
+            lines.append(f"   parameters: {self.parameters}")
+        if self.return_type is not None:
+            lines.append(f"   return_type: {self.return_type}")
+        if self.has_return:
+            lines.append(f"   has_return: {self.has_return}")
+
+
+@dataclass
+class GuardKind(MetaSymbolKind):
+    """Guard of a conditional"""
+
+    condition: Expression
+
+    def name(self) -> SymbolKindName:
+        return "Guard"
+
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   condition: {self.condition}")
+
+    def __str__(self) -> str:
+        return self.condition
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+@dataclass
 class IfKind(MetaSymbolKind):
     if_case: Case
     elif_cases: List[Case]
     else_body: Optional["Symbol"]
 
-    def name(self) -> str:
+    def name(self) -> SymbolKindName:
         return "If"
 
     def dump(self, lines: List[str]) -> None:
@@ -332,40 +388,46 @@ class IfKind(MetaSymbolKind):
 
 
 @dataclass
-class FunctionKind(SymbolKind):
-    has_return: bool
-    parameters: List[Parameter]
-    return_type: Optional[Type] = None
-
-    def name(self) -> str:
-        return "Function"
-
-    def dump(self, lines: List[str]) -> None:
-        if self.parameters != []:
-            lines.append(f"   parameters: {self.parameters}")
-        if self.return_type is not None:
-            lines.append(f"   return_type: {self.return_type}")
-        if self.has_return:
-            lines.append(f"   has_return: {self.has_return}")
+class InterfaceKind(SymbolKind):
+    def name(self) -> SymbolKindName:
+        return "Interface"
 
 
 @dataclass
-class ValueKind(SymbolKind):
-    type: Optional[Type] = None
+class ModuleKind(SymbolKind):
+    def name(self) -> SymbolKindName:
+        return "Module"
 
-    def name(self) -> str:
-        return "Value"
 
-    def dump(self, lines: List[str]) -> None:
-        if self.type is not None:
-            lines.append(f"   type: {self.type}")
+@dataclass
+class NamespaceKind(SymbolKind):
+    def name(self) -> SymbolKindName:
+        return "Namespace"
+
+
+@dataclass
+class SectionKind(SymbolKind):
+    def name(self) -> SymbolKindName:
+        return "Section"
+
+
+@dataclass
+class StructureKind(SymbolKind):
+    def name(self) -> SymbolKindName:
+        return "Structure"
+
+
+@dataclass
+class TheoremKind(SymbolKind):
+    def name(self) -> SymbolKindName:
+        return "Theorem"
 
 
 @dataclass
 class TypeDefinitionKind(SymbolKind):
     type: Optional[Type] = None
 
-    def name(self) -> str:
+    def name(self) -> SymbolKindName:
         return "TypeDefinition"
 
     def dump(self, lines: List[str]) -> None:
@@ -380,57 +442,15 @@ class TypeDefinitionKind(SymbolKind):
 
 
 @dataclass
-class DefKind(SymbolKind):
-    def name(self) -> str:
-        return "Def"
+class ValueKind(SymbolKind):
+    type: Optional[Type] = None
 
+    def name(self) -> SymbolKindName:
+        return "Value"
 
-@dataclass
-class StructureKind(SymbolKind):
-    def name(self) -> str:
-        return "Structure"
-
-
-@dataclass
-class TheoremKind(SymbolKind):
-    def name(self) -> str:
-        return "Theorem"
-
-
-@dataclass
-class InterfaceKind(SymbolKind):
-    def name(self) -> str:
-        return "Interface"
-
-
-@dataclass
-class ClassKind(SymbolKind):
-    superclasses: Optional[str]
-
-    def name(self) -> str:
-        return "Class"
-
-    def signature(self) -> Optional[str]:
-        if self.superclasses is not None:
-            return self.superclasses
-
-
-@dataclass
-class NamespaceKind(SymbolKind):
-    def name(self) -> str:
-        return "Namespace"
-
-
-@dataclass
-class ModuleKind(SymbolKind):
-    def name(self) -> str:
-        return "Module"
-
-
-@dataclass
-class SectionKind(SymbolKind):
-    def name(self) -> str:
-        return "Section"
+    def dump(self, lines: List[str]) -> None:
+        if self.type is not None:
+            lines.append(f"   type: {self.type}")
 
 
 @dataclass
@@ -503,7 +523,17 @@ class Symbol:
 
 @dataclass
 class File:
-    path: str  # path of the file relative to the root directory
+    """
+    Represents a file with associated metadata.
+
+    Attributes:
+    - path: Path of the file relative to the root directory.
+    - statements: Top-level statements in the file.
+    - _imports: Imports present in the file.
+    - _symbol_table: Symbol table for all symbols in the file.
+    """
+
+    path: str
     statements: List[Item] = field(default_factory=list)
     _imports: List[Import] = field(default_factory=list)
     _symbol_table: Dict[QualifiedId, Symbol] = field(default_factory=dict)
