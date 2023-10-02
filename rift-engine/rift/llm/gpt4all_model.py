@@ -691,8 +691,8 @@ class Gpt4AllModel(AbstractCodeCompletionProvider, AbstractChatCompletionProvide
                     return ""
             return ""
 
-        def postprocess2(chunk: CompletionChunk) -> str:
-            return chunk["choices"][0]["text"]
+        def postprocess2(chunk: ChatCompletionChunk) -> str:
+            return chunk.choices[0].text
 
         pre_prompt: SourceCodeFileWithRegion = SourceCodeFileWithRegion(
             region=region, before_region=before_cursor, after_region=after_cursor, instruction=goal
