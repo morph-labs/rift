@@ -302,7 +302,7 @@ def test_response():
 
     language = "python"
     code_blocks3 = response.extract_blocks_from_response(Test.response3)
-    file = IR.File("response3")
+    file = IR.File(IR.Code(Test.response3.encode()), "response3")
     parser.parse_code_block(file, IR.Code(Test.code3), language)
     missing_types = functions_missing_types_in_file(file)
     filter_function_ids = [mt.function_declaration.get_qualified_id() for mt in missing_types]
@@ -325,7 +325,7 @@ def test_response():
 
     language = "python"
     code_blocks4 = response.extract_blocks_from_response(Test.response4)
-    file = IR.File("response4")
+    file = IR.File(IR.Code(Test.response4.encode()), "response4")
     parser.parse_code_block(file, IR.Code(Test.code4), language)
     missing_docs = functions_missing_docstrings_in_file(file)
     filter_function_ids = [md.function_declaration.get_qualified_id() for md in missing_docs]
@@ -342,7 +342,7 @@ def test_response():
 
     language = "typescript"
     code_blocks5 = response.extract_blocks_from_response(Test.response5)
-    file = IR.File("response5")
+    file = IR.File(IR.Code(Test.response5.encode()), "response5")
     parser.parse_code_block(file, IR.Code(Test.code5), language)
     missing_docs = functions_missing_docstrings_in_file(file)
     filter_function_ids = [md.function_declaration.get_qualified_id() for md in missing_docs]
