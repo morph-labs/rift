@@ -18,21 +18,27 @@ import tiktoken
 import rift.ir.IR as IR
 from rift.ir.parser import parse_files_in_paths
 
+Vector = npt.NDArray[np.float32]
+
 
 @dataclass
 class Embedding:
-    embedding: npt.NDArray[np.float32]
+    embedding: Vector
 
-    def similarity(self, other: "Embedding") -> float:
-        dot_product = self.embedding.dot(other.embedding)
-        norm_self = np.linalg.norm(self.embedding)
-        norm_other = np.linalg.norm(other.embedding)
-        if norm_self == 0 or norm_other == 0:
+    @classmethod
+    def cosine_similarity(cls, a: Vector, b: Vector) -> float:
+        dot_product = a.dot(b)
+        norm_a = np.linalg.norm(a)
+        norm_b = np.linalg.norm(b)
+        if norm_a == 0 or norm_b == 0:
             return 0.0
-        result = dot_product / (norm_self * norm_other)
+        result = dot_product / (norm_a * norm_b)
         if math.isnan(result):
             return 0.0
         return result
+
+    def similarity(self, query: "Embedding") -> float:
+        return self.cosine_similarity(self.embedding, query.embedding)
 
 
 version = "0.0.1"
@@ -51,7 +57,7 @@ class Index:
 
     def search(self, query: Embedding, num_results: int = 5) -> List[Tuple[PathWithId, float]]:
         scores: List[Tuple[PathWithId, float]] = [
-            (pathWithId, query.similarity(e)) for pathWithId, e in self.embeddings.items()
+            (pathWithId, e.similarity(query=query)) for pathWithId, e in self.embeddings.items()
         ]
         scores = sorted(scores, key=lambda x: x[1], reverse=True)
         return scores[:num_results]
