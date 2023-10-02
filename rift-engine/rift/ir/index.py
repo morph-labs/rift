@@ -23,10 +23,27 @@ Vector = npt.NDArray[np.float32]
 
 @dataclass
 class Embedding:
-    embedding: Vector
+    """
+    A class representing a vector embedding.
+
+    Attributes:
+        vectors (List[Vector]): A list of vectors representing the embedding.
+
+    Methods:
+        cosine_similarity(a: Vector, b: Vector) -> float:
+            Computes the cosine similarity between two vectors.
+        similarity(query: "Embedding") -> float:
+            Computes the maximum cosine similarity between the vectors in this embedding and the vectors in the given query embedding.
+    """
+
+    symbol: IR.Symbol
+    vectors: List[Vector]
 
     @classmethod
     def cosine_similarity(cls, a: Vector, b: Vector) -> float:
+        """
+        Computes the cosine similarity between two vectors.
+        """
         dot_product = a.dot(b)
         norm_a = np.linalg.norm(a)
         norm_b = np.linalg.norm(b)
@@ -37,16 +54,20 @@ class Embedding:
             return 0.0
         return result
 
-    def similarity(self, query: "Embedding") -> float:
-        return self.cosine_similarity(self.embedding, query.embedding)
+    def similarity(self, query: Vector) -> float:
+        """
+        Computes the maximum cosine similarity between the vectors in this embedding and the vectors in the given query embedding.
+        """
+        similarities = [self.cosine_similarity(v, query) for v in self.vectors]
+        return max(similarities)
 
 
-version = "0.0.1"
+version = "0.0.2"
 
 PathWithId = Tuple[str, IR.QualifiedId]
 
 
-EmbeddingFunction = Callable[[str], Embedding]
+EmbeddingFunction = Callable[[str], Vector]
 
 
 @dataclass
@@ -55,9 +76,13 @@ class Index:
     project: IR.Project
     version: str = version
 
-    def search(self, query: Embedding, num_results: int = 5) -> List[Tuple[PathWithId, float]]:
+    def search(
+        self, query: Vector, num_results: int = 5, kinds: List[IR.SymbolKindName] = ["Function"]
+    ) -> List[Tuple[PathWithId, float]]:
         scores: List[Tuple[PathWithId, float]] = [
-            (pathWithId, e.similarity(query=query)) for pathWithId, e in self.embeddings.items()
+            (path_with_id, e.similarity(query=query))
+            for path_with_id, e in self.embeddings.items()
+            if e.symbol.symbol_kind.name() in kinds
         ]
         scores = sorted(scores, key=lambda x: x[1], reverse=True)
         return scores[:num_results]
@@ -80,7 +105,7 @@ class Index:
         cls,
         embed_fun: EmbeddingFunction,
         project: IR.Project,
-        document_for_symbol: Optional[Callable[[IR.Symbol], str]] = None,
+        documents_for_symbol: Callable[[IR.Symbol], List[str]],
     ) -> "Index":
         """
         Creates an instance of the Index class.
@@ -94,35 +119,66 @@ class Index:
         Returns:
         - An instance of the Index class.
         """
-        embeddings: Dict[PathWithId, Embedding] = {}
 
-        # Collect all document first
-        documents: List[str] = []
-        paths_with_ids: List[PathWithId] = []
+        @dataclass
+        class DocumentWithEmbedding:
+            document: str
+            vector: Optional[Vector]
+
+        @dataclass
+        class SymbolEmbedding:
+            documents_with_embeddings: List[DocumentWithEmbedding]
+            symbol: IR.Symbol
+            path_with_id: PathWithId
+
+        all_documents_with_embeddings: List[DocumentWithEmbedding] = []
+        symbol_embeddings: List[SymbolEmbedding] = []
+
         for file in project.get_files():
-            for f in file.get_function_declarations():
-                file_path = file.path
-                path_with_id = (file_path, f.get_qualified_id())
-                if document_for_symbol:
-                    document = document_for_symbol(f)
-                else:
-                    document = f.get_substring().decode()
-                documents.append(document)
-                paths_with_ids.append(path_with_id)
+            all_symbols = file.search_symbol(lambda _: True)
+            file_path = file.path
+            for symbol in all_symbols:
+                path_with_id = (file_path, symbol.get_qualified_id())
+                documents = documents_for_symbol(symbol)
+                if len(documents) > 0:
+                    documents_with_embeddings = [
+                        DocumentWithEmbedding(document, None) for document in documents
+                    ]
+                    all_documents_with_embeddings.extend(documents_with_embeddings)
+                    symbol_embeddings.append(
+                        SymbolEmbedding(
+                            documents_with_embeddings=documents_with_embeddings,
+                            symbol=symbol,
+                            path_with_id=path_with_id,
+                        )
+                    )
 
-        async def async_get_embedding(document: str) -> Awaitable[Embedding]:
+        async def async_get_embedding(
+            document_with_embedding: DocumentWithEmbedding,
+        ) -> Awaitable[Vector]:
             loop = asyncio.get_running_loop()
-            return loop.run_in_executor(None, embed_fun, document)
+            return loop.run_in_executor(None, embed_fun, document_with_embedding.document)
 
         # Parallel server requests
-        embedded_results: List[Awaitable[Embedding]] = await asyncio.gather(
-            *(async_get_embedding(document) for document in documents)
+        embedded_results: List[Awaitable[Vector]] = await asyncio.gather(
+            *(async_get_embedding(x) for x in all_documents_with_embeddings)
         )
 
         # Assign embeddings
-        for path_with_id, embedding in zip(paths_with_ids, embedded_results):
-            embeddings[path_with_id] = await embedding
+        for n, res in enumerate(embedded_results):
+            all_documents_with_embeddings[n].vector = await res
 
+        embeddings = {
+            symbol_embedding.path_with_id: Embedding(
+                symbol=symbol_embedding.symbol,
+                vectors=[
+                    x.vector
+                    for x in symbol_embedding.documents_with_embeddings
+                    if x.vector is not None
+                ],
+            )
+            for symbol_embedding in symbol_embeddings
+        }
         return cls(embeddings=embeddings, project=project)
 
 
@@ -136,7 +192,7 @@ def token_length(string: str) -> int:
 MAX_TOKENS = 8192
 
 
-def openai_embedding(document: str) -> Embedding:
+def openai_embedding(document: str) -> Vector:
     print("openai embedding for", document[:20], "...")
     if token_length(document) >= MAX_TOKENS:
         print("Truncating document to 8192 tokens")
@@ -147,8 +203,8 @@ def openai_embedding(document: str) -> Embedding:
         document = Encoder.decode(tokens)
     model = "text-embedding-ada-002"
     vector = openai.Embedding.create(input=[document], model=model)["data"][0]["embedding"]  # type: ignore
-    embedding = Embedding(np.array(vector))  # type: ignore
-    return embedding
+    vector: Vector = np.array(vector)  # type: ignore
+    return vector
 
 
 def get_embedding_function(openai: bool) -> EmbeddingFunction:
@@ -159,10 +215,11 @@ def get_embedding_function(openai: bool) -> EmbeddingFunction:
 
         nlp = spacy.load("en_core_web_md")
 
-        def nlp_embedding(document: str) -> Embedding:
-            return Embedding(np.array(nlp(document).vector))
+        def spacy_embedding(document: str) -> Vector:
+            print("spacy embedding for", document[:20], "...")
+            return np.array(nlp(document).vector)
 
-        return nlp_embedding
+        return spacy_embedding
 
 
 import pytest
@@ -172,9 +229,9 @@ import pytest
 async def test_index() -> None:
     this_dir = os.path.dirname(__file__)
     project_root = __file__  # this file only
-    # project_root = os.path.dirname(
-    #     os.path.dirname(os.path.dirname(this_dir))
-    # )  # the whole rift project
+    project_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(this_dir))
+    )  # the whole rift project
     openai = False
 
     index_file = os.path.join(this_dir, "index.rci")
@@ -189,11 +246,22 @@ async def test_index() -> None:
         print("Creating index...")
         start = time.time()
 
-        def document_for_symbol(symbol: IR.Symbol) -> str:
-            return symbol.get_substring().decode()
+        def documents_for_symbol(symbol: IR.Symbol) -> List[str]:
+            documents: List[str] = []
+            if isinstance(symbol.symbol_kind, IR.FunctionKind):
+                documents = [symbol.get_substring().decode()]
+            elif isinstance(symbol.symbol_kind, IR.ClassKind):
+                for s in symbol.body:
+                    documents.extend(documents_for_symbol(s))
+                return documents
+            elif isinstance(symbol.symbol_kind, IR.FileKind):
+                for s in symbol.body:
+                    documents.extend(documents_for_symbol(s))
+                return documents
+            return documents
 
         index = await Index.create(
-            document_for_symbol=document_for_symbol,
+            documents_for_symbol=documents_for_symbol,
             embed_fun=embed_fun,
             project=project,
         )
@@ -205,17 +273,13 @@ async def test_index() -> None:
         print(f"Saved index in {time.time() - start:.2f} seconds")
 
     test_sentence = "Creates an instance of the Index class"
+    start = time.time()
     query = embed_fun(test_sentence)
-    scores = index.search(query)
+    scores = index.search(query, kinds=["Function"])  #  ["Class", "File"]
 
     print("\nSemantic Search Results:")
     for n, x in scores:
         print(f"{n}  {x:.3f}")
-
-    # bench search
-    repetitions = 100
-    start = time.time()
-    for _ in range(repetitions):
-        index.search(query)
     elapsed = time.time() - start
-    print(f"\nSearched {repetitions} times in {elapsed:.2f} seconds")
+    print(f"\nSearched in {elapsed:.2f} seconds")
+

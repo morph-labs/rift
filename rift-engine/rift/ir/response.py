@@ -49,7 +49,7 @@ def parse_code_blocks(code_blocks: List[IR.Code], language: IR.Language) -> IR.F
     Returns:
         IR: The intermediate representation of the parsed code blocks.
     """
-    file = IR.File("response")
+    file = IR.File(code_blocks[0], "response")
     for block in code_blocks:
         parser.parse_code_block(file, block, language)
     return file

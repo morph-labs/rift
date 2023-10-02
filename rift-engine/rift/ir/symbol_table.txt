@@ -1,4 +1,10 @@
 === Symbol Table for test.c ===
+File: test.c
+   language: python
+   range: ((0, 0), (17, 1))
+   substring: (0, 169)
+   body_sub: (0, 169)
+   body: ['aa', 'comment', 'foo', 'bb', 'main']
 Function: aa
    language: c
    range: ((0, 0), (2, 1))
@@ -30,6 +36,12 @@ Function: main
    parent: test.c
    return_type: int
 === Symbol Table for test.js ===
+File: test.js
+   language: python
+   range: ((0, 0), (3, 18))
+   substring: (0, 111)
+   body_sub: (0, 111)
+   body: ['comment', 'f1', 'comment', 'f2']
 Function: f1
    language: javascript
    range: ((1, 0), (1, 27))
@@ -45,6 +57,12 @@ Function: f2
    docstring: /** Some docstring on an arrow function */
    parent: test.js
 === Symbol Table for test.java ===
+File: test.java
+   language: python
+   range: ((0, 0), (24, 6))
+   substring: (0, 458)
+   body_sub: (0, 458)
+   body: ['line_comment', 'Bicycle', 'block_comment', 'Math', 'Animal', 'line_comment']
 Function: braking
    language: java
    range: ((7, 4), (9, 5))
@@ -86,6 +104,12 @@ Interface: Animal
    body_sub: (364, 451)
    parent: test.java
 === Symbol Table for test.ts ===
+File: test.ts
+   language: python
+   range: ((0, 0), (13, 74))
+   substring: (0, 365)
+   body_sub: (0, 365)
+   body: ['a', 'ts', 'ts2', 'A', 'RunHelperSyncResult', 'HelperStatus']
 TypeDefinition: a
    language: typescript
    range: ((0, 0), (0, 24))
@@ -145,6 +169,12 @@ TypeDefinition: HelperStatus
    substring: (291, 365)
    parent: test.ts
 === Symbol Table for test.tsx ===
+File: test.tsx
+   language: python
+   range: ((0, 0), (1, 27))
+   substring: (0, 50)
+   body_sub: (0, 50)
+   body: ['expression_statement', 'tsx']
 Function: tsx
    language: tsx
    range: ((1, 0), (1, 27))
@@ -153,6 +183,12 @@ Function: tsx
    parent: test.tsx
    has_return: True
 === Symbol Table for test.py ===
+File: test.py
+   language: python
+   range: ((0, 0), (53, 26))
+   substring: (0, 1074)
+   body_sub: (0, 1074)
+   body: ['A', 'B', 'import_statement', 'import_statement', 'import_statement', 'import_from_statement', 'import_from_statement', 'outer_fun', 'some_conditionals', 'with_nested_conditionals']
 Expression: expression$0
    language: python
    range: ((1, 4), (4, 7))
@@ -473,6 +509,12 @@ Function: with_nested_conditionals
    parameters: [cond:str]
    return_type: None
 === Symbol Table for test.cpp ===
+File: test.cpp
+   language: python
+   range: ((0, 0), (7, 1))
+   substring: (0, 142)
+   body_sub: (0, 142)
+   body: ['namespace_name']
 Function: add
    language: cpp
    range: ((2, 4), (2, 43))
@@ -505,6 +547,12 @@ Namespace: namespace_name
    body: ['{', 'add', 'student', ';', '}']
    parent: test.cpp
 === Symbol Table for test.cs ===
+File: test.cs
+   language: python
+   range: ((0, 0), (17, 1))
+   substring: (0, 276)
+   body_sub: (0, 276)
+   body: ['comment', 'SampleNamespace', 'IEquatable']
 Function: sum
    language: c_sharp
    range: ((6, 8), (10, 9))
@@ -539,6 +587,12 @@ Interface: IEquatable
    body_sub: (249, 276)
    parent: test.cs
 === Symbol Table for test.ml ===
+File: test.ml
+   language: python
+   range: ((0, 0), (14, 3))
+   substring: (0, 365)
+   body_sub: (0, 365)
+   body: ['divide', 'callback', 'M', 'N']
 Function: divide
    language: ocaml
    range: ((0, 0), (0, 28))
@@ -626,6 +680,12 @@ Module: N
    body: ['struct', 'with_named_args', 'f1', 'f2', 'v1', 'v2', 'end']
    parent: test.ml
 === Symbol Table for test.rb ===
+File: test.rb
+   language: python
+   range: ((0, 0), (50, 11))
+   substring: (0, 1015)
+   body_sub: (0, 1015)
+   body: ['sum', 'output', 'greetings', 'swap', 'comment', 'Person', 'Cream', 'Foo']
 Function: sum
    language: ruby
    range: ((0, 0), (3, 11))

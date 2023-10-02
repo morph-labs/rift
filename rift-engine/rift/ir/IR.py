@@ -339,7 +339,7 @@ class ExpressionKind(MetaSymbolKind):
 
 
 @dataclass
-class FileKind(SymbolKind):
+class FileKind(MetaSymbolKind):
     """
     Represents a file in the IR.
     """
@@ -645,7 +645,7 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
     last_line = code.bytes.count(b"\n")
     if code.bytes.endswith(b"\n"):
         last_line -= 1  # Adjust for the last line if it ends with a newline
-    last_newline_pos = code.bytes.rfind(b"\n")
+    last_newline_pos = code.bytes.rfind(b"\n", 0, end_byte-1)
     if last_newline_pos == -1:  # If there's no newline, the entire content is a single line
         last_char_in_line = end_byte
     else:
@@ -680,13 +680,15 @@ class File:
     - _symbol_table: Symbol table for all symbols in the file.
     """
 
+    code: Code
     path: str
     symbol: Optional[Symbol] = None
     _imports: List[Import] = field(default_factory=list)
     _symbol_table: Dict[QualifiedId, Symbol] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        self.symbol = create_file_symbol(code=Code(b""), language="python", path=self.path)
+        self.symbol = create_file_symbol(code=self.code, language="python", path=self.path)
+        self.add_symbol(self.symbol)
 
     def lookup_symbol(self, qid: QualifiedId) -> Optional[Symbol]:
         return self._symbol_table.get(qid)

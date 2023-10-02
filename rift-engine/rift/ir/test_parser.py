@@ -326,6 +326,7 @@ class Tests:
             public void animalSound();
             public int catalogue(string name, int location);
         }
+        // ddd
     """
         )
         .lstrip()
@@ -374,7 +375,7 @@ class Tests:
 
 
 def new_file(code: IR.Code, path: str, language: IR.Language, project: IR.Project) -> None:
-    file = IR.File(path)
+    file = IR.File(code, path)
     parser.parse_code_block(file, code, language, metasymbols=True)
     project.add_file(file)
 
