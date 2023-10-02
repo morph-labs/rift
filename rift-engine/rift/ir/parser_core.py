@@ -21,7 +21,6 @@ from rift.ir.IR import (
     IfKind,
     Import,
     InterfaceKind,
-    Item,
     Language,
     ModuleKind,
     NamespaceKind,
@@ -35,6 +34,7 @@ from rift.ir.IR import (
     TheoremKind,
     Type,
     TypeDefinitionKind,
+    UnknownKind,
     ValueKind,
 )
 
@@ -1160,12 +1160,11 @@ class SymbolParser:
         import_ = parse_import(self.node)
         if import_ is not None:
             self.file.add_import(import_)
-        if symbols != []:
-            pass
-        else:
-            item = Item(type=self.node.type, symbol=None)
-            if self.parent:
-                self.parent.body.append(item)
+        if symbols == []:
+            symbol = self.mk_symbol_decl(
+                id=self.node.type, parents=[self.node], symbol_kind=UnknownKind()
+            )
+            self.file.add_symbol(symbol)
 
     def parse_block(self) -> None:
         counter = Counter()

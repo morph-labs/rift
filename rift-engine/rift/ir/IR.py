@@ -68,7 +68,10 @@ class Item:
 
     def __str__(self):
         if self.symbol:
-            return self.symbol.name
+            if isinstance(self.symbol.symbol_kind, UnknownKind):
+                return f"'{self.symbol.name}'"
+            else:
+                return self.symbol.name
         else:
             return f"'{self.type}'"
 
@@ -214,6 +217,7 @@ SymbolKindName = Literal[
     "Structure",
     "Theorem",
     "TypeDefinition",
+    "Unknown",
     "Value",
 ]
 
@@ -515,6 +519,16 @@ class TypeDefinitionKind(SymbolKind):
 
 
 @dataclass
+class UnknownKind(MetaSymbolKind):
+    """
+    Represents an unknown symbol kind.
+    """
+
+    def name(self) -> SymbolKindName:
+        return "Unknown"
+
+
+@dataclass
 class ValueKind(SymbolKind):
     """
     Represents a value in the IR
@@ -663,7 +677,6 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
     )
 
 
-
 @dataclass
 class File:
     """
@@ -716,9 +729,9 @@ class File:
         ]
 
     def dump_symbol_table(self, lines: List[str]) -> None:
-        for id in self._symbol_table:
-            d = self._symbol_table[id]
-            d.dump(lines)
+        for _, symbol in self._symbol_table.items():
+            if not isinstance(symbol.symbol_kind, UnknownKind):
+                symbol.dump(lines)
 
     def dump_map(self, indent: int, lines: List[str]) -> None:
         def dump_symbol(symbol: Symbol, indent: int) -> None:
@@ -733,7 +746,7 @@ class File:
                 dump_statement(statement, indent + 2)
 
         def dump_statement(statement: Item, indent: int) -> None:
-            if statement.symbol:
+            if statement.symbol and not isinstance(statement.symbol.symbol_kind, UnknownKind):
                 dump_symbol(statement.symbol, indent)
 
         if self.symbol and isinstance(self.symbol.symbol_kind, FileKind):
