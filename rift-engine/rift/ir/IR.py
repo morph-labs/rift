@@ -678,7 +678,6 @@ class File:
 
     path: str
     symbol: Optional[Symbol] = None
-    statements: List[Item] = field(default_factory=list)
     _imports: List[Import] = field(default_factory=list)
     _symbol_table: Dict[QualifiedId, Symbol] = field(default_factory=dict)
 
@@ -737,8 +736,9 @@ class File:
             if statement.symbol:
                 dump_symbol(statement.symbol, indent)
 
-        for statement in self.statements:
-            dump_statement(statement, indent)
+        if self.symbol and isinstance(self.symbol.symbol_kind, FileKind):
+            for symbol in self.symbol.body:
+                dump_statement(symbol, indent)
 
 
 @dataclass
