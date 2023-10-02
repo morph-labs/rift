@@ -726,23 +726,21 @@ class File:
 
     def dump_map(self, indent: int, lines: List[str]) -> None:
         def dump_symbol(symbol: Symbol, indent: int) -> None:
-            if not isinstance(symbol.symbol_kind, MetaSymbolKind):
+            if isinstance(symbol.symbol_kind, UnknownKind):
+                pass
+            elif not isinstance(symbol.symbol_kind, MetaSymbolKind):
                 decl_without_body = symbol.get_substring_without_body().decode().strip()
                 # indent the declaration
                 decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
                 lines.append(f"{' ' * indent}{decl_without_body}")
             else:
                 lines.append(f"{' ' * indent}{symbol.name} = `{symbol.symbol_kind}`")
-            for statement in symbol.body:
-                dump_statement(statement, indent + 2)
+            for s in symbol.body:
+                dump_symbol(s, indent + 2)
 
-        def dump_statement(statement: Symbol, indent: int) -> None:
-            if not isinstance(statement.symbol_kind, UnknownKind):
-                dump_symbol(statement, indent)
-
-        if self.symbol and isinstance(self.symbol.symbol_kind, FileKind):
-            for symbol in self.symbol.body:
-                dump_statement(symbol, indent)
+        assert self.symbol and isinstance(self.symbol.symbol_kind, FileKind)
+        for symbol in self.symbol.body:
+            dump_symbol(symbol, indent)
 
 
 @dataclass

@@ -1169,6 +1169,4 @@ class SymbolParser:
     def parse_block(self) -> None:
         counter = Counter()
         for child in self.node.children:
-            if self.language == "ruby" and child.text.decode() == "name":
-                continue
             self.recurse(child, self.scope, parent=self.parent).parse_statement(counter)
