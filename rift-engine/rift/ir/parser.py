@@ -34,7 +34,7 @@ def parse_code_block(
             language=language,
             metasymbols=metasymbols,
             node=node,
-            parent=None,
+            parent=file.symbol,
             scope="",
         ).parse_statement(counter=parser_core.Counter())
         file.statements.extend(items)

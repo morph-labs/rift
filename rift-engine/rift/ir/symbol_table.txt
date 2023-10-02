@@ -4,6 +4,7 @@ Function: aa
    range: ((0, 0), (2, 1))
    substring: (0, 24)
    body_sub: (9, 24)
+   parent: test.c
    return_type: int
 Function: foo
    language: c
@@ -11,6 +12,7 @@ Function: foo
    substring: (52, 84)
    docstring: /** This is a docstring */
    body_sub: (71, 84)
+   parent: test.c
    parameters: [x:int**]
    return_type: int*
 Function: bb
@@ -18,12 +20,14 @@ Function: bb
    range: ((8, 0), (10, 1))
    substring: (86, 110)
    body_sub: (95, 110)
+   parent: test.c
    return_type: int
 Function: main
    language: c
    range: ((12, 0), (17, 1))
    substring: (112, 169)
    body_sub: (123, 169)
+   parent: test.c
    return_type: int
 === Symbol Table for test.js ===
 Function: f1
@@ -32,12 +36,14 @@ Function: f1
    substring: (22, 49)
    docstring: /** Some docstring */
    body_sub: (36, 49)
+   parent: test.js
    has_return: True
 Function: f2
    language: javascript
    range: ((3, 0), (3, 18))
    substring: (93, 111)
    docstring: /** Some docstring on an arrow function */
+   parent: test.js
 === Symbol Table for test.java ===
 Function: braking
    language: java
@@ -54,6 +60,7 @@ Class: Bicycle
    docstring: // This is docstring
    body_sub: (42, 205)
    body: ['{', 'line_comment', 'field_declaration', 'line_comment', braking, '}']
+   parent: test.java
 Function: sum
    language: java
    range: ((14, 4), (17, 5))
@@ -71,21 +78,25 @@ Class: Math
    docstring: /* This is docstring */
    body_sub: (249, 345)
    body: ['{', sum, '}']
+   parent: test.java
 Interface: Animal
    language: java
    range: ((20, 0), (23, 1))
    substring: (347, 451)
    body_sub: (364, 451)
+   parent: test.java
 === Symbol Table for test.ts ===
 TypeDefinition: a
    language: typescript
    range: ((0, 0), (0, 24))
    substring: (0, 24)
+   parent: test.ts
 Function: ts
    language: typescript
    range: ((1, 0), (1, 56))
    substring: (25, 81)
    body_sub: (69, 81)
+   parent: test.ts
    parameters: [x:number, opt?:string]
    return_type: number
    has_return: True
@@ -95,6 +106,7 @@ Function: ts2
    substring: (89, 133)
    exported: True
    body_sub: (120, 133)
+   parent: test.ts
    return_type: array<number>
    has_return: True
 Function: constructor
@@ -120,21 +132,25 @@ Class: A
    exported: True
    body_sub: (149, 224)
    body: ['{', constructor, load, '}']
+   parent: test.ts
 Interface: RunHelperSyncResult
    language: typescript
    range: ((9, 0), (12, 1))
    substring: (225, 290)
    body_sub: (255, 290)
+   parent: test.ts
 TypeDefinition: HelperStatus
    language: typescript
    range: ((13, 0), (13, 74))
    substring: (291, 365)
+   parent: test.ts
 === Symbol Table for test.tsx ===
 Function: tsx
    language: tsx
    range: ((1, 0), (1, 27))
    substring: (23, 50)
    body_sub: (38, 50)
+   parent: test.tsx
    has_return: True
 === Symbol Table for test.py ===
 Expression: expression$0
@@ -175,6 +191,7 @@ Class: A(C,D)
     """
    body_sub: (18, 139)
    body: [expression$0, py]
+   parent: test.py
 Function: insert_code
    language: python
    range: ((11, 4), (14, 12))
@@ -216,6 +233,7 @@ Class: B
    substring: (140, 410)
    body_sub: (153, 410)
    body: [insert_code, load, Nested]
+   parent: test.py
 Function: inner_fun
    language: python
    range: ((28, 4), (29, 12))
@@ -231,6 +249,7 @@ Function: outer_fun
    substring: (533, 599)
    body_sub: (562, 599)
    body: [inner_fun]
+   parent: test.py
    return_type: None
 Expression: expression$0
    language: python
@@ -332,6 +351,7 @@ Function: some_conditionals
    docstring: """explanation"""
    body_sub: (647, 870)
    body: [expression$0, if$0, 'comment', if$1]
+   parent: test.py
    parameters: [cond:str]
    return_type: None
 Guard: guard$0
@@ -449,6 +469,7 @@ Function: with_nested_conditionals
    substring: (872, 1074)
    body_sub: (925, 1074)
    body: [if$0]
+   parent: test.py
    parameters: [cond:str]
    return_type: None
 === Symbol Table for test.cpp ===
@@ -482,6 +503,7 @@ Namespace: namespace_name
    substring: (0, 142)
    body_sub: (26, 142)
    body: ['{', add, student, ';', '}']
+   parent: test.cpp
 === Symbol Table for test.cs ===
 Function: sum
    language: c_sharp
@@ -509,23 +531,27 @@ Namespace: SampleNamespace
    docstring: // This is docstring
    body_sub: (47, 223)
    body: ['{', 'comment', SampleClass, '}']
+   parent: test.cs
 Interface: IEquatable
    language: c_sharp
    range: ((14, 0), (17, 1))
    substring: (225, 276)
    body_sub: (249, 276)
+   parent: test.cs
 === Symbol Table for test.ml ===
 Function: divide
    language: ocaml
    range: ((0, 0), (0, 28))
    substring: (0, 28)
    body_sub: (21, 28)
+   parent: test.ml
    parameters: [x:int, y]
 Function: callback
    language: ocaml
    range: ((1, 0), (1, 27))
    substring: (29, 56)
    body_sub: (52, 56)
+   parent: test.ml
    parameters: [():unit]
    return_type: unit
 Function: bump
@@ -550,6 +576,7 @@ Module: M
    substring: (57, 159)
    body_sub: (66, 159)
    body: ['struct', bump, hline, 'end']
+   parent: test.ml
 Function: with_named_args
    language: ocaml
    range: ((7, 4), (7, 81))
@@ -597,29 +624,34 @@ Module: N
    substring: (160, 365)
    body_sub: (169, 365)
    body: ['struct', with_named_args, f1, f2, v1, v2, 'end']
+   parent: test.ml
 === Symbol Table for test.rb ===
 Function: sum
    language: ruby
    range: ((0, 0), (3, 11))
    substring: (0, 77)
    body_sub: (26, 77)
+   parent: test.rb
    parameters: [a, b]
 Function: output
    language: ruby
    range: ((5, 8), (7, 11))
    substring: (87, 134)
    body_sub: (110, 134)
+   parent: test.rb
 Function: greetings
    language: ruby
    range: ((9, 8), (13, 11))
    substring: (144, 220)
    body_sub: (164, 220)
+   parent: test.rb
    parameters: [a]
 Function: swap
    language: ruby
    range: ((15, 8), (20, 11))
    substring: (230, 340)
    body_sub: (257, 340)
+   parent: test.rb
    parameters: [a, b]
 Function: initialize
    language: ruby
@@ -643,6 +675,7 @@ Class: Person
    docstring: # This is a docstring for class Person
    body_sub: (422, 680)
    body: ['class', 'constant', 'call', initialize, introduce, 'end']
+   parent: test.rb
 Function: cream?
    language: ruby
    range: ((37, 12), (39, 15))
@@ -656,6 +689,7 @@ Module: Cream
    substring: (690, 774)
    body_sub: (715, 774)
    body: ['module', 'constant', cream?, 'end']
+   parent: test.rb
 Function: pour
    language: ruby
    range: ((44, 16), (48, 19))
@@ -678,6 +712,7 @@ Module: Foo
    substring: (784, 1015)
    body_sub: (807, 1015)
    body: ['module', 'constant', Bar, 'end']
+   parent: test.rb
 
 === Project Map ===
 File: test.c
