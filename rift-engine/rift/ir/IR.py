@@ -521,7 +521,22 @@ class ValueKind(SymbolKind):
 
 @dataclass
 class Symbol:
-    """Class for symbol information."""
+    """Class for symbol information.
+
+    Attributes:
+        body (Block): The body of the symbol.
+        body_sub (Optional[Substring]): The substring of the document that corresponds to the body of the symbol.
+        code (Code): The code object that contains the symbol.
+        docstring_sub (Optional[Substring]): The substring of the document that corresponds to the docstring of the symbol.
+        exported (bool): Whether the symbol is exported.
+        language (Language): The language of the symbol.
+        name (str): The name of the symbol.
+        range (Range): The range of the symbol.
+        parent (Optional[Symbol]): The parent symbol in terms of control flow.
+        scope (Scope): The scope of the symbol.
+        substring (Substring): The substring of the document that corresponds to the symbol.
+        symbol_kind (SymbolKind): The kind of the symbol.
+    """
 
     body: Block
     body_sub: Optional[Substring]
@@ -531,20 +546,27 @@ class Symbol:
     language: Language
     name: str
     range: Range
-    parent: Optional["Symbol"]  # parent symbol in terms of control flow
+    parent: Optional["Symbol"]
     scope: Scope
     substring: Substring
     symbol_kind: SymbolKind
 
-    # return the substring of the document that corresponds to this symbol info
     def get_substring(self) -> bytes:
+        """Returns the substring of the document that corresponds to this symbol info."""
         start, end = self.substring
         return self.code.bytes[start:end]
 
     def get_qualified_id(self) -> QualifiedId:
+        """
+        Returns the qualified identifier of the IR node, which is the concatenation of its scope and name.
+        """
         return self.scope + self.name
 
     def get_substring_without_body(self) -> bytes:
+        """
+        Returns a substring of the code bytes that excludes the body of the IR node.
+        If the body_sub attribute is None, returns the full substring of the IR node.
+        """
         if self.body_sub is None:
             return self.get_substring()
         else:
@@ -554,6 +576,9 @@ class Symbol:
 
     @property
     def docstring(self) -> Optional[str]:
+        """
+        Returns the docstring of the IR object if it exists, otherwise returns None.
+        """
         if self.docstring_sub is None:
             return None
         else:
@@ -561,6 +586,12 @@ class Symbol:
             return self.code.bytes[start:end].decode()
 
     def dump(self, lines: List[str]) -> None:
+        """
+        Appends a string representation of the IR node to the given list of strings.
+
+        Args:
+            lines (List[str]): The list of strings to append the string representation to.
+        """
         signature = self.symbol_kind.signature()
         if signature is not None:
             id = self.name + signature
