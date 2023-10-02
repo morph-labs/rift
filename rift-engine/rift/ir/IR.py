@@ -248,7 +248,11 @@ class MetaSymbolKind(SymbolKind):
 
 @dataclass
 class BodyKind(MetaSymbolKind):
-    """Body of a branch"""
+    """Represents the body of a branch in the intermediate representation (IR).
+
+    Attributes:
+        block (Block): The block of code that makes up the body of the branch.
+    """
 
     block: Block
 
@@ -267,6 +271,10 @@ class BodyKind(MetaSymbolKind):
 
 @dataclass
 class CallKind(MetaSymbolKind):
+    """
+    Represents a function call in the intermediate representation (IR) of the Rift engine.
+    """
+
     function_name: str
     arguments: List[Expression]
 
@@ -287,6 +295,10 @@ class CallKind(MetaSymbolKind):
 
 @dataclass
 class ClassKind(SymbolKind):
+    """
+    Represents a class in the program's intermediate representation.
+    """
+
     superclasses: Optional[str]
 
     def name(self) -> SymbolKindName:
@@ -299,13 +311,21 @@ class ClassKind(SymbolKind):
 
 @dataclass
 class DefKind(SymbolKind):
+    """
+    Represents a mathematical definition in Lean: https://leanprover.github.io/lean4/doc/definitions.html
+    """
+
     def name(self) -> SymbolKindName:
         return "Def"
 
 
 @dataclass
 class ExpressionKind(MetaSymbolKind):
-    """Expression statement"""
+    """Represents an expression statement in the intermediate representation (IR) of the Rift engine.
+
+    Attributes:
+        code (str): The code string that represents the expression.
+    """
 
     code: str
 
@@ -324,6 +344,14 @@ class ExpressionKind(MetaSymbolKind):
 
 @dataclass
 class FunctionKind(SymbolKind):
+    """Represents a function symbol in the intermediate representation (IR) of the Rift engine.
+
+    Attributes:
+        has_return (bool): Whether the function has a return statement in its body.
+        parameters (List[Parameter]): The list of parameters of the function.
+        return_type (Optional[Type]): The return type of the function, if any.
+    """
+
     has_return: bool
     parameters: List[Parameter]
     return_type: Optional[Type] = None
@@ -361,6 +389,14 @@ class GuardKind(MetaSymbolKind):
 
 @dataclass
 class IfKind(MetaSymbolKind):
+    """A symbol kind representing an if statement.
+
+    Attributes:
+        if_case (Case): The if case of the statement.
+        elif_cases (List[Case]): The elif cases of the statement.
+        else_body (Optional[Symbol]): The else body of the statement, if any.
+    """
+
     if_case: Case
     elif_cases: List[Case]
     else_body: Optional["Symbol"]
@@ -389,42 +425,68 @@ class IfKind(MetaSymbolKind):
 
 @dataclass
 class InterfaceKind(SymbolKind):
+    """
+    Represents a kind of symbol that defines an interface.
+    """
+
     def name(self) -> SymbolKindName:
         return "Interface"
 
 
 @dataclass
 class ModuleKind(SymbolKind):
+    """
+    Represents a module in the IR.
+    """
+
     def name(self) -> SymbolKindName:
         return "Module"
 
 
 @dataclass
 class NamespaceKind(SymbolKind):
+    """
+    Represents a namespace in the IR.
+    """
+
     def name(self) -> SymbolKindName:
         return "Namespace"
 
 
 @dataclass
 class SectionKind(SymbolKind):
+    """Represents a Lean section: https://leanprover.github.io/lean4/doc/sections.html"""
+
     def name(self) -> SymbolKindName:
         return "Section"
 
 
 @dataclass
 class StructureKind(SymbolKind):
+    """
+    Represents a structure in Lean: https://lean-lang.org/lean4/doc/struct.html
+    """
+
     def name(self) -> SymbolKindName:
         return "Structure"
 
 
 @dataclass
 class TheoremKind(SymbolKind):
+    """
+    Represents a theorem in Lean: https://lean-lang.org/theorem_proving_in_lean4/title_page.html
+    """
+
     def name(self) -> SymbolKindName:
         return "Theorem"
 
 
 @dataclass
 class TypeDefinitionKind(SymbolKind):
+    """
+    Represents a type definition in the IR.
+    """
+
     type: Optional[Type] = None
 
     def name(self) -> SymbolKindName:
@@ -443,6 +505,10 @@ class TypeDefinitionKind(SymbolKind):
 
 @dataclass
 class ValueKind(SymbolKind):
+    """
+    Represents a value in the IR
+    """
+
     type: Optional[Type] = None
 
     def name(self) -> SymbolKindName:
