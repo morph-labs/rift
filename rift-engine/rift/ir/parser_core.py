@@ -1020,8 +1020,8 @@ class SymbolParser:
     def parse_body(self, counter: Counter) -> Symbol:
         """Parse the body of a conditional branch"""
         body_symbol = self.mk_dummy_metasymbol(counter, "body")
-        block = self.recurse(self.node, self.scope, parent=body_symbol).parse_block()
-        self.update_dummy_symbol(symbol=body_symbol, symbol_kind=BodyKind(block))
+        self.recurse(self.node, self.scope, parent=body_symbol).parse_block()
+        self.update_dummy_symbol(symbol=body_symbol, symbol_kind=BodyKind(body_symbol.body))
         self.file.add_symbol(body_symbol)
         return body_symbol
 
@@ -1155,27 +1155,21 @@ class SymbolParser:
                 self.node = child
                 self.walk_expression(counter)
 
-    def parse_statement(
-        self, counter: Counter
-    ) -> List[Item]:  # list because mutual definitions let x = and y = ...
+    def parse_statement(self, counter: Counter) -> None:
         symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(counter)
         import_ = parse_import(self.node)
         if import_ is not None:
             self.file.add_import(import_)
         if symbols != []:
-            return [Item(type=self.node.type, symbol=s) for s in symbols]
+            pass
         else:
             item = Item(type=self.node.type, symbol=None)
             if self.parent:
                 self.parent.body.append(item)
-            return [item]
 
-    def parse_block(self) -> Block:
-        block: Block = []
+    def parse_block(self) -> None:
         counter = Counter()
         for child in self.node.children:
             if self.language == "ruby" and child.text.decode() == "name":
                 continue
-            items = self.recurse(child, self.scope, parent=self.parent).parse_statement(counter)
-            block.extend(items)
-        return block
+            self.recurse(child, self.scope, parent=self.parent).parse_statement(counter)
