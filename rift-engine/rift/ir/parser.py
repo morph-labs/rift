@@ -27,16 +27,15 @@ def parse_code_block(
 ) -> None:
     parser = get_parser(language)
     tree = parser.parse(code.bytes)
-    for node in tree.root_node.children:
-        _items = parser_core.SymbolParser(
-            code=code,
-            file=file,
-            language=language,
-            metasymbols=metasymbols,
-            node=node,
-            parent=file.symbol,
-            scope="",
-        ).parse_statement(counter=parser_core.Counter())
+    parser_core.SymbolParser(
+        code=code,
+        file=file,
+        language=language,
+        metasymbols=metasymbols,
+        node=tree.root_node,
+        parent=file.symbol,
+        scope="",
+    ).parse_block()
 
 
 def parse_path(

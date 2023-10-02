@@ -1155,18 +1155,17 @@ class SymbolParser:
                 self.node = child
                 self.walk_expression(counter)
 
-    def parse_statement(self, counter: Counter) -> None:
-        symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(counter)
-        import_ = parse_import(self.node)
-        if import_ is not None:
-            self.file.add_import(import_)
-        if symbols == []:
-            symbol = self.mk_symbol_decl(
-                id=self.node.type, parents=[self.node], symbol_kind=UnknownKind()
-            )
-            self.file.add_symbol(symbol)
-
     def parse_block(self) -> None:
         counter = Counter()
+        self_ = self
         for child in self.node.children:
-            self.recurse(child, self.scope, parent=self.parent).parse_statement(counter)
+            self = self_.recurse(child, self_.scope, parent=self_.parent)
+            symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(counter)
+            import_ = parse_import(self.node)
+            if import_ is not None:
+                self.file.add_import(import_)
+            if symbols == []:
+                symbol = self.mk_symbol_decl(
+                    id=self.node.type, parents=[self.node], symbol_kind=UnknownKind()
+                )
+                self.file.add_symbol(symbol)
