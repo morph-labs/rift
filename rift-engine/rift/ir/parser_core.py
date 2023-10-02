@@ -304,7 +304,7 @@ class SymbolParser:
         else:
             name = id.text.decode()
         if body is None:
-            body = []
+            body = Block()
         return Symbol(
             body=body,
             body_sub=self.body_sub,
@@ -1072,7 +1072,7 @@ class SymbolParser:
                     counter
                 )
                 # return the last item in the body of the parent
-                return self.parent.body[-1].symbol
+                return self.parent.body[-1]
 
             else:
                 symbol = self.mk_dummy_metasymbol(counter, "expression")
@@ -1094,7 +1094,7 @@ class SymbolParser:
             return code
 
         # Get a list of symbols from the parent's body
-        symbols = [item.symbol for item in self.parent.body if item.symbol is not None]
+        symbols = self.parent.body
 
         # Sort the symbols based on their starting substring index in descending order for accurate replacement
         sorted_symbols = sorted(symbols, key=lambda s: s.substring[0], reverse=True)
