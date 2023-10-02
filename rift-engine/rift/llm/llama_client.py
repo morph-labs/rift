@@ -53,61 +53,63 @@ O = TypeVar("O", bound=BaseModel)
 import transformers
 
 
-@dataclass
-class SourceCodeFileWithRegion:
-    """
-    Datastructure for a training datapoint (inference if the completion is None)
+# @dataclass
+# class SourceCodeFileWithRegion:
+#     """
+#     Datastructure for a training datapoint (inference if the completion is None)
 
-    Represents a file that has been split into a region, the parts before/after the region, a natural language instruction, and a completion.
-    """
+#     Represents a file that has been split into a region, the parts before/after the region, a natural language instruction, and a completion.
+#     """
 
-    # The text before the region
-    before_region: str
+#     # The text before the region
+#     before_region: str
 
-    # The text in the region
-    region: str
+#     # The text in the region
+#     region: str
 
-    # The text after the region
-    after_region: str
+#     # The text after the region
+#     after_region: str
 
-    # A natural language instruction for completing the task
-    instruction: Optional[str] = None
+#     # A natural language instruction for completing the task
+#     instruction: Optional[str] = None
 
-    # The completion of the task
-    completion: Optional[str] = None
+#     # The completion of the task
+#     completion: Optional[str] = None
 
-    def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
-        """
-        Formats the source code file with region into a string that can be used for code completion.
+#     def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
+#         """
+#         Formats the source code file with region into a string that can be used for code completion.
 
-        The function takes in three arguments:
-            - `before_cursor`: The text to display before the cursor. Defaults to "PREFIX".
-            - `after_cursor`: The text to display after the cursor. Defaults to "SUFFIX".
-            - `latest_region`: The latest region of code. If not provided, it defaults to the region in this object.
-        """
-        formatted = (
-            f"[PREFIX]\n{self.before_region}\n[/PREFIX]\n"
-            f"[REGION]\n{latest_region or self.region}\n[/REGION]\n"
-            f"[SUFFIX]\n{self.after_region}\n[/SUFFIX]"
-        )
-        return formatted
+#         The function takes in three arguments:
+#             - `before_cursor`: The text to display before the cursor. Defaults to "PREFIX".
+#             - `after_cursor`: The text to display after the cursor. Defaults to "SUFFIX".
+#             - `latest_region`: The latest region of code. If not provided, it defaults to the region in this object.
+#         """
+#         formatted = (
+#             f"[PREFIX]\n{self.before_region}\n[/PREFIX]\n"
+#             f"[REGION]\n{latest_region or self.region}\n[/REGION]\n"
+#             f"[SUFFIX]\n{self.after_region}\n[/SUFFIX]"
+#         )
+#         return formatted
 
-    def get_prompt(self):
-        """
-        Generates a prompt for code completion based on the instruction and region in this object.
+#     def get_prompt(self):
+#         """
+#         Generates a prompt for code completion based on the instruction and region in this object.
 
-        The function returns a string that includes:
-            - "Please generate code completing the task which will replace the below region."
-            - The natural language instruction from this object's `instruction` attribute.
-            - The formatted source code file with region, using the latest region if not provided in this object's `region` attribute.
-        """
-        assert self.instruction, "instruction not set"
-        result = (
-            f"### INSTRUCTIONS\n\nPlease generate code completing the task which will replace the below region.\nTask: {self.instruction}\n\n"
-            + self.format()
-            + ("\n\n### RESPONSE\n\n")
-        )
-        return result
+#         The function returns a string that includes:
+#             - "Please generate code completing the task which will replace the below region."
+#             - The natural language instruction from this object's `instruction` attribute.
+#             - The formatted source code file with region, using the latest region if not provided in this object's `region` attribute.
+#         """
+#         assert self.instruction, "instruction not set"
+#         result = (
+#             f"### INSTRUCTIONS\n\nPlease generate code completing the task which will replace the below region.\nTask: {self.instruction}\n\n"
+#             + self.format()
+#             + ("\n\n### RESPONSE\n\n")
+#         )
+#         return result
+
+from rift.llm.prompt import SourceCodeFileWithRegion
 
 
 ENCODER = transformers.AutoTokenizer.from_pretrained("TheBloke/CodeLlama-7B-Instruct-fp16")
@@ -646,7 +648,8 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
             Generate code to replace the given `region`. Write a partial code snippet without imports if needed.
             """
 
-        messages_skeleton = create_messages("", "", "", goal=goal, latest_region=latest_region)
+        # messages_skeleton = create_messages("", "", "", goal=goal, latest_region=latest_region)
+        messages_skeleton = [Message.user(content=SourceCodeFileWithRegion(before_region="", region=latest_region or "", after_region="", instruction=goal).get_prompt(train=True))]        
         max_size = MAX_CONTEXT_SIZE - MAX_LEN_SAMPLED_COMPLETION - messages_size(messages_skeleton)
 
         # rescale `max_size_document` if we need to make room for the other documents
@@ -724,7 +727,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         )
 
         prompt = pre_prompt.get_prompt()
-        logger.info(f"{prompt=}")
+        # logger.info(f"{prompt=}")
         stream = TextStream.from_aiter(self.completion(prompt, stream=True))
         # async def postprocess2(completion_chunk: CompletionChunk) -> str:
         #     if completion_chunk["choices"]:

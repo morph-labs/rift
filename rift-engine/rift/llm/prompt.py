@@ -2,9 +2,8 @@ from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 
-from tiktoken import get_encoding
-
 from rift.llm.openai_types import Message, MessageRole
+from tiktoken import get_encoding
 
 ENCODER = get_encoding("cl100k_base")
 
@@ -216,6 +215,95 @@ class PromptMessages:
 
     def __str__(self) -> str:
         return "\n".join(str(message) for message in self.messages)
+
+from dataclasses import dataclass
+from typing import List, Optional
+
+
+@dataclass
+class AlpacaInstructionPrompt:
+    instruction: str
+    input: Optional[str] = None
+    response: Optional[str] = None
+
+    def get_prompt(self):
+        return (
+            f"""\
+### Instruction:
+{self.instruction}
+"""
+            + (f"\n\n### Input:{self.input}\n\n" if self.input else "\n\n")
+            + "### Response:\n"
+        )
+
+
+@dataclass
+class SourceCodeFile:
+    abspath: str
+    filename: str
+    lines: List[str]
+
+    @classmethod
+    def create(cls, abspath: str):
+        with open(abspath, "r") as file:
+            # extract the filename from the absolute path
+            filename = os.path.basename(abspath)
+            # read lines from file into list
+            lines = file.readlines()
+        # return a SourceCodeFile object
+        return SourceCodeFile(abspath, filename, lines)
+
+cce_instruction = """\
+Please generate code completing the task which will replace the below region. Your solution will replace the REGION. Make sure that PREFIX + ${your solution} + SUFFIX is still valid code."""
+
+training_instruction = """Please generate code completing the task which will replace the below region."""
+
+@dataclass
+class SourceCodeFileWithRegion:
+    before_region: str
+    region: str
+    after_region: str
+    instruction: Optional[str] = None
+    completion: Optional[str] = None
+
+    def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
+        formatted = (
+            f"[PREFIX]\n{self.before_region}\n[/PREFIX]\n"
+            f"[REGION]\n{latest_region or self.region}\n[/REGION]\n"
+            f"[SUFFIX]\n{self.after_region}\n[/SUFFIX]"
+        )
+        return formatted
+
+    def get_prompt(self, train: bool =False):
+        assert self.instruction, "instruction not set"
+        alpaca_instruction_prompt = AlpacaInstructionPrompt(
+            instruction=f"Task: {self.instruction}\n" + (cce_instruction if not train else training_instruction),
+            input=self.format()
+        )
+        return alpaca_instruction_prompt.get_prompt()
+
+    def print_fields(self):
+        print("before_region")
+        print("---")
+        print(self.before_region)
+        print("---")
+        print("region")
+        print("---")
+        print(self.region)
+        print("---")
+        print("after_region")
+        print("---")
+        print(self.after_region)
+        print("---")
+        print("instruction")
+        print("---")
+        print(self.instruction)
+        print("---")
+        print("completion")
+        print("---")
+        print(self.completion)
+        print("---")
+    
 
 
 from unittest import TestCase

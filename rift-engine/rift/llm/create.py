@@ -41,7 +41,7 @@ class ModelConfig(BaseModel):
             codeEditModel="openai:gpt-4",
             chatModel="openai:gpt-3.5-turbo",
         )
-
+    
 
 CLIENTS = weakref.WeakValueDictionary()
 
