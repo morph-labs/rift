@@ -59,7 +59,7 @@ Class: Bicycle
    substring: (21, 205)
    docstring: // This is docstring
    body_sub: (42, 205)
-   body: ['{', 'line_comment', 'field_declaration', 'line_comment', braking, '}']
+   body: ['{', 'line_comment', 'field_declaration', 'line_comment', 'braking', '}']
    parent: test.java
 Function: sum
    language: java
@@ -77,7 +77,7 @@ Class: Math
    substring: (231, 345)
    docstring: /* This is docstring */
    body_sub: (249, 345)
-   body: ['{', sum, '}']
+   body: ['{', 'sum', '}']
    parent: test.java
 Interface: Animal
    language: java
@@ -131,7 +131,7 @@ Class: A
    substring: (141, 224)
    exported: True
    body_sub: (149, 224)
-   body: ['{', constructor, load, '}']
+   body: ['{', 'constructor', 'load', '}']
    parent: test.ts
 Interface: RunHelperSyncResult
    language: typescript
@@ -177,7 +177,7 @@ Function: py
    scope: A.
    docstring: """This is a docstring"""
    body_sub: (97, 139)
-   body: [expression$0, 'return_statement']
+   body: ['expression$0', 'return_statement']
    parent: A
    parameters: [x, y]
    has_return: True
@@ -190,7 +190,7 @@ Class: A(C,D)
     for class A
     """
    body_sub: (18, 139)
-   body: [expression$0, py]
+   body: ['expression$0', 'py']
    parent: test.py
 Function: insert_code
    language: python
@@ -225,14 +225,14 @@ Class: Nested
    substring: (358, 410)
    scope: B.
    body_sub: (380, 410)
-   body: [nested]
+   body: ['nested']
    parent: B
 Class: B
    language: python
    range: ((9, 0), (19, 16))
    substring: (140, 410)
    body_sub: (153, 410)
-   body: [insert_code, load, Nested]
+   body: ['insert_code', 'load', 'Nested']
    parent: test.py
 Function: inner_fun
    language: python
@@ -248,7 +248,7 @@ Function: outer_fun
    range: ((27, 0), (29, 12))
    substring: (533, 599)
    body_sub: (562, 599)
-   body: [inner_fun]
+   body: ['inner_fun']
    parent: test.py
    return_type: None
 Expression: expression$0
@@ -316,7 +316,7 @@ If: if$0
    range: ((33, 4), (41, 12))
    substring: (669, 803)
    scope: some_conditionals.
-   body: [guard$0, body$0, guard$1, body$1, guard$2, body$2, body$3]
+   body: ['guard$0', 'body$0', 'guard$1', 'body$1', 'guard$2', 'body$2', 'body$3']
    parent: some_conditionals
    if_case: Case(guard$0, body$0)
    elif_cases: [Case(guard$1, body$1), Case(guard$2, body$2)]
@@ -341,7 +341,7 @@ If: if$1
    range: ((43, 4), (45, 12))
    substring: (832, 870)
    scope: some_conditionals.
-   body: [guard$3, body$4]
+   body: ['guard$3', 'body$4']
    parent: some_conditionals
    if_case: Case(guard$3, body$4)
 Function: some_conditionals
@@ -350,7 +350,7 @@ Function: some_conditionals
    substring: (601, 870)
    docstring: """explanation"""
    body_sub: (647, 870)
-   body: [expression$0, if$0, 'comment', if$1]
+   body: ['expression$0', 'if$0', 'comment', 'if$1']
    parent: test.py
    parameters: [cond:str]
    return_type: None
@@ -389,7 +389,7 @@ Expression: expression$0
    range: ((50, 12), (50, 31))
    substring: (977, 996)
    scope: with_nested_conditionals.if$0.body$0.if$0.body$0.
-   body: [call$0, call$1]
+   body: ['call$0', 'call$1']
    parent: with_nested_conditionals.if$0.body$0.if$0.body$0
    code: x = call$0 + call$1
 Body: body$0
@@ -397,15 +397,15 @@ Body: body$0
    range: ((50, 12), (50, 31))
    substring: (977, 996)
    scope: with_nested_conditionals.if$0.body$0.if$0.
-   body: [expression$0]
+   body: ['expression$0']
    parent: with_nested_conditionals.if$0.body$0.if$0
-   block: [expression$0]
+   block: ['expression$0']
 If: if$0
    language: python
    range: ((49, 8), (50, 31))
    substring: (949, 996)
    scope: with_nested_conditionals.if$0.body$0.
-   body: [guard$0, body$0]
+   body: ['guard$0', 'body$0']
    parent: with_nested_conditionals.if$0.body$0
    if_case: Case(guard$0, body$0)
 Guard: guard$1
@@ -436,15 +436,15 @@ Body: body$1
    range: ((52, 12), (53, 26))
    substring: (1033, 1074)
    scope: with_nested_conditionals.if$0.body$0.if$1.
-   body: [call$0, call$1]
+   body: ['call$0', 'call$1']
    parent: with_nested_conditionals.if$0.body$0.if$1
-   block: [call$0, call$1]
+   block: ['call$0', 'call$1']
 If: if$1
    language: python
    range: ((51, 8), (53, 26))
    substring: (1005, 1074)
    scope: with_nested_conditionals.if$0.body$0.
-   body: [guard$1, body$1]
+   body: ['guard$1', 'body$1']
    parent: with_nested_conditionals.if$0.body$0
    if_case: Case(guard$1, body$1)
 Body: body$0
@@ -452,15 +452,15 @@ Body: body$0
    range: ((49, 8), (53, 26))
    substring: (949, 1074)
    scope: with_nested_conditionals.if$0.
-   body: [if$0, if$1]
+   body: ['if$0', 'if$1']
    parent: with_nested_conditionals.if$0
-   block: [if$0, if$1]
+   block: ['if$0', 'if$1']
 If: if$0
    language: python
    range: ((48, 4), (53, 26))
    substring: (925, 1074)
    scope: with_nested_conditionals.
-   body: [guard$0, body$0]
+   body: ['guard$0', 'body$0']
    parent: with_nested_conditionals
    if_case: Case(guard$0, body$0)
 Function: with_nested_conditionals
@@ -468,7 +468,7 @@ Function: with_nested_conditionals
    range: ((47, 0), (53, 26))
    substring: (872, 1074)
    body_sub: (925, 1074)
-   body: [if$0]
+   body: ['if$0']
    parent: test.py
    parameters: [cond:str]
    return_type: None
@@ -495,14 +495,14 @@ Class: student
    substring: (76, 139)
    scope: namespace_name::
    body_sub: (90, 139)
-   body: ['{', 'access_specifier', print, '}']
+   body: ['{', 'access_specifier', 'print', '}']
    parent: namespace_name
 Namespace: namespace_name
    language: cpp
    range: ((0, 0), (7, 1))
    substring: (0, 142)
    body_sub: (26, 142)
-   body: ['{', add, student, ';', '}']
+   body: ['{', 'add', 'student', ';', '}']
    parent: test.cpp
 === Symbol Table for test.cs ===
 Function: sum
@@ -522,7 +522,7 @@ Class: SampleClass
    scope: SampleNamespace::
    docstring: // This is docstring
    body_sub: (100, 221)
-   body: ['{', sum, '}']
+   body: ['{', 'sum', '}']
    parent: SampleNamespace
 Namespace: SampleNamespace
    language: c_sharp
@@ -530,7 +530,7 @@ Namespace: SampleNamespace
    substring: (21, 223)
    docstring: // This is docstring
    body_sub: (47, 223)
-   body: ['{', 'comment', SampleClass, '}']
+   body: ['{', 'comment', 'SampleClass', '}']
    parent: test.cs
 Interface: IEquatable
    language: c_sharp
@@ -575,7 +575,7 @@ Module: M
    range: ((2, 0), (5, 3))
    substring: (57, 159)
    body_sub: (66, 159)
-   body: ['struct', bump, hline, 'end']
+   body: ['struct', 'bump', 'hline', 'end']
    parent: test.ml
 Function: with_named_args
    language: ocaml
@@ -623,7 +623,7 @@ Module: N
    range: ((6, 0), (14, 3))
    substring: (160, 365)
    body_sub: (169, 365)
-   body: ['struct', with_named_args, f1, f2, v1, v2, 'end']
+   body: ['struct', 'with_named_args', 'f1', 'f2', 'v1', 'v2', 'end']
    parent: test.ml
 === Symbol Table for test.rb ===
 Function: sum
@@ -674,7 +674,7 @@ Class: Person
    substring: (397, 680)
    docstring: # This is a docstring for class Person
    body_sub: (422, 680)
-   body: ['class', 'constant', 'call', initialize, introduce, 'end']
+   body: ['class', 'constant', 'call', 'initialize', 'introduce', 'end']
    parent: test.rb
 Function: cream?
    language: ruby
@@ -688,7 +688,7 @@ Module: Cream
    range: ((36, 8), (40, 11))
    substring: (690, 774)
    body_sub: (715, 774)
-   body: ['module', 'constant', cream?, 'end']
+   body: ['module', 'constant', 'cream?', 'end']
    parent: test.rb
 Function: pour
    language: ruby
@@ -704,14 +704,14 @@ Class: Bar
    substring: (807, 1003)
    scope: Foo::
    body_sub: (833, 1003)
-   body: ['class', 'constant', pour, 'end']
+   body: ['class', 'constant', 'pour', 'end']
    parent: Foo
 Module: Foo
    language: ruby
    range: ((42, 8), (50, 11))
    substring: (784, 1015)
    body_sub: (807, 1015)
-   body: ['module', 'constant', Bar, 'end']
+   body: ['module', 'constant', 'Bar', 'end']
    parent: test.rb
 
 === Project Map ===
@@ -773,16 +773,16 @@ File: test.py
   def with_nested_conditionals(cond: str) -> None:
     if$0 = `if guard$0: body$0`
       guard$0 = `cond == "a"`
-      body$0 = `[if$0, if$1]`
+      body$0 = `['if$0', 'if$1']`
         if$0 = `if guard$0: body$0`
           guard$0 = `cond == "b"`
-          body$0 = `[expression$0]`
+          body$0 = `['expression$0']`
             expression$0 = `x = call$0 + call$1`
               call$0 = `foo(1)`
               call$1 = `bar(2)`
         if$1 = `if guard$1: body$1`
           guard$1 = `cond == "c"`
-          body$1 = `[call$0, call$1]`
+          body$1 = `['call$0', 'call$1']`
             call$0 = `print("hello")`
             call$1 = `print("world")`
 File: test.cpp

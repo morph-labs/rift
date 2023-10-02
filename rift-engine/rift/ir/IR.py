@@ -62,23 +62,14 @@ Expression = str
 
 
 @dataclass
-class Item:
-    type: Optional[str] = ""
-    symbol: Optional["Symbol"] = None
+class Block(List["Symbol"]):
+    pass
 
-    def __str__(self):
-        if self.symbol:
-            if isinstance(self.symbol.symbol_kind, UnknownKind):
-                return f"'{self.symbol.name}'"
-            else:
-                return self.symbol.name
-        else:
-            return f"'{self.type}'"
+    def __str__(self) -> str:
+        return f"{[x.name for x in self]}"
 
-    __repr__ = __str__
-
-
-Block = List[Item]
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 @dataclass
@@ -662,7 +653,7 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
     range = ((first_line, 0), (last_line, last_char_in_line))
 
     return Symbol(
-        body=[],
+        body=Block(),
         body_sub=body_sub,
         code=code,
         docstring_sub=None,
@@ -715,7 +706,7 @@ class File:
 
     def add_symbol(self, symbol: Symbol) -> None:
         if symbol.parent:
-            symbol.parent.body.append(Item(symbol=symbol))
+            symbol.parent.body.append(symbol)
         self._symbol_table[symbol.get_qualified_id()] = symbol
 
     def add_import(self, import_: Import) -> None:
@@ -745,9 +736,9 @@ class File:
             for statement in symbol.body:
                 dump_statement(statement, indent + 2)
 
-        def dump_statement(statement: Item, indent: int) -> None:
-            if statement.symbol and not isinstance(statement.symbol.symbol_kind, UnknownKind):
-                dump_symbol(statement.symbol, indent)
+        def dump_statement(statement: Symbol, indent: int) -> None:
+            if not isinstance(statement.symbol_kind, UnknownKind):
+                dump_symbol(statement, indent)
 
         if self.symbol and isinstance(self.symbol.symbol_kind, FileKind):
             for symbol in self.symbol.body:
