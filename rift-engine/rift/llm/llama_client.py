@@ -690,13 +690,13 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
                 )
                 truncated_documents.append(doc)
 
-        messages = create_messages(
-            before_cursor=before_cursor,
-            region=region,
-            after_cursor=after_cursor,
-            documents=truncated_documents,
-            goal=goal,
-        )
+        # messages = create_messages(
+        #     before_cursor=before_cursor,
+        #     region=region,
+        #     after_cursor=after_cursor,
+        #     documents=truncated_documents,
+        #     goal=goal,
+        # )
         # logger.info(f"{messages=}")
 
         event = asyncio.Event()
@@ -723,7 +723,7 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
             return chunk["choices"][0]["text"]
 
         pre_prompt: SourceCodeFileWithRegion = SourceCodeFileWithRegion(
-            region=region, before_region=before_cursor, after_region=after_cursor, instruction=goal
+            region=latest_region or region, before_region=before_cursor, after_region=after_cursor, instruction=goal
         )
 
         prompt = pre_prompt.get_prompt()
