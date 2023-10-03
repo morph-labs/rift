@@ -9,7 +9,7 @@ import os
 import pickle
 import time
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Awaitable, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -22,87 +22,92 @@ from rift.ir.parser import parse_files_in_paths
 Vector = npt.NDArray[np.float32]
 
 
+@dataclass
+class Node(ABC):
+    """Helper class to represent nodes in a boolean query tree."""
+
+    @abstractmethod
+    def node_similarity(self, vector: Vector) -> float:
+        """
+        Computes the similarity between the node and a vector.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def cosine_similarity(cls, a: Vector, b: Vector) -> float:
+        """
+        Computes the cosine similarity between two vectors.
+        """
+        dot_product = a.dot(b)
+        norm_a = np.linalg.norm(a)
+        norm_b = np.linalg.norm(b)
+        if norm_a == 0 or norm_b == 0:
+            return 0.0
+        result = dot_product / (norm_a * norm_b)
+        if math.isnan(result):
+            return 0.0
+        return result
+
+
+class Text(Node):
+    """Helper class to represent text nodes in a boolean query tree."""
+
+    text: str
+    vector: Vector
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+        self.vector = embed_fun(text)
+
+    def node_similarity(self, vector: Vector) -> float:
+        return self.cosine_similarity(vector, self.vector)
+
+
+@dataclass
+class Not(Node):
+    """Helper class to represent not nodes in a boolean query tree."""
+
+    node: Node
+
+    def node_similarity(self, vector: Vector) -> float:
+        return 1 - self.node.node_similarity(vector)
+
+
+@dataclass
+class And(Node):
+    """Helper class to represent and nodes in a boolean query tree."""
+
+    left: Node
+    right: Node
+
+    def node_similarity(self, vector: Vector) -> float:
+        return min(self.left.node_similarity(vector), self.right.node_similarity(vector))
+
+
+@dataclass
+class Or(Node):
+    """Helper class to represent or nodes in a boolean query tree."""
+
+    left: Node
+    right: Node
+
+    def node_similarity(self, vector: Vector) -> float:
+        return max(self.left.node_similarity(vector), self.right.node_similarity(vector))
+
+
 class Query:
-    @dataclass
-    class Node(ABC):
-        """Helper class to represent nodes in a boolean query tree."""
-
-        @abstractmethod
-        def node_similarity(self, vector: Vector) -> float:
-            """
-            Computes the similarity between the node and a vector.
-            """
-            raise NotImplementedError
-
-        @classmethod
-        def cosine_similarity(cls, a: Vector, b: Vector) -> float:
-            """
-            Computes the cosine similarity between two vectors.
-            """
-            dot_product = a.dot(b)
-            norm_a = np.linalg.norm(a)
-            norm_b = np.linalg.norm(b)
-            if norm_a == 0 or norm_b == 0:
-                return 0.0
-            result = dot_product / (norm_a * norm_b)
-            if math.isnan(result):
-                return 0.0
-            return result
-
-    class Text(Node):
-        """Helper class to represent text nodes in a boolean query tree."""
-
-        text: str
-        vector: Vector
-
-        def __init__(self, text: str) -> None:
-            self.text = text
-            self.vector = embed_fun(text)
-
-        def node_similarity(self, vector: Vector) -> float:
-            return self.cosine_similarity(vector, self.vector)
-
-    @dataclass
-    class Not(Node):
-        """Helper class to represent not nodes in a boolean query tree."""
-
-        node: "Query.Node"
-
-        def node_similarity(self, vector: Vector) -> float:
-            return 1 - self.node.node_similarity(vector)
-
-    @dataclass
-    class And(Node):
-        """Helper class to represent and nodes in a boolean query tree."""
-
-        left: "Query.Node"
-        right: "Query.Node"
-
-        def node_similarity(self, vector: Vector) -> float:
-            return min(self.left.node_similarity(vector), self.right.node_similarity(vector))
-
-    @dataclass
-    class Or(Node):
-        """Helper class to represent or nodes in a boolean query tree."""
-
-        left: "Query.Node"
-        right: "Query.Node"
-
-        def node_similarity(self, vector: Vector) -> float:
-            return max(self.left.node_similarity(vector), self.right.node_similarity(vector))
-
-    node: "Query.Node"
+    node: Node
     kinds: List[IR.SymbolKindName] = ["Function"]
     num_results: int = 5
 
     def __init__(
         self,
-        query: Union[str, "Query.Node"],
+        query: Union[str, Node],
         num_results: int = 5,
         kinds: List[IR.SymbolKindName] = ["Function"],
     ):
         if isinstance(query, str):
-            query = Query.Text(text=query)
+            query = Text(text=query)
         self.node = query
         self.num_results = num_results
         self.kinds = kinds
@@ -343,7 +348,7 @@ async def test_index() -> None:
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
 
-    def test_search(node: Query.Node) -> None:
+    def test_search(node: Node) -> None:
         start = time.time()
         query = Query(node, num_results=6, kinds=["Function"])  #  ["Class", "File"]
         scores = index.search(query)
@@ -353,5 +358,5 @@ async def test_index() -> None:
         elapsed = time.time() - start
         print(f"\nSearched in {elapsed:.2f} seconds")
 
-    test_search(Query.Text("load"))
-    test_search(Query.And(Query.Text("load"), Query.Not(Query.Text("cosine_similarity"))))
+    test_search(Text("load"))
+    test_search(And(Text("load"), Not(Text("cosine_similarity"))))
