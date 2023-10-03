@@ -35,22 +35,17 @@ def extract_structure(pdf_path: str) -> DocumentStructure:
             re.MULTILINE,
         )
 
-    # Define a maximum depth up to which patterns should be generated and compiled.
-    MAX_DEPTH = (
-        3  # This means we'll have Section, Subsection, Sub-sub-section. Increase for more depths.
-    )
-
-    compiled_patterns = [compile_pattern_for_depth(i) for i in range(MAX_DEPTH)]
-
     def extract_for_depth(
         text: str, start_byte: int, end_byte: int, depth: int
     ) -> DocumentStructure:
-        if depth >= len(compiled_patterns):
+        pattern = compile_pattern_for_depth(depth)
+        matches = list(pattern.finditer(text, start_byte, end_byte))
+
+        # Base case: If no matches are found for the current depth, return an empty dict
+        if not matches:
             return {}
 
         doc: DocumentStructure = {}
-        matches = list(compiled_patterns[depth].finditer(text, start_byte, end_byte))
-
         for i, match in enumerate(matches):
             title = match.group().strip()
             title_start_byte = match.start()
@@ -64,22 +59,21 @@ def extract_structure(pdf_path: str) -> DocumentStructure:
         return doc
 
     text = extract_text(pdf_path)
-    return extract_for_depth(text, 0, len(text), 0)
+    return extract_for_depth(text, start_byte=0, end_byte=len(text), depth=0)
 
 
-def print_hierarchical_structure_with_spans(doc: DocumentStructure) -> None:
+def print_hierarchical_structure_with_spans(doc: DocumentStructure, indent: int = 0) -> None:
     """
     Print the hierarchical structure with proper indentations and associated byte spans.
 
     Args:
-    - structure (dict): Hierarchical structure of sections and subsections with byte spans.
+    - doc (DocumentStructure): Hierarchical structure of sections and subsections with byte spans.
+    - indent (int): Current level of indentation.
     """
+    indentation = "  " * indent
     for section, section_details in doc.items():
-        print(f"{section} {section_details['span']}")
-        for subsection, subsection_details in section_details["subsections"].items():
-            print(f"  {subsection} {subsection_details['span']}")
-            for sub_subsection, sub_subsection_details in subsection_details["subsections"].items():
-                print(f"    {sub_subsection} {sub_subsection_details['span']}")
+        print(f"{indentation}{section} {section_details['span']}")
+        print_hierarchical_structure_with_spans(section_details["subsections"], indent + 1)
 
 
 if __name__ == "__main__":
