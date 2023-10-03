@@ -151,7 +151,7 @@ def count_missing(missing_types: List[MissingType]) -> int:
 
 
 def get_num_missing_in_code(code: IR.Code, language: IR.Language) -> int:
-    file = IR.File("dummy")
+    file = IR.File(IR.Code(b""), "dummy")
     parser.parse_code_block(file, code, language)
     return count_missing(functions_missing_types_in_file(file))
 

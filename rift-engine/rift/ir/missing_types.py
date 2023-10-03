@@ -77,7 +77,7 @@ def functions_missing_types_in_path(
 ) -> Tuple[List[MissingType], IR.Code, IR.File]:
     """Given a file path, parse the file and find function declarations that are missing types in the parameters or the return type."""
     full_path = os.path.join(root, path)
-    file = IR.File(path)
+    file = IR.File(IR.Code(b""), path)
     language = IR.language_from_file_extension(path)
     missing_types: List[MissingType] = []
     if language is None:
