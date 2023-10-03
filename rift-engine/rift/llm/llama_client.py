@@ -51,64 +51,6 @@ I = TypeVar("I", bound=BaseModel)
 O = TypeVar("O", bound=BaseModel)
 
 import transformers
-
-
-# @dataclass
-# class SourceCodeFileWithRegion:
-#     """
-#     Datastructure for a training datapoint (inference if the completion is None)
-
-#     Represents a file that has been split into a region, the parts before/after the region, a natural language instruction, and a completion.
-#     """
-
-#     # The text before the region
-#     before_region: str
-
-#     # The text in the region
-#     region: str
-
-#     # The text after the region
-#     after_region: str
-
-#     # A natural language instruction for completing the task
-#     instruction: Optional[str] = None
-
-#     # The completion of the task
-#     completion: Optional[str] = None
-
-#     def format(self, before_cursor="PREFIX", after_cursor="SUFFIX", latest_region=None):
-#         """
-#         Formats the source code file with region into a string that can be used for code completion.
-
-#         The function takes in three arguments:
-#             - `before_cursor`: The text to display before the cursor. Defaults to "PREFIX".
-#             - `after_cursor`: The text to display after the cursor. Defaults to "SUFFIX".
-#             - `latest_region`: The latest region of code. If not provided, it defaults to the region in this object.
-#         """
-#         formatted = (
-#             f"[PREFIX]\n{self.before_region}\n[/PREFIX]\n"
-#             f"[REGION]\n{latest_region or self.region}\n[/REGION]\n"
-#             f"[SUFFIX]\n{self.after_region}\n[/SUFFIX]"
-#         )
-#         return formatted
-
-#     def get_prompt(self):
-#         """
-#         Generates a prompt for code completion based on the instruction and region in this object.
-
-#         The function returns a string that includes:
-#             - "Please generate code completing the task which will replace the below region."
-#             - The natural language instruction from this object's `instruction` attribute.
-#             - The formatted source code file with region, using the latest region if not provided in this object's `region` attribute.
-#         """
-#         assert self.instruction, "instruction not set"
-#         result = (
-#             f"### INSTRUCTIONS\n\nPlease generate code completing the task which will replace the below region.\nTask: {self.instruction}\n\n"
-#             + self.format()
-#             + ("\n\n### RESPONSE\n\n")
-#         )
-#         return result
-
 from rift.llm.prompt import SourceCodeFileWithRegion
 
 
@@ -306,22 +248,12 @@ def create_system_message_chat_truncated(
     hardcoded_message = create_system_message_chat("", "", "")
     hardcoded_message_size = message_size(hardcoded_message)
     max_size = max_size - hardcoded_message_size
-
-    # if document_list:
-    #     # truncate the main document as necessary
-    #     max_document_size = int(current_file_weight * max_size)
-    # else:
-    #     max_document_size = max_size
-
-    # rescale `max_size_document` if we need to make room for the other documents
     max_size_document = int(max_size * (current_file_weight if documents else 1.0))
 
     before_cursor = document[:cursor_offset_start]
     region = document[cursor_offset_start:cursor_offset_end]
     after_cursor = document[cursor_offset_end:]
 
-    # TODO: handle case when region is too large
-    # calculate truncation for the ur-document
     if get_num_tokens(document) > max_size_document:
         tokens_before_cursor = ENCODER.encode(before_cursor)
         tokens_after_cursor = ENCODER.encode(after_cursor)
@@ -335,13 +267,6 @@ def create_system_message_chat_truncated(
         )
         before_cursor = ENCODER.decode(tokens_before_cursor)
         after_cursor = ENCODER.decode(tokens_after_cursor)
-
-    # document_tokens = encoder.encode(document)
-    # if len(document_tokens) > max_size_document:
-    #     document_tokens: List[int] = truncate_around_region(
-    #         document, document_tokens, cursor_offset_start, cursor_offset_end, max_size_document
-    #     )
-    # truncated_document = encoder.decode(document_tokens)
 
     truncated_document_list = []
     logger.info(f"document list = {documents}")
@@ -422,38 +347,9 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         )
 
     async def handle_error(self, resp: aiohttp.ClientResponse):
-        # status_code = resp.status
-        # message = await self.get_error_message(resp)
-        # message = f"{status_code} error from {self.base_url}: {message}"
-        # logger.error(message)
-        # if status_code == 404 and self.default_model == "gpt-4":
-        #     logger.error(
-        #         "Please double check you have access to GPT-4 API: https://openai.com/waitlist/gpt-4-api"
-        #     )
-        # raise LlamaError(message=message, status=status_code)
         pass  # TODO
 
     async def get_error_message(self, resp):
-        # if resp.content_type == "application/json":
-        #     j = await resp.json()
-        # else:
-        #     t = await resp.text()
-        #     try:
-        #         j = json.loads(t)
-        #     except json.JSONDecodeError:
-        #         return t
-        # if isinstance(j, str):
-        #     return j
-        # for k in ["error", "message", "detail"]:
-        #     if k in j:
-        #         e = j[k]
-        #         if isinstance(e, str):
-        #             return e
-        #         if "message" in e:
-        #             m = e["message"]
-        #             if isinstance(m, str):
-        #                 return m
-        # raise ValueError(f"Could not parse error message from {j}")
         raise NotImplementedError("TODO")
 
     async def _post_streaming(
@@ -690,15 +586,6 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
                 )
                 truncated_documents.append(doc)
 
-        # messages = create_messages(
-        #     before_cursor=before_cursor,
-        #     region=region,
-        #     after_cursor=after_cursor,
-        #     documents=truncated_documents,
-        #     goal=goal,
-        # )
-        # logger.info(f"{messages=}")
-
         event = asyncio.Event()
 
         def error_callback(e):
@@ -715,10 +602,6 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
                     return ""
             return ""
 
-        # stream = TextStream.from_aiter(
-        # asg.map(postprocess, self.chat_completions(messages, stream=True))
-        # )
-
         def postprocess2(chunk: CompletionChunk) -> str:
             return chunk["choices"][0]["text"]
 
@@ -727,84 +610,8 @@ class LlamaClient(AbstractCodeCompletionProvider, AbstractChatCompletionProvider
         )
 
         prompt = pre_prompt.get_prompt()
-        # logger.info(f"{prompt=}")
         stream = TextStream.from_aiter(self.completion(prompt, stream=True))
-        # async def postprocess2(completion_chunk: CompletionChunk) -> str:
-        #     if completion_chunk["choices"]:
-        #         choice = completion_chunk["choices"][0]
-        #         if "text" in choice and choice["text"]:
-        #             return choice["text"]
-        #         if choice["finish_reason"]:
-        #             return ""
-        #     return ""
-
-        # commented_region = '# ' + '\n# '.join(region.split('\n'))
-        # prompt = f"<PRE> {before_cursor}\n{commented_region}\n{f'# better version which accomplishes {goal}'} <SUF> {after_cursor} <MID>"
-        # # prompt = ""
-        # logger.info(f"{prompt=}")
-        # stream = TextStream.from_aiter(
-        #     asg.map(postprocess2, self.completion(prompt, stream=True))
-        # )
-
         logger.info("constructed stream")
-        # logger.info(f"{stream=}")
-        # thoughtstream = TextStream()
-        # codestream = TextStream()
-        # planstream = TextStream()
-
-        # async def worker():
-        #     logger.info("[edit_code:worker]")
-        #     try:
-        #         prelude, stream2 = stream.split_once("```")
-        #         # logger.info(f"{prelude=}")
-        #         async for delta in prelude:
-        #             # logger.info(f"plan {delta=}")
-        #             planstream.feed_data(delta)
-        #         planstream.feed_eof()
-        #         lang_tag = await stream2.readuntil("\n")
-        #         before, after = stream2.split_once("\n```")
-        #         # logger.info(f"{before=}")
-        #         logger.info("reading codestream")
-        #         async for delta in before:
-        #             # logger.info(f"code {delta=}")
-        #             codestream.feed_data(delta)
-        #         codestream.feed_eof()
-        #         # thoughtstream.feed_data("\n")
-        #         logger.info("reading thoughtstream")
-        #         async for delta in after:
-        #             thoughtstream.feed_data(delta)
-        #         thoughtstream.feed_eof()
-        #     except Exception as e:
-        #         event.set()
-        #         raise e
-        #     finally:
-        #         planstream.feed_eof()
-        #         thoughtstream.feed_eof()
-        #         codestream.feed_eof()
-        #         # logger.info("FED EOF TO ALL")
-
-        # # t = asyncio.create_task(worker())
-        # # thoughtstream._feed_task = t
-        # # codestream._feed_task = t
-        # # planstream._feed_task = t
-        # # logger.info("[edit_code] about to return")
-
-        # codestream = TextStream()
-        # async def worker():
-        #     try:
-        #         async for delta in stream:
-        #             logger.info(f"[worker] {delta=}")
-        #             codestream.feed_data(delta)
-        #         codestream.feed_eof()
-        #     except MissingKeyError as e:
-        #         event.set()
-        #         raise e
-        #     finally:
-        #         codestream.feed_eof()
-
-        # t = asyncio.create_task(worker())
-        # codestream._feed_task = t
-        # return EditCodeResult(thoughts=None, code=codestream, plan=None, event=event)
         thoughtstream = TextStream()
         codestream = TextStream()
         planstream = TextStream()
@@ -871,46 +678,6 @@ def create_messages(
     user_message = format_visible_files(documents) + user_message
 
     return [
-        # Message.system(
-        #     "You are a brilliant coder and an expert software engineer and world-class systems architect with deep technical and design knowledge. You value:\n"
-        #     "- Conciseness\n"
-        #     "- DRY principle\n"
-        #     "- Self-documenting code with plenty of comments\n"
-        #     "- Modularity\n"
-        #     "- Deduplicated code\n"
-        #     "- Readable code\n"
-        #     "- Abstracting things away to functions for reusability\n"
-        #     "- Logical thinking\n"
-        #     "\n\n"
-        #     "You will be presented with a *task* and a source code file split into three parts: a *prefix*, *region*, and *suffix*. "
-        #     "The task will specify a change or new code that will replace the given region.\n You will receive the source code in the following format:\n"
-        #     "==== PREFIX ====\n"
-        #     "${source code file before the region}\n"
-        #     "==== REGION ====\n"
-        #     "${region}\n"
-        #     "==== SUFFIX ====\n"
-        #     "{source code file after the region}\n\n"
-        #     "When presented with a task, you will:\n(1) write a detailed and elegant plan to solve this task,\n(2) write your solution for it surrounded by triple backticks, and\n(3) write a 1-2 sentence summary of your solution.\n"
-        #     f"Your solution will be added verbatim to replace the given region. Do *not* repeat the prefix or suffix in any way.\n"
-        #     "The solution should directly replaces the given region. If the region is empty, just write something that will replace the empty string. *Do not repeat the prefix or suffix in any way*. If the region is in the middle of a function definition or class declaration, do not repeat the function signature or class declaration. Write a partial code snippet without imports if needed. Preserve indentation.\n"
-        #     f"For example, if the source code looks like this:\n"
-        #     "==== PREFIX ====\n"
-        #     "def hello_world():\n    \n"
-        #     "==== REGION ====\n"
-        #     "\n"
-        #     "==== SUFFIX ====\n"
-        #     "if __name__ == '__main__':\n    hello_world()\n\n"
-        #     "And the task is 'implement this function and return 0', then a good response would be\n"
-        #     "We will implement hello world by first using the Python `print` statement and then returning the integer literal 0.\n"
-        #     "```\n"
-        #     "    # print hello world\n"
-        #     "    print('hello world!')\n"
-        #     "    # return the integer 0\n"
-        #     "    return 0\n"
-        #     "```\n"
-        #     "I added an implementation of the rest of the `hello_world` function which uses the Python `print` statement to print 'hello_world' before returning the integer literal 0.\n"
-        # ),
-        # Message.assistant("Hello! How can I help you today?"),
         Message.system(
             "You will be presented with a *task* and a source code file split into three parts: a *prefix*, *region*, and *suffix*. "
             "The task will specify a change or new code that will replace the given region.\n You will receive the source code in the following format:\n"
@@ -965,12 +732,6 @@ async def _main():
     )
     async for delta in stream.text:
         print(delta)
-    # print("\n\n")
-    # async for x in client.chat_completions(messages, stream=True):
-    #     text = x.choices[0].delta.content or ""
-    #     print(text, end="")
-
-    # print("\n\n")
 
 
 if __name__ == "__main__":
