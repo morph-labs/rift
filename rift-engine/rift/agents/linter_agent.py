@@ -10,7 +10,6 @@ import nest_asyncio  # type: ignore
 import openai
 
 import rift.agents.abstract as agent
-from rift.ir.metalanguage import MetaLanguage
 import rift.agents.registry as registry
 import rift.ir.IR as IR
 import rift.ir.parser as parser
@@ -18,6 +17,7 @@ import rift.llm.openai_types as openai_types
 import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
 from rift.agents.agenttask import AgentTask
+from rift.ir.metalanguage import MetaLanguage
 from rift.ir.response import extract_blocks_from_response
 from rift.lsp import LspServer
 from rift.util.TextStream import TextStream

@@ -1,11 +1,12 @@
-from dataclasses import dataclass, field
 import logging
 import os
-from textwrap import dedent
-import rift.ir.parser as parser
-import rift.ir.IR as IR
-from typing import Any, Callable, Dict, List, Union
 import re
+from dataclasses import dataclass, field
+from textwrap import dedent
+from typing import Any, Callable, Dict, List, Union
+
+import rift.ir.IR as IR
+import rift.ir.parser as parser
 
 logger = logging.getLogger(__name__)
 
