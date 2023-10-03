@@ -2,12 +2,12 @@
 # pip install spacy
 # python -m spacy download en_core_web_md
 
-from abc import ABC, abstractmethod
 import asyncio
 import math
 import os
 import pickle
 import time
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Dict, List, Optional, Tuple, Union
 
@@ -27,7 +27,7 @@ class Node(ABC):
     """Helper class to represent nodes in a boolean query tree."""
 
     @abstractmethod
-    def node_similarity(self, vector: Vector) -> float:
+    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
         """
         Computes the similarity between the node and a vector.
         """
@@ -59,7 +59,7 @@ class Text(Node):
         self.text = text
         self.vector = embed_fun(text)
 
-    def node_similarity(self, vector: Vector) -> float:
+    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
         return self.cosine_similarity(vector, self.vector)
 
 
@@ -69,19 +69,24 @@ class Not(Node):
 
     node: Node
 
-    def node_similarity(self, vector: Vector) -> float:
-        return 1 - self.node.node_similarity(vector)
+    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
+        return 1 - self.node.node_similarity(symbol, vector)
 
 
-@dataclass
 class And(Node):
     """Helper class to represent and nodes in a boolean query tree."""
 
-    left: Node
-    right: Node
+    arguments: List[Node]
 
-    def node_similarity(self, vector: Vector) -> float:
-        return min(self.left.node_similarity(vector), self.right.node_similarity(vector))
+    def __init__(self, left: Node | List[Node], right: Optional[Node] = None) -> None:
+        if isinstance(left, list):
+            self.arguments = left
+        else:
+            assert right is not None
+            self.arguments = [left, right]
+
+    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
+        return min(x.node_similarity(symbol, vector) for x in self.arguments)
 
 
 @dataclass
@@ -91,8 +96,25 @@ class Or(Node):
     left: Node
     right: Node
 
-    def node_similarity(self, vector: Vector) -> float:
-        return max(self.left.node_similarity(vector), self.right.node_similarity(vector))
+    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
+        return max(
+            self.left.node_similarity(symbol, vector), self.right.node_similarity(symbol, vector)
+        )
+
+
+@dataclass
+class Function(Node):
+    """
+    A class representing a function node in the IR index.
+
+    Attributes:
+        function (Callable[[IR.Symbol, Vector], float]): The function to calculate node similarity.
+    """
+
+    function: Callable[[IR.Symbol, Vector], float]
+
+    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
+        return self.function(symbol, vector)
 
 
 class Query:
@@ -136,7 +158,7 @@ class Embedding:
         Computes the maximum cosine similarity between the vectors in this embedding and the vectors in the given query embedding.
         """
 
-        similarities = [query.node.node_similarity(v) for v in self.vectors]
+        similarities = [query.node.node_similarity(self.symbol, v) for v in self.vectors]
         return max(similarities)
 
 
@@ -360,3 +382,12 @@ async def test_index() -> None:
 
     test_search(Text("load"))
     test_search(And(Text("load"), Not(Text("cosine_similarity"))))
+    is_query = Function(
+        lambda symbol, vector: 1.0 if symbol.get_qualified_id().startswith("Query.") else 0.0
+    )
+    is_in_class = Function(
+        lambda symbol, vector: 1.0
+        if symbol.parent and isinstance(symbol.parent.symbol_kind, IR.ClassKind)
+        else 0.0
+    )
+    test_search(And([Text("load"), Not(is_query), is_in_class]))
