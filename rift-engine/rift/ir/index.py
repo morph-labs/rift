@@ -382,12 +382,12 @@ async def test_index() -> None:
 
     test_search(Text("load"))
     test_search(And(Text("load"), Not(Text("cosine_similarity"))))
-    is_query = Function(
+    in_query = Function(
         lambda symbol, vector: 1.0 if symbol.get_qualified_id().startswith("Query.") else 0.0
     )
-    is_in_class = Function(
+    in_class = Function(
         lambda symbol, vector: 1.0
         if symbol.parent and isinstance(symbol.parent.symbol_kind, IR.ClassKind)
         else 0.0
     )
-    test_search(And([Text("load"), Not(is_query), is_in_class]))
+    test_search(And([Text("load"), Not(in_query), in_class]))
