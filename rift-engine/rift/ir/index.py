@@ -48,6 +48,45 @@ class Query:
         def or_(cls, left: "Query.Node", right: "Query.Node") -> "Query.Node":
             return cls(text="", kind="Or", left=left, right=right)
 
+        @classmethod
+        def cosine_similarity(cls, a: Vector, b: Vector) -> float:
+            """
+            Computes the cosine similarity between two vectors.
+            """
+            dot_product = a.dot(b)
+            norm_a = np.linalg.norm(a)
+            norm_b = np.linalg.norm(b)
+            if norm_a == 0 or norm_b == 0:
+                return 0.0
+            result = dot_product / (norm_a * norm_b)
+            if math.isnan(result):
+                return 0.0
+            return result
+
+        def node_similarity(self, vector: Vector) -> float:
+            if self.kind == "Text":
+                return self.cosine_similarity(vector, self.vector)
+            elif self.kind == "And":
+                if not self.left or not self.right:
+                    raise ValueError("Invalid query node")
+                return min(
+                    self.left.node_similarity(vector),
+                    self.right.node_similarity(vector),
+                )
+            elif self.kind == "Or":
+                if not self.left or not self.right:
+                    raise ValueError("Invalid query node")
+                return max(
+                    self.left.node_similarity(vector),
+                    self.right.node_similarity(vector),
+                )
+            elif self.kind == "Not":
+                if not self.left:
+                    raise ValueError("Invalid query node")
+                return 1 - self.left.node_similarity(vector)
+            else:
+                raise ValueError(f"Invalid query node kind: {self.kind}")
+
     node: "Query.Node"
     kinds: List[IR.SymbolKindName] = ["Function"]
     num_results: int = 5
@@ -83,51 +122,12 @@ class Embedding:
     symbol: IR.Symbol
     vectors: List[Vector]
 
-    @classmethod
-    def cosine_similarity(cls, a: Vector, b: Vector) -> float:
-        """
-        Computes the cosine similarity between two vectors.
-        """
-        dot_product = a.dot(b)
-        norm_a = np.linalg.norm(a)
-        norm_b = np.linalg.norm(b)
-        if norm_a == 0 or norm_b == 0:
-            return 0.0
-        result = dot_product / (norm_a * norm_b)
-        if math.isnan(result):
-            return 0.0
-        return result
-
     def similarity(self, query: Query) -> float:
         """
         Computes the maximum cosine similarity between the vectors in this embedding and the vectors in the given query embedding.
         """
 
-        def node_similarity(vector: Vector, node: Query.Node) -> float:
-            if node.kind == "Text":
-                return self.cosine_similarity(vector, node.vector)
-            elif node.kind == "And":
-                if not node.left or not node.right:
-                    raise ValueError("Invalid query node")
-                return min(
-                    node_similarity(vector, node.left),
-                    node_similarity(vector, node.right),
-                )
-            elif node.kind == "Or":
-                if not node.left or not node.right:
-                    raise ValueError("Invalid query node")
-                return max(
-                    node_similarity(vector, node.left),
-                    node_similarity(vector, node.right),
-                )
-            elif node.kind == "Not":
-                if not node.left:
-                    raise ValueError("Invalid query node")
-                return 1 - node_similarity(vector, node.left)
-            else:
-                raise ValueError(f"Invalid query node kind: {node.kind}")
-
-        similarities = [node_similarity(v, query.node) for v in self.vectors]
+        similarities = [query.node.node_similarity(v) for v in self.vectors]
         return max(similarities)
 
 
