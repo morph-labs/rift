@@ -8,7 +8,7 @@ import os
 import pickle
 import time
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Awaitable, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -22,18 +22,47 @@ Vector = npt.NDArray[np.float32]
 
 
 class Query:
-    query: str
-    kinds: List[IR.SymbolKindName]
-    num_results: int
-    vector: Vector
+    @dataclass
+    class Node:
+        """Helper class to represent nodes in a boolean query tree."""
+
+        text: str
+        kind: Literal["And", "Or", "Not", "Text"] = "Text"
+        vector: Vector = np.array([])
+        left: Optional["Query.Node"] = None
+        right: Optional["Query.Node"] = None
+
+        def __post_init__(self) -> None:
+            if self.kind == "Text":
+                self.vector = embed_fun(self.text)
+
+        @classmethod
+        def not_(cls, node: "Query.Node") -> "Query.Node":
+            return cls(text="", kind="Not", left=node)
+
+        @classmethod
+        def and_(cls, left: "Query.Node", right: "Query.Node") -> "Query.Node":
+            return cls(text="", kind="And", left=left, right=right)
+
+        @classmethod
+        def or_(cls, left: "Query.Node", right: "Query.Node") -> "Query.Node":
+            return cls(text="", kind="Or", left=left, right=right)
+
+    node: "Query.Node"
+    kinds: List[IR.SymbolKindName] = ["Function"]
+    num_results: int = 5
 
     def __init__(
-        self, query: str, num_results: int = 5, kinds: List[IR.SymbolKindName] = ["Function"]
+        self,
+        query: Union[str, "Query.Node"],
+        num_results: int = 5,
+        kinds: List[IR.SymbolKindName] = ["Function"],
     ):
-        self.query = query
+        if isinstance(query, str):
+            query = Query.Node(text=query, kind="Text")
+        self.node = query
         self.num_results = num_results
         self.kinds = kinds
-        self.vector = embed_fun(query)
 
 
 @dataclass
@@ -73,8 +102,32 @@ class Embedding:
         """
         Computes the maximum cosine similarity between the vectors in this embedding and the vectors in the given query embedding.
         """
-        vector = query.vector
-        similarities = [self.cosine_similarity(v, vector) for v in self.vectors]
+
+        def node_similarity(vector: Vector, node: Query.Node) -> float:
+            if node.kind == "Text":
+                return self.cosine_similarity(vector, node.vector)
+            elif node.kind == "And":
+                if not node.left or not node.right:
+                    raise ValueError("Invalid query node")
+                return min(
+                    node_similarity(vector, node.left),
+                    node_similarity(vector, node.right),
+                )
+            elif node.kind == "Or":
+                if not node.left or not node.right:
+                    raise ValueError("Invalid query node")
+                return max(
+                    node_similarity(vector, node.left),
+                    node_similarity(vector, node.right),
+                )
+            elif node.kind == "Not":
+                if not node.left:
+                    raise ValueError("Invalid query node")
+                return 1 - node_similarity(vector, node.left)
+            else:
+                raise ValueError(f"Invalid query node kind: {node.kind}")
+
+        similarities = [node_similarity(v, query.node) for v in self.vectors]
         return max(similarities)
 
 
@@ -286,13 +339,17 @@ async def test_index() -> None:
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
 
-    test_sentence = "parse tree sitter"
-    start = time.time()
-    query = Query(test_sentence, num_results=10, kinds=["Function"])  #  ["Class", "File"]
-    scores = index.search(query)
+    def test_search(node: Query.Node) -> None:
+        start = time.time()
+        query = Query(node, num_results=6, kinds=["Function"])  #  ["Class", "File"]
+        scores = index.search(query)
+        print("\nSemantic Search Results:")
+        for n, x in scores:
+            print(f"{n}  {x:.3f}")
+        elapsed = time.time() - start
+        print(f"\nSearched in {elapsed:.2f} seconds")
 
-    print("\nSemantic Search Results:")
-    for n, x in scores:
-        print(f"{n}  {x:.3f}")
-    elapsed = time.time() - start
-    print(f"\nSearched in {elapsed:.2f} seconds")
+    test_search(Query.Node("load"))
+    test_search(
+        Query.Node.and_(Query.Node("load"), Query.Node.not_(Query.Node("cosine_similarity")))
+    )
