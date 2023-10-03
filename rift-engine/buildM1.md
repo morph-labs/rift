@@ -19,3 +19,8 @@ CMAKE_ARGS="-DLLAMA_METAL=on" ./venv/bin/pip install -e .
 ```bash
 ./venv/bin/pyinstaller -y rift.spec
 ```
+
+# Zip it
+```bash
+export V="2.1.2" && cd dist && mv rift rift-macOS-arm64-v$V && zip -r rift-macOS-arm64-v$V.zip rift-macOS-arm64-v$V
+```
