@@ -330,7 +330,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
         logger.info(f"ABOUT TO APPLY EDITS: {file_process.edits}")
         new_document = document.apply_edits(file_process.edits)
         logger.info(f"{new_document=}")
-        dummy_file = IR.File("dummy")
+        dummy_file = IR.File(IR.Code(b""), "dummy")
         parser.parse_code_block(dummy_file, new_document, language)
         new_num_missing = len(functions_missing_docstrings_in_file(dummy_file))
         await self.send_chat_update(
