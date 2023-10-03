@@ -645,7 +645,7 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
     last_line = code.bytes.count(b"\n")
     if code.bytes.endswith(b"\n"):
         last_line -= 1  # Adjust for the last line if it ends with a newline
-    last_newline_pos = code.bytes.rfind(b"\n", 0, end_byte-1)
+    last_newline_pos = code.bytes.rfind(b"\n", 0, end_byte - 1)
     if last_newline_pos == -1:  # If there's no newline, the entire content is a single line
         last_char_in_line = end_byte
     else:
