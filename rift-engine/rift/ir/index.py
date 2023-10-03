@@ -2,6 +2,7 @@
 # pip install spacy
 # python -m spacy download en_core_web_md
 
+from abc import ABC, abstractmethod
 import asyncio
 import math
 import os
@@ -23,30 +24,15 @@ Vector = npt.NDArray[np.float32]
 
 class Query:
     @dataclass
-    class Node:
+    class Node(ABC):
         """Helper class to represent nodes in a boolean query tree."""
 
-        text: str
-        kind: Literal["And", "Or", "Not", "Text"] = "Text"
-        vector: Vector = np.array([])
-        left: Optional["Query.Node"] = None
-        right: Optional["Query.Node"] = None
-
-        def __post_init__(self) -> None:
-            if self.kind == "Text":
-                self.vector = embed_fun(self.text)
-
-        @classmethod
-        def not_(cls, node: "Query.Node") -> "Query.Node":
-            return cls(text="", kind="Not", left=node)
-
-        @classmethod
-        def and_(cls, left: "Query.Node", right: "Query.Node") -> "Query.Node":
-            return cls(text="", kind="And", left=left, right=right)
-
-        @classmethod
-        def or_(cls, left: "Query.Node", right: "Query.Node") -> "Query.Node":
-            return cls(text="", kind="Or", left=left, right=right)
+        @abstractmethod
+        def node_similarity(self, vector: Vector) -> float:
+            """
+            Computes the similarity between the node and a vector.
+            """
+            raise NotImplementedError
 
         @classmethod
         def cosine_similarity(cls, a: Vector, b: Vector) -> float:
@@ -63,29 +49,47 @@ class Query:
                 return 0.0
             return result
 
+    class Text(Node):
+        """Helper class to represent text nodes in a boolean query tree."""
+
+        text: str
+        vector: Vector
+
+        def __init__(self, text: str) -> None:
+            self.text = text
+            self.vector = embed_fun(text)
+
         def node_similarity(self, vector: Vector) -> float:
-            if self.kind == "Text":
-                return self.cosine_similarity(vector, self.vector)
-            elif self.kind == "And":
-                if not self.left or not self.right:
-                    raise ValueError("Invalid query node")
-                return min(
-                    self.left.node_similarity(vector),
-                    self.right.node_similarity(vector),
-                )
-            elif self.kind == "Or":
-                if not self.left or not self.right:
-                    raise ValueError("Invalid query node")
-                return max(
-                    self.left.node_similarity(vector),
-                    self.right.node_similarity(vector),
-                )
-            elif self.kind == "Not":
-                if not self.left:
-                    raise ValueError("Invalid query node")
-                return 1 - self.left.node_similarity(vector)
-            else:
-                raise ValueError(f"Invalid query node kind: {self.kind}")
+            return self.cosine_similarity(vector, self.vector)
+
+    @dataclass
+    class Not(Node):
+        """Helper class to represent not nodes in a boolean query tree."""
+
+        node: "Query.Node"
+
+        def node_similarity(self, vector: Vector) -> float:
+            return 1 - self.node.node_similarity(vector)
+
+    @dataclass
+    class And(Node):
+        """Helper class to represent and nodes in a boolean query tree."""
+
+        left: "Query.Node"
+        right: "Query.Node"
+
+        def node_similarity(self, vector: Vector) -> float:
+            return min(self.left.node_similarity(vector), self.right.node_similarity(vector))
+
+    @dataclass
+    class Or(Node):
+        """Helper class to represent or nodes in a boolean query tree."""
+
+        left: "Query.Node"
+        right: "Query.Node"
+
+        def node_similarity(self, vector: Vector) -> float:
+            return max(self.left.node_similarity(vector), self.right.node_similarity(vector))
 
     node: "Query.Node"
     kinds: List[IR.SymbolKindName] = ["Function"]
@@ -98,7 +102,7 @@ class Query:
         kinds: List[IR.SymbolKindName] = ["Function"],
     ):
         if isinstance(query, str):
-            query = Query.Node(text=query, kind="Text")
+            query = Query.Text(text=query)
         self.node = query
         self.num_results = num_results
         self.kinds = kinds
@@ -349,7 +353,5 @@ async def test_index() -> None:
         elapsed = time.time() - start
         print(f"\nSearched in {elapsed:.2f} seconds")
 
-    test_search(Query.Node("load"))
-    test_search(
-        Query.Node.and_(Query.Node("load"), Query.Node.not_(Query.Node("cosine_similarity")))
-    )
+    test_search(Query.Text("load"))
+    test_search(Query.And(Query.Text("load"), Query.Not(Query.Text("cosine_similarity"))))
