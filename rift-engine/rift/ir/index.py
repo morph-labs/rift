@@ -21,6 +21,21 @@ from rift.ir.parser import parse_files_in_paths
 Vector = npt.NDArray[np.float32]
 
 
+class Query:
+    query: str
+    kinds: List[IR.SymbolKindName]
+    num_results: int
+    vector: Vector
+
+    def __init__(
+        self, query: str, num_results: int = 5, kinds: List[IR.SymbolKindName] = ["Function"]
+    ):
+        self.query = query
+        self.num_results = num_results
+        self.kinds = kinds
+        self.vector = embed_fun(query)
+
+
 @dataclass
 class Embedding:
     """
@@ -54,11 +69,12 @@ class Embedding:
             return 0.0
         return result
 
-    def similarity(self, query: Vector) -> float:
+    def similarity(self, query: Query) -> float:
         """
         Computes the maximum cosine similarity between the vectors in this embedding and the vectors in the given query embedding.
         """
-        similarities = [self.cosine_similarity(v, query) for v in self.vectors]
+        vector = query.vector
+        similarities = [self.cosine_similarity(v, vector) for v in self.vectors]
         return max(similarities)
 
 
@@ -70,22 +86,55 @@ PathWithId = Tuple[str, IR.QualifiedId]
 EmbeddingFunction = Callable[[str], Vector]
 
 
+def openai_embedding(document: str) -> Vector:
+    print("openai embedding for", document[:20], "...")
+    model = "text-embedding-ada-002"
+    MAX_TOKENS = 8192
+    if token_length(document) >= MAX_TOKENS:
+        print("Truncating document to 8192 tokens")
+        tokens = Encoder.encode(document)
+        tokens = tokens[
+            : MAX_TOKENS - 1
+        ]  # less than max tokens otherwise the embedding is full of nan
+        document = Encoder.decode(tokens)
+    vector = openai.Embedding.create(input=[document], model=model)["data"][0]["embedding"]  # type: ignore
+    vector: Vector = np.array(vector)  # type: ignore
+    return vector
+
+
+embed_fun: EmbeddingFunction = openai_embedding
+
+
+def set_embedding_function(openai: bool) -> None:
+    global embed_fun
+    if openai:
+        embed_fun = openai_embedding
+    else:
+        import spacy
+
+        nlp = spacy.load("en_core_web_md")
+
+        def spacy_embedding(document: str) -> Vector:
+            print("spacy embedding for", document[:20], "...")
+            return np.array(nlp(document).vector)
+
+        embed_fun = spacy_embedding
+
+
 @dataclass
 class Index:
     embeddings: Dict[PathWithId, Embedding]  # (file_path, id) -> embedding
     project: IR.Project
     version: str = version
 
-    def search(
-        self, query: Vector, num_results: int = 5, kinds: List[IR.SymbolKindName] = ["Function"]
-    ) -> List[Tuple[PathWithId, float]]:
+    def search(self, query: Query) -> List[Tuple[PathWithId, float]]:
         scores: List[Tuple[PathWithId, float]] = [
             (path_with_id, e.similarity(query=query))
             for path_with_id, e in self.embeddings.items()
-            if e.symbol.symbol_kind.name() in kinds
+            if e.symbol.symbol_kind.name() in query.kinds
         ]
         scores = sorted(scores, key=lambda x: x[1], reverse=True)
-        return scores[:num_results]
+        return scores[: query.num_results]
 
     def save(self, path: str) -> None:
         with open(path, "wb") as f:
@@ -103,7 +152,6 @@ class Index:
     @classmethod
     async def create(
         cls,
-        embed_fun: EmbeddingFunction,
         project: IR.Project,
         documents_for_symbol: Callable[[IR.Symbol], List[str]],
     ) -> "Index":
@@ -189,39 +237,6 @@ def token_length(string: str) -> int:
     return len(Encoder.encode(string))
 
 
-MAX_TOKENS = 8192
-
-
-def openai_embedding(document: str) -> Vector:
-    print("openai embedding for", document[:20], "...")
-    if token_length(document) >= MAX_TOKENS:
-        print("Truncating document to 8192 tokens")
-        tokens = Encoder.encode(document)
-        tokens = tokens[
-            : MAX_TOKENS - 1
-        ]  # less than max tokens otherwise the embedding is full of nan
-        document = Encoder.decode(tokens)
-    model = "text-embedding-ada-002"
-    vector = openai.Embedding.create(input=[document], model=model)["data"][0]["embedding"]  # type: ignore
-    vector: Vector = np.array(vector)  # type: ignore
-    return vector
-
-
-def get_embedding_function(openai: bool) -> EmbeddingFunction:
-    if openai:
-        return openai_embedding
-    else:
-        import spacy
-
-        nlp = spacy.load("en_core_web_md")
-
-        def spacy_embedding(document: str) -> Vector:
-            print("spacy embedding for", document[:20], "...")
-            return np.array(nlp(document).vector)
-
-        return spacy_embedding
-
-
 import pytest
 
 
@@ -229,13 +244,13 @@ import pytest
 async def test_index() -> None:
     this_dir = os.path.dirname(__file__)
     project_root = __file__  # this file only
-    project_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(this_dir))
-    )  # the whole rift project
-    openai = False
+    # project_root = os.path.dirname(
+    #     os.path.dirname(os.path.dirname(this_dir))
+    # )  # the whole rift project
+    openai = True
 
     index_file = os.path.join(this_dir, "index.rci")
-    embed_fun = get_embedding_function(openai=openai)
+    set_embedding_function(openai=openai)
     if os.path.exists(index_file):
         start = time.time()
         print(f"Loading index from file... {index_file}")
@@ -262,7 +277,6 @@ async def test_index() -> None:
 
         index = await Index.create(
             documents_for_symbol=documents_for_symbol,
-            embed_fun=embed_fun,
             project=project,
         )
 
@@ -272,14 +286,13 @@ async def test_index() -> None:
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
 
-    test_sentence = "Creates an instance of the Index class"
+    test_sentence = "parse tree sitter"
     start = time.time()
-    query = embed_fun(test_sentence)
-    scores = index.search(query, kinds=["Function"])  #  ["Class", "File"]
+    query = Query(test_sentence, num_results=10, kinds=["Function"])  #  ["Class", "File"]
+    scores = index.search(query)
 
     print("\nSemantic Search Results:")
     for n, x in scores:
         print(f"{n}  {x:.3f}")
     elapsed = time.time() - start
     print(f"\nSearched in {elapsed:.2f} seconds")
-
