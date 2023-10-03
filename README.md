@@ -7,22 +7,30 @@ Rift is open-source infrastructure for AI-native development environments. Rift 
 https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903b26f909
 
 - [Discord](https://discord.gg/wa5sgWMfqv)
-- [Getting started](#getting-started)
-- [Installation](#manual-installation)
 - [Features](#features)
+  - Conversational Code Editing
+  - Codebase-wide Edits
+  - Contextual Codebase Generation
+  - Auto Docstring Generation
 - [Tips](#tips)
-- [The road ahead](#the-road-ahead)
+- [Getting Started](#getting-started)
+- [Manual Installation](#manual-installation)
+- [The Road Ahead](#the-road-ahead)
+- [Contributing](#contributing)
+- [Feedback](#feedback)
+
+
 
 ## Features
-**Conversational code editing**
+**Conversational Code Editing**
 
 ![code edit screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/code-edit.gif)
 
-**Codebase-wide edits**
+**Codebase-wide Edits**
 
 ![aider screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/aider.gif)
 
-**Contextual codebase generation**
+**Contextual Codebase Generation**
 
 ![smol screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/smol.gif)
 
@@ -47,7 +55,7 @@ https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903
 - Command+Shift+P -> "Rift: Start Server" restarts the server if it has been auto-installed.
 
 
-## Getting started
+## Getting Started
 Install the VSCode extension from the VSCode Marketplace. By default, the extension will attempt to automatically start the Rift Code Engine every time the extension is activated. During this process, if a `rift` executable is not found in a virtual environment under `~/.morph`, the extension will ask you to attempt an automatic installation of a Python environment and the Rift Code Engine. To disable this behavior, such as for development, go to the VSCode settings, search for "rift", and set `rift.autostart` to `false`.
 
 When `rift.autostart` is `true`, the extension will attempt to automatically start the Rift Code Engine. You can set `rift.riftPath` to change the path of the Rift executable, which may be necessary due to interactions with WSL on Windows.
@@ -59,9 +67,12 @@ source ~/.morph/env/bin/activate
 rift --port 7797
 ```
 
+Upon installation, when one changes the >Code Editor settings to our Rift Coder 7B model, it will automatically install an 8-bit quantized version of the model. [The raw model can be found here](https://huggingface.co/morph-labs/rift-coder-v0-7b-gguf).
+
+
 If the automatic installation of the Rift Code Engine fails, follow the below instructions for manual installation.
 
-### Manual installation
+### Manual Installation
 **Rift Code Engine**:
 - Set up a Python virtual environment for Python 3.10 or higher.
   - On Mac OSX:
@@ -97,7 +108,7 @@ If the automatic installation of the Rift Code Engine fails, follow the below in
 **Rift VSCode Extension** (via `code --install-extension`, change the executable as needed):
 - From the repository root: `cd ./editors/rift-vscode && npm i && bash reinstall.sh`. Make sure your OpenAI API key is set in the VSCode settings (open with `Ctrl + ,` then search for "rift").
 
-## The road ahead
+## The Road Ahead
 <!-- TODO(jesse): rephrase / polish in light of Rift 2.0 -->
 Existing code generation tooling is presently mostly code-agnostic, operating at the level of tokens in / tokens out of code LMs. The [language server protocol](https://microsoft.github.io/language-server-protocol/) (LSP) defines a standard for *language servers*, objects which index a codebase and provide structure- and runtime-aware interfaces to external development tools like IDEs.
 
