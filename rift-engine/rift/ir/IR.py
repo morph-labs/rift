@@ -3,6 +3,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
+import numpy as np
+import numpy.typing as npt
+
 import rift.ir.custom_parsers as custom_parsers
 
 Language = Literal[
@@ -25,6 +28,7 @@ Pos = Tuple[int, int]  # (line, column)
 Range = Tuple[Pos, Pos]  # ((start_line, start_column), (end_line, end_column))
 Substring = Tuple[int, int]  # (start_byte, end_byte)
 Scope = str  # e.g. "A.B." for class B inside class A
+Vector = npt.NDArray[np.float32]  # for embeddings
 
 
 @dataclass
@@ -552,6 +556,7 @@ class Symbol:
         scope (Scope): The scope of the symbol.
         substring (Substring): The substring of the document that corresponds to the symbol.
         symbol_kind (SymbolKind): The kind of the symbol.
+        embedding (Optional[Vector]): The vector embedding of the symbol.
     """
 
     body: Block
@@ -566,6 +571,7 @@ class Symbol:
     scope: Scope
     substring: Substring
     symbol_kind: SymbolKind
+    embedding: Optional[Vector] = None
 
     def get_substring(self) -> bytes:
         """Returns the substring of the document that corresponds to this symbol info."""
