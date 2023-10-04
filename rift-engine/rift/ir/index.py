@@ -12,14 +12,12 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import numpy.typing as npt
 import openai
 import tiktoken
 
 import rift.ir.IR as IR
+from rift.ir.IR import SymbolKindName, Vector
 from rift.ir.parser import parse_files_in_paths
-
-Vector = npt.NDArray[np.float32]
 
 
 @dataclass
@@ -27,7 +25,7 @@ class Node(ABC):
     """Helper class to represent nodes in a boolean query tree."""
 
     @abstractmethod
-    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
+    def node_similarity(self, symbol: IR.Symbol) -> float:
         """
         Computes the similarity between the node and a vector.
         """
@@ -59,8 +57,10 @@ class Text(Node):
         self.text = text
         self.vector = embed_fun(text)
 
-    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
-        return self.cosine_similarity(vector, self.vector)
+    def node_similarity(self, symbol: IR.Symbol) -> float:
+        if symbol.embedding is None:
+            return 0.0
+        return self.cosine_similarity(symbol.embedding, self.vector)
 
 
 @dataclass
@@ -74,8 +74,8 @@ class Not(Node):
         """Not operation."""
         return 1 - x
 
-    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
-        return self.op(self.node.node_similarity(symbol, vector))
+    def node_similarity(self, symbol: IR.Symbol) -> float:
+        return self.op(self.node.node_similarity(symbol))
 
 
 class And(Node):
@@ -95,8 +95,8 @@ class And(Node):
         """And operation for a list of parameters."""
         return min(args)
 
-    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
-        return self.op([x.node_similarity(symbol, vector) for x in self.arguments])
+    def node_similarity(self, symbol: IR.Symbol) -> float:
+        return self.op([x.node_similarity(symbol) for x in self.arguments])
 
 
 class Or(Node):
@@ -116,8 +116,8 @@ class Or(Node):
         """Or operation for a list of parameters."""
         return max(args)
 
-    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
-        return self.op([x.node_similarity(symbol, vector) for x in self.arguments])
+    def node_similarity(self, symbol: IR.Symbol) -> float:
+        return self.op([x.node_similarity(symbol) for x in self.arguments])
 
 
 @dataclass
@@ -126,13 +126,13 @@ class Function(Node):
     A class representing a function node in the IR index.
 
     Attributes:
-        function (Callable[[IR.Symbol, Vector], float]): The function to calculate node similarity.
+        function (Callable[[IR.Symbol], float]): The function to calculate node similarity.
     """
 
-    function: Callable[[IR.Symbol, Vector], float]
+    function: Callable[[IR.Symbol], float]
 
-    def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
-        return self.function(symbol, vector)
+    def node_similarity(self, symbol: IR.Symbol) -> float:
+        return self.function(symbol)
 
 
 class Query:
@@ -156,31 +156,35 @@ class Query:
 @dataclass
 class Embedding:
     """
-    A class representing a vector embedding.
+    Represents a vector embedding for a symbol.
 
     Attributes:
-        vectors (List[Vector]): A list of vectors representing the embedding.
-
-    Methods:
-        cosine_similarity(a: Vector, b: Vector) -> float:
-            Computes the cosine similarity between two vectors.
-        similarity(query: "Embedding") -> float:
-            Computes the maximum cosine similarity between the vectors in this embedding and the vectors in the given query embedding.
+    - symbol: The primary symbol for which the embedding was generated.
+    - aggregate_symbols: Symbols used for aggregating the embedding. For non-aggregate symbols
+      (e.g., functions), this list contains only the primary symbol.
     """
 
     symbol: IR.Symbol
-    vectors: List[Vector]
+    aggregate_symbols: List[IR.Symbol]
 
     def similarity(self, query: Query) -> float:
         """
-        Computes the maximum cosine similarity between the vectors in this embedding and the vectors in the given query embedding.
+        Compute the maximum cosine similarity between the vectors of this embedding
+        and the vectors of the provided query embedding.
+
+        Args:
+        - query: The query embedding against which similarity needs to be computed.
+
+        Returns:
+        - A float value representing the maximum cosine similarity.
         """
 
-        similarities = [query.node.node_similarity(self.symbol, v) for v in self.vectors]
-        return Or.op(similarities)
+        similarities = [query.node.node_similarity(symbol) for symbol in self.aggregate_symbols]
+
+        return max(similarities)
 
 
-version = "0.0.2"
+version = "0.0.3"
 
 PathWithId = Tuple[str, IR.QualifiedId]
 
@@ -251,81 +255,91 @@ class Index:
             raise ValueError(f"Index version {index.version} is not supported.")
         return index
 
+    @dataclass
+    class EmbeddingItem(ABC):
+        """abstract class for embedding items: either a document or a reference"""
+
+        symbol: IR.Symbol
+
+    @dataclass
+    class DocumentItem(EmbeddingItem):
+        """
+        A  document to be embedded in an IR.Symbol object.
+        """
+
+        document: str
+
+    @dataclass
+    class ReferenceItem(EmbeddingItem):
+        """
+        A reference to the embedding of a symbol. Used for aggregating embeddings of nested symbols.
+        """
+
+        pass
+
+    @dataclass
+    class SymbolEmbedding:
+        items: List["Index.EmbeddingItem"]
+        path_with_id: PathWithId
+        symbol: IR.Symbol
+
     @classmethod
     async def create(
         cls,
         project: IR.Project,
-        documents_for_symbol: Callable[[IR.Symbol], List[str]],
+        embeddings_for_symbol: Callable[[IR.Symbol], List[EmbeddingItem]],
     ) -> "Index":
         """
-        Creates an instance of the Index class.
+        Creates an Index object from a given project and a function that returns embeddings for a given symbol.
 
-        Parameters:
-        - embed_fun: A funcion that computes the embedding of a string.
-        - project: The project containing files and function declarations.
-        - document_for_symbol: An optional callable that returns a document for a given symbol.
-            The document is used for semantic search.
+        Args:
+            cls: The class object.
+            project: The project to index.
+            embeddings_for_symbol: A function that returns embeddings for a given symbol.
 
         Returns:
-        - An instance of the Index class.
+            An Index object containing the embeddings for the symbols in the project.
         """
-
-        @dataclass
-        class DocumentWithEmbedding:
-            document: str
-            vector: Optional[Vector]
-
-        @dataclass
-        class SymbolEmbedding:
-            documents_with_embeddings: List[DocumentWithEmbedding]
-            symbol: IR.Symbol
-            path_with_id: PathWithId
-
-        all_documents_with_embeddings: List[DocumentWithEmbedding] = []
-        symbol_embeddings: List[SymbolEmbedding] = []
+        documents_to_embed: List["Index.DocumentItem"] = []
+        symbol_embeddings: List["Index.SymbolEmbedding"] = []
 
         for file in project.get_files():
             all_symbols = file.search_symbol(lambda _: True)
             file_path = file.path
             for symbol in all_symbols:
                 path_with_id = (file_path, symbol.get_qualified_id())
-                documents = documents_for_symbol(symbol)
-                if len(documents) > 0:
-                    documents_with_embeddings = [
-                        DocumentWithEmbedding(document, None) for document in documents
-                    ]
-                    all_documents_with_embeddings.extend(documents_with_embeddings)
+                items = embeddings_for_symbol(symbol)
+                if len(items) > 0:
+                    documents_to_embed.extend(
+                        [i for i in items if isinstance(i, Index.DocumentItem)]
+                    )
                     symbol_embeddings.append(
-                        SymbolEmbedding(
-                            documents_with_embeddings=documents_with_embeddings,
-                            symbol=symbol,
+                        Index.SymbolEmbedding(
+                            items=items,
                             path_with_id=path_with_id,
+                            symbol=symbol,
                         )
                     )
 
         async def async_get_embedding(
-            document_with_embedding: DocumentWithEmbedding,
+            document_to_embed: Index.DocumentItem,
         ) -> Awaitable[Vector]:
             loop = asyncio.get_running_loop()
-            return loop.run_in_executor(None, embed_fun, document_with_embedding.document)
+            return loop.run_in_executor(None, embed_fun, document_to_embed.document)
 
         # Parallel server requests
         embedded_results: List[Awaitable[Vector]] = await asyncio.gather(
-            *(async_get_embedding(x) for x in all_documents_with_embeddings)
+            *(async_get_embedding(x) for x in documents_to_embed)
         )
 
         # Assign embeddings
         for n, res in enumerate(embedded_results):
-            all_documents_with_embeddings[n].vector = await res
+            documents_to_embed[n].symbol.embedding = await res
 
         embeddings = {
             symbol_embedding.path_with_id: Embedding(
                 symbol=symbol_embedding.symbol,
-                vectors=[
-                    x.vector
-                    for x in symbol_embedding.documents_with_embeddings
-                    if x.vector is not None
-                ],
+                aggregate_symbols=[doc.symbol for doc in symbol_embedding.items],
             )
             for symbol_embedding in symbol_embeddings
         }
@@ -363,23 +377,25 @@ async def test_index() -> None:
         print("Creating index...")
         start = time.time()
 
-        def documents_for_symbol(symbol: IR.Symbol) -> List[str]:
-            documents: List[str] = []
+        def gather_nested_symbols(symbol: IR.Symbol) -> List[Index.EmbeddingItem]:
+            """Return references to documents in nested symbols"""
+            items: List[Index.EmbeddingItem] = [Index.ReferenceItem(symbol)]
+            for s in symbol.body:
+                items.extend(gather_nested_symbols(s))
+            return items
+
+        def documents_for_symbol(symbol: IR.Symbol) -> List[Index.EmbeddingItem]:
             if isinstance(symbol.symbol_kind, IR.FunctionKind):
-                documents = [symbol.get_substring().decode()]
+                return [Index.DocumentItem(symbol, symbol.get_substring().decode())]
             elif isinstance(symbol.symbol_kind, IR.ClassKind):
-                for s in symbol.body:
-                    documents.extend(documents_for_symbol(s))
-                return documents
+                return gather_nested_symbols(symbol)
             elif isinstance(symbol.symbol_kind, IR.FileKind):
-                # TODO a function on symbols won't work: need to keep the symbols with the documents
-                for s in symbol.body:
-                    documents.extend(documents_for_symbol(s))
-                return documents
-            return documents
+                return gather_nested_symbols(symbol)
+            else:
+                return []
 
         index = await Index.create(
-            documents_for_symbol=documents_for_symbol,
+            embeddings_for_symbol=documents_for_symbol,
             project=project,
         )
 
@@ -389,9 +405,11 @@ async def test_index() -> None:
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
 
-    def test_search(node: Node) -> None:
+    def test_search(
+        node: Node, kinds: List[SymbolKindName] = ["Function"], num_results: int = 5
+    ) -> None:
         start = time.time()
-        query = Query(node, num_results=6, kinds=["Function"])  #  ["Class", "File"]
+        query = Query(node, num_results=num_results, kinds=kinds)  #  ["Class", "File"]
         scores = index.search(query)
         print("\nSemantic Search Results:")
         for n, x in scores:
@@ -400,10 +418,10 @@ async def test_index() -> None:
         print(f"\nSearched in {elapsed:.2f} seconds")
 
     in_query = Function(
-        lambda symbol, vector: 1.0 if symbol.get_qualified_id().startswith("Query.") else 0.0
+        lambda symbol: 1.0 if symbol.get_qualified_id().startswith("Query.") else 0.0
     )
 
-    def in_class_function(symbol: IR.Symbol, vector: Vector) -> float:
+    def in_class_function(symbol: IR.Symbol) -> float:
         if isinstance(symbol.symbol_kind, IR.FunctionKind):
             if symbol.parent and isinstance(symbol.parent.symbol_kind, IR.ClassKind):
                 return 1.0
@@ -415,5 +433,6 @@ async def test_index() -> None:
     in_class = Function(in_class_function)
 
     test_search(Text("load"))
-    test_search(And(Text("load"), Not(Text("cosine_similarity"))))
-    test_search(And([Text("load"), Not(in_query), in_class]))
+    test_search(And([Text("load")]), ["File"])
+    test_search(And([Text("load"), Not(in_query), Not(in_class)]), ["Function", "File"])
+    test_search(And([Text("load"), in_query]), ["Function", "File"])
