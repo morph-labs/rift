@@ -67,7 +67,7 @@ source ~/.morph/env/bin/activate
 rift --port 7797
 ```
 
-Upon installation, when one changes the >Code Editor settings to our Rift Coder 7B model, it will automatically install an 8-bit quantized version of the model. [The raw model can be found here](https://huggingface.co/morph-labs/rift-coder-v0-7b-gguf).
+Upon installation, when one changes the 'Code Edit Model' in the settings to our Rift Coder 7B model, it will automatically install an 8-bit quantized version of the model. [The raw model can be found here](https://huggingface.co/morph-labs/rift-coder-v0-7b-gguf).
 
 
 If the automatic installation of the Rift Code Engine fails, follow the below instructions for manual installation.
