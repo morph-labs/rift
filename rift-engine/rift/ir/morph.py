@@ -12,7 +12,9 @@ from rift.ir.parser import parse_files_in_paths
 
 import git
 
-repo_root = git.Repo('.', search_parent_directories=True).git.rev_parse("--show-toplevel")
+repo_root = git.Repo(".", search_parent_directories=True).git.rev_parse(
+    "--show-toplevel"
+)
 morph_dir = os.path.join(repo_root, ".morph")
 os.makedirs(morph_dir, exist_ok=True)
 index_file = os.path.join(morph_dir, "index.rci")
@@ -23,7 +25,7 @@ def search(args):
     index = Index.load(index_file)
 
     # Create a query from the command line arguments
-    query = Query(Text(' '.join(args)))
+    query = Query(Text(" ".join(args)))
 
     # Perform the search
     start = time.time()
@@ -72,20 +74,30 @@ async def index_repo(args):
     index.save(index_file)
     print(f"Saved index in {time.time() - start:.2f} seconds")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Create the parser
-    parser = argparse.ArgumentParser(description='Perform a search in the index or index a repository.')
+    parser = argparse.ArgumentParser(
+        description="Perform a search in the index or index a repository."
+    )
 
     # Add the arguments
-    parser.add_argument('command', choices=['search', 'index'], help='the command to execute')
-    parser.add_argument('arguments', metavar='N', type=str, nargs='*',
-                        help='the arguments for the command')
+    parser.add_argument(
+        "command", choices=["search", "index"], help="the command to execute"
+    )
+    parser.add_argument(
+        "arguments",
+        metavar="N",
+        type=str,
+        nargs="*",
+        help="the arguments for the command",
+    )
 
     # Parse the command line arguments
     args = parser.parse_args()
 
     # Call the appropriate function
-    if args.command == 'search':
+    if args.command == "search":
         search(args.arguments)
-    elif args.command == 'index':
+    elif args.command == "index":
         asyncio.run(index_repo(args.arguments))

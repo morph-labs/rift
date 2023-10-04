@@ -57,12 +57,16 @@ def parse_path(
             print("Skipping file due to UnicodeDecodeError:", path)
             return
         file_ir = IR.File(code=code, path=path_from_root)
-        parse_code_block(file=file_ir, code=code, language=language, metasymbols=metasymbols)
+        parse_code_block(
+            file=file_ir, code=code, language=language, metasymbols=metasymbols
+        )
         project.add_file(file=file_ir)
 
 
 def parse_files_in_paths(
-    paths: List[str], filter_file: Optional[Callable[[str], bool]] = None, metasymbols: bool = False
+    paths: List[str],
+    filter_file: Optional[Callable[[str], bool]] = None,
+    metasymbols: bool = False,
 ) -> IR.Project:
     """
     Parses all files with known extensions in the provided list of paths.

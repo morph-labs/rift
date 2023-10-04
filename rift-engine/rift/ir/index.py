@@ -460,5 +460,3 @@ async def test_index() -> None:
     test_search(And([Text("load")]), ["File"])
     test_search(And([Text("load"), Not(in_query), Not(in_class)]), ["Function", "File"])
     test_search(And([Text("load"), in_query]), ["Function", "File"])
-
-
