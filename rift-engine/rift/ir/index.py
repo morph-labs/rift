@@ -69,8 +69,13 @@ class Not(Node):
 
     node: Node
 
+    @classmethod
+    def op(cls, x: float) -> float:
+        """Not operation."""
+        return 1 - x
+
     def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
-        return 1 - self.node.node_similarity(symbol, vector)
+        return self.op(self.node.node_similarity(symbol, vector))
 
 
 class And(Node):
@@ -85,21 +90,34 @@ class And(Node):
             assert right is not None
             self.arguments = [left, right]
 
+    @classmethod
+    def op(cls, args: List[float]) -> float:
+        """And operation for a list of parameters."""
+        return min(args)
+
     def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
-        return min(x.node_similarity(symbol, vector) for x in self.arguments)
+        return self.op([x.node_similarity(symbol, vector) for x in self.arguments])
 
 
-@dataclass
 class Or(Node):
     """Helper class to represent or nodes in a boolean query tree."""
 
-    left: Node
-    right: Node
+    arguments: List[Node]
+
+    def __init__(self, left: Node | List[Node], right: Optional[Node] = None) -> None:
+        if isinstance(left, list):
+            self.arguments = left
+        else:
+            assert right is not None
+            self.arguments = [left, right]
+
+    @classmethod
+    def op(cls, args: List[float]) -> float:
+        """Or operation for a list of parameters."""
+        return max(args)
 
     def node_similarity(self, symbol: IR.Symbol, vector: Vector) -> float:
-        return max(
-            self.left.node_similarity(symbol, vector), self.right.node_similarity(symbol, vector)
-        )
+        return self.op([x.node_similarity(symbol, vector) for x in self.arguments])
 
 
 @dataclass
@@ -159,7 +177,7 @@ class Embedding:
         """
 
         similarities = [query.node.node_similarity(self.symbol, v) for v in self.vectors]
-        return max(similarities)
+        return Or.op(similarities)
 
 
 version = "0.0.2"
@@ -354,6 +372,7 @@ async def test_index() -> None:
                     documents.extend(documents_for_symbol(s))
                 return documents
             elif isinstance(symbol.symbol_kind, IR.FileKind):
+                # TODO a function on symbols won't work: need to keep the symbols with the documents
                 for s in symbol.body:
                     documents.extend(documents_for_symbol(s))
                 return documents
@@ -380,14 +399,21 @@ async def test_index() -> None:
         elapsed = time.time() - start
         print(f"\nSearched in {elapsed:.2f} seconds")
 
-    test_search(Text("load"))
-    test_search(And(Text("load"), Not(Text("cosine_similarity"))))
     in_query = Function(
         lambda symbol, vector: 1.0 if symbol.get_qualified_id().startswith("Query.") else 0.0
     )
-    in_class = Function(
-        lambda symbol, vector: 1.0
-        if symbol.parent and isinstance(symbol.parent.symbol_kind, IR.ClassKind)
-        else 0.0
-    )
+
+    def in_class_function(symbol: IR.Symbol, vector: Vector) -> float:
+        if isinstance(symbol.symbol_kind, IR.FunctionKind):
+            if symbol.parent and isinstance(symbol.parent.symbol_kind, IR.ClassKind):
+                return 1.0
+            else:
+                return 0.0
+        else:
+            return 1.0
+
+    in_class = Function(in_class_function)
+
+    test_search(Text("load"))
+    test_search(And(Text("load"), Not(Text("cosine_similarity"))))
     test_search(And([Text("load"), Not(in_query), in_class]))
