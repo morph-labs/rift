@@ -50,8 +50,12 @@ def parse_path(
     language = IR.language_from_file_extension(path)
     if language is not None and (filter_file is None or filter_file(path)):
         path_from_root = os.path.relpath(path, project.root_path)
-        with open(path, "r", encoding="utf-8") as f:
-            code = IR.Code(f.read().encode("utf-8"))
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                code = IR.Code(f.read().encode("utf-8"))
+        except UnicodeDecodeError:
+            print("Skipping file due to UnicodeDecodeError:", path)
+            return
         file_ir = IR.File(code=code, path=path_from_root)
         parse_code_block(file=file_ir, code=code, language=language, metasymbols=metasymbols)
         project.add_file(file=file_ir)
