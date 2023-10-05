@@ -137,7 +137,7 @@ class Function(Node):
 
 class Query:
     node: Node
-    kinds: List[IR.SymbolKindName] = ["Function"]
+    kinds: List[IR.SymbolKindName]
     num_results: int = 5
 
     def __init__(
@@ -284,18 +284,61 @@ class Index:
         symbol: IR.Symbol
 
     @classmethod
+    def gather_nested_symbols(
+        cls, symbol: IR.Symbol, kinds: List[SymbolKindName]
+    ) -> List["Index.EmbeddingItem"]:
+        """Return references to documents in nested symbols"""
+        if isinstance(symbol.symbol_kind, IR.FunctionKind):
+            return []
+        items: List[Index.EmbeddingItem] = [Index.ReferenceItem(symbol)]
+        for s in symbol.body:
+            items.extend(cls.gather_nested_symbols(s, kinds))
+        return items
+
+    @staticmethod
+    def symbol_is_leaf(symbol: IR.Symbol) -> bool:
+        """Return True if the symbol is a leaf symbol in terms of embedding: it does not contain any nested symbols"""
+        if isinstance(symbol.symbol_kind, IR.FunctionKind):
+            return True
+        if isinstance(symbol.symbol_kind, IR.DefKind):
+            return True
+        if isinstance(symbol.symbol_kind, IR.TheoremKind):
+            return True
+        return False
+
+    @classmethod
+    def documents_for_symbol(
+        cls, symbol: IR.Symbol, kinds: List[SymbolKindName]
+    ) -> List["Index.EmbeddingItem"]:
+        """Return documents for a symbol used for embedding"""
+        if symbol.symbol_kind.name() not in kinds:
+            return []
+        if cls.symbol_is_leaf(symbol):
+            # treat leaf symbols as documents
+            return [Index.DocumentItem(symbol, symbol.get_substring().decode())]
+        else:
+            return cls.gather_nested_symbols(symbol, kinds)
+
+    @classmethod
     async def create(
         cls,
         project: IR.Project,
-        embeddings_for_symbol: Callable[[IR.Symbol], List[EmbeddingItem]],
+        kinds: List[SymbolKindName] = [
+            "Function",
+            "Class",
+            "File",
+            "Def",
+            "Section",
+            "Structure",
+            "Theorem",
+        ],
     ) -> "Index":
         """
         Creates an Index object from a given project and a function that returns embeddings for a given symbol.
 
         Args:
-            cls: The class object.
             project: The project to index.
-            embeddings_for_symbol: A function that returns embeddings for a given symbol.
+            kinds: The kinds of symbols to index.
 
         Returns:
             An Index object containing the embeddings for the symbols in the project.
@@ -308,7 +351,7 @@ class Index:
             file_path = file.path
             for symbol in all_symbols:
                 path_with_id = (file_path, symbol.get_qualified_id())
-                items = embeddings_for_symbol(symbol)
+                items = cls.documents_for_symbol(symbol, kinds)
                 if len(items) > 0:
                     documents_to_embed.extend(
                         [i for i in items if isinstance(i, Index.DocumentItem)]
@@ -376,26 +419,7 @@ async def test_index() -> None:
         project = parse_files_in_paths([project_root])
         print("Creating index...")
         start = time.time()
-
-        def gather_nested_symbols(symbol: IR.Symbol) -> List[Index.EmbeddingItem]:
-            """Return references to documents in nested symbols"""
-            items: List[Index.EmbeddingItem] = [Index.ReferenceItem(symbol)]
-            for s in symbol.body:
-                items.extend(gather_nested_symbols(s))
-            return items
-
-        def documents_for_symbol(symbol: IR.Symbol) -> List[Index.EmbeddingItem]:
-            if isinstance(symbol.symbol_kind, IR.FunctionKind):
-                return [Index.DocumentItem(symbol, symbol.get_substring().decode())]
-            elif isinstance(symbol.symbol_kind, IR.ClassKind):
-                return gather_nested_symbols(symbol)
-            elif isinstance(symbol.symbol_kind, IR.FileKind):
-                return gather_nested_symbols(symbol)
-            else:
-                return []
-
         index = await Index.create(
-            embeddings_for_symbol=documents_for_symbol,
             project=project,
         )
 
