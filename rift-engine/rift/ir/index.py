@@ -25,6 +25,7 @@ RATE_LIMIT = 50  # 50 requests per second
 rate_limiter = Semaphore(RATE_LIMIT)
 MAX_RETRIES = 3  # adjust as needed
 
+
 @dataclass
 class Node(ABC):
     """Helper class to represent nodes in a boolean query tree."""
