@@ -221,7 +221,7 @@ def set_embedding_function(openai: bool) -> None:
         nlp = spacy.load("en_core_web_md")
 
         def spacy_embedding(document: str) -> Vector:
-            print("spacy embedding for", document[:20], "...")
+            # print("spacy embedding for", document[:20], "...")
             return np.array(nlp(document).vector)
 
         embed_fun = spacy_embedding
@@ -233,9 +233,9 @@ class Index:
     project: IR.Project
     version: str = version
 
-    def search(self, query: Query) -> List[Tuple[PathWithId, float]]:
-        scores: List[Tuple[PathWithId, float]] = [
-            (path_with_id, e.similarity(query=query))
+    def search(self, query: Query) -> List[Tuple[PathWithId, float, IR.Range]]:
+        scores: List[Tuple[PathWithId, float, IR.Range]] = [
+            (path_with_id, e.similarity(query=query), e.symbol.range)
             for path_with_id, e in self.embeddings.items()
             if e.symbol.symbol_kind.name() in query.kinds
         ]
@@ -284,15 +284,32 @@ class Index:
         symbol: IR.Symbol
 
     @classmethod
+    def symbol_fits_length(cls, symbol: IR.Symbol, max_len: int) -> bool:
+        sub = symbol.substring
+        return sub[1] - sub[0] <= max_len
+
+    @classmethod
+    def symbol_needs_indexing(
+        cls, symbol: IR.Symbol, kinds: List[SymbolKindName], max_len: int
+    ) -> bool:
+        kind = symbol.symbol_kind
+        if kind.name() in kinds:
+            return True
+        elif isinstance(kind, IR.MetaSymbolKind):
+            if symbol.parent and not cls.symbol_fits_length(symbol.parent, max_len):
+                return True
+        return False
+
+    @classmethod
     def gather_nested_symbols(
-        cls, symbol: IR.Symbol, kinds: List[SymbolKindName]
+        cls, symbol: IR.Symbol, kinds: List[SymbolKindName], max_len: int
     ) -> List["Index.EmbeddingItem"]:
         """Return references to documents in nested symbols"""
-        if isinstance(symbol.symbol_kind, IR.FunctionKind):
-            return []
-        items: List[Index.EmbeddingItem] = [Index.ReferenceItem(symbol)]
+        items: List[Index.EmbeddingItem] = []
         for s in symbol.body:
-            items.extend(cls.gather_nested_symbols(s, kinds))
+            if cls.symbol_needs_indexing(s, kinds, max_len):
+                items.append(Index.ReferenceItem(s))
+                items.extend(cls.gather_nested_symbols(s, kinds, max_len))
         return items
 
     @staticmethod
@@ -300,24 +317,32 @@ class Index:
         """Return True if the symbol is a leaf symbol in terms of embedding: it does not contain any nested symbols"""
         if isinstance(symbol.symbol_kind, IR.FunctionKind):
             return True
-        if isinstance(symbol.symbol_kind, IR.DefKind):
-            return True
-        if isinstance(symbol.symbol_kind, IR.TheoremKind):
+        if isinstance(symbol.symbol_kind, IR.MetaSymbolKind):
             return True
         return False
 
     @classmethod
     def documents_for_symbol(
-        cls, symbol: IR.Symbol, kinds: List[SymbolKindName]
+        cls, file_path: str, symbol: IR.Symbol, kinds: List[SymbolKindName], max_len: int
     ) -> List["Index.EmbeddingItem"]:
         """Return documents for a symbol used for embedding"""
-        if symbol.symbol_kind.name() not in kinds:
+        if not cls.symbol_needs_indexing(symbol, kinds, max_len):
             return []
         if cls.symbol_is_leaf(symbol):
-            # treat leaf symbols as documents
-            return [Index.DocumentItem(symbol, symbol.get_substring().decode())]
+            if cls.symbol_fits_length(symbol, max_len):
+                # treat leaf symbols as documents
+                return [Index.DocumentItem(symbol, symbol.get_substring().decode())]
+            else:
+                items = cls.gather_nested_symbols(symbol, kinds, max_len)
+
+                print(
+                    f"Warning: symbol {symbol.get_qualified_id()} is too long ({len(symbol.get_substring().decode())} > {max_len}) {symbol.range} "
+                )
+                print(f"WWW Added {len(items)} items for {file_path}:{symbol.get_qualified_id()}")
+
+                return items
         else:
-            return cls.gather_nested_symbols(symbol, kinds)
+            return cls.gather_nested_symbols(symbol, kinds, max_len)
 
     @classmethod
     async def create(
@@ -332,6 +357,7 @@ class Index:
             "Structure",
             "Theorem",
         ],
+        max_len: int = 100,
     ) -> "Index":
         """
         Creates an Index object from a given project and a function that returns embeddings for a given symbol.
@@ -351,18 +377,19 @@ class Index:
             file_path = file.path
             for symbol in all_symbols:
                 path_with_id = (file_path, symbol.get_qualified_id())
-                items = cls.documents_for_symbol(symbol, kinds)
-                if len(items) > 0:
-                    documents_to_embed.extend(
-                        [i for i in items if isinstance(i, Index.DocumentItem)]
-                    )
-                    symbol_embeddings.append(
-                        Index.SymbolEmbedding(
-                            items=items,
-                            path_with_id=path_with_id,
-                            symbol=symbol,
+                if cls.symbol_needs_indexing(symbol, kinds, max_len):
+                    items = cls.documents_for_symbol(file_path, symbol, kinds, max_len)
+                    if len(items) > 0:
+                        documents_to_embed.extend(
+                            [i for i in items if isinstance(i, Index.DocumentItem)]
                         )
-                    )
+                        symbol_embeddings.append(
+                            Index.SymbolEmbedding(
+                                items=items,
+                                path_with_id=path_with_id,
+                                symbol=symbol,
+                            )
+                        )
 
         async def async_get_embedding(
             document_to_embed: Index.DocumentItem,
@@ -403,10 +430,12 @@ import pytest
 async def test_index() -> None:
     this_dir = os.path.dirname(__file__)
     project_root = __file__  # this file only
+
     # project_root = os.path.dirname(
     #     os.path.dirname(os.path.dirname(this_dir))
     # )  # the whole rift project
-    openai = True
+
+    openai = False
 
     index_file = os.path.join(this_dir, "index.rci")
     set_embedding_function(openai=openai)
@@ -416,11 +445,12 @@ async def test_index() -> None:
         index = Index.load(index_file)
         print(f"Loaded index in {time.time() - start:.2f} seconds")
     else:
-        project = parse_files_in_paths([project_root])
+        project = parse_files_in_paths([project_root], metasymbols=True)
         print("Creating index...")
         start = time.time()
         index = await Index.create(
             project=project,
+            kinds=["Function", "Class"],
         )
 
         print(f"Created index in {time.time() - start:.2f} seconds")
@@ -428,6 +458,7 @@ async def test_index() -> None:
         start = time.time()
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
+        # print(f"{project.dump_map()}")
 
     def test_search(
         node: Node, kinds: List[SymbolKindName] = ["Function"], num_results: int = 5
@@ -436,27 +467,31 @@ async def test_index() -> None:
         query = Query(node, num_results=num_results, kinds=kinds)  #  ["Class", "File"]
         scores = index.search(query)
         print("\nSemantic Search Results:")
-        for n, x in scores:
-            print(f"{n}  {x:.3f}")
+        for n, x, range in scores:
+            print(f"{n}  {x:.3f}  {range}")
         elapsed = time.time() - start
         print(f"\nSearched in {elapsed:.2f} seconds")
 
-    in_query = Function(
-        lambda symbol: 1.0 if symbol.get_qualified_id().startswith("Query.") else 0.0
+    # in_query = Function(
+    #     lambda symbol: 1.0 if symbol.get_qualified_id().startswith("Query.") else 0.0
+    # )
+
+    # def in_class_function(symbol: IR.Symbol) -> float:
+    #     if isinstance(symbol.symbol_kind, IR.FunctionKind):
+    #         if symbol.parent and isinstance(symbol.parent.symbol_kind, IR.ClassKind):
+    #             return 1.0
+    #         else:
+    #             return 0.0
+    #     else:
+    #         return 1.0
+
+    # in_class = Function(in_class_function)
+
+    test_search(
+        Text("Warning: symbol {symbol.get_qualified_id()} is too long ({len(symbol.get_substring().decode())} > {max_len}"),
+        ["Function", "Expression", "If", "Call", "Guard", "Body"],
+        10,
     )
-
-    def in_class_function(symbol: IR.Symbol) -> float:
-        if isinstance(symbol.symbol_kind, IR.FunctionKind):
-            if symbol.parent and isinstance(symbol.parent.symbol_kind, IR.ClassKind):
-                return 1.0
-            else:
-                return 0.0
-        else:
-            return 1.0
-
-    in_class = Function(in_class_function)
-
-    test_search(Text("load"))
-    test_search(And([Text("load")]), ["File"])
-    test_search(And([Text("load"), Not(in_query), Not(in_class)]), ["Function", "File"])
-    test_search(And([Text("load"), in_query]), ["Function", "File"])
+    # test_search(And([Text("load")]), ["File"])
+    # test_search(And([Text("load"), Not(in_query), Not(in_class)]), ["Function", "File"])
+    # test_search(And([Text("load"), in_query]), ["Function", "File"])
