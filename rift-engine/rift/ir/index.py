@@ -19,6 +19,11 @@ import rift.ir.IR as IR
 from rift.ir.IR import SymbolKindName, Vector
 from rift.ir.parser import parse_files_in_paths
 
+from asyncio import Semaphore
+
+RATE_LIMIT = 50  # 50 requests per second
+rate_limiter = Semaphore(RATE_LIMIT)
+MAX_RETRIES = 3  # adjust as needed
 
 @dataclass
 class Node(ABC):
@@ -368,7 +373,15 @@ class Index:
             document_to_embed: Index.DocumentItem,
         ) -> Awaitable[Vector]:
             loop = asyncio.get_running_loop()
-            return loop.run_in_executor(None, embed_fun, document_to_embed.document)
+            for _ in range(MAX_RETRIES):
+                async with rate_limiter:  # Rate limiting
+                    try:
+                        return loop.run_in_executor(None, embed_fun, document_to_embed.document)
+                    except openai.error.RateLimitError:
+                        # If rate limited, wait for a second (or whatever backoff logic you want) and then retry
+                        await asyncio.sleep(1)
+            else:
+                print("Failed to embed after multiple retries.")
 
         # Parallel server requests
         embedded_results: List[Awaitable[Vector]] = await asyncio.gather(

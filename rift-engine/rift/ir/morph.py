@@ -44,7 +44,7 @@ async def index_repo(args):
     project_root = repo_root  # the root of the git repo
 
     # set_embedding_function(openai=true)
-    print(f"Reading $project_root...")
+    print(f"Reading {project_root} ...")
     project = parse_files_in_paths([project_root])
     print(f"Creating index...")
     start = time.time()
