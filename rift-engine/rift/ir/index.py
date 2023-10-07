@@ -239,9 +239,9 @@ class Index:
     project: IR.Project
     version: str = version
 
-    def search(self, query: Query) -> List[Tuple[PathWithId, float, IR.Range]]:
-        scores: List[Tuple[PathWithId, float, IR.Range]] = [
-            (path_with_id, e.similarity(query=query), e.symbol.range)
+    def search(self, query: Query) -> List[Tuple[PathWithId, float, IR.Symbol]]:
+        scores: List[Tuple[PathWithId, float, IR.Symbol]] = [
+            (path_with_id, e.similarity(query=query), e.symbol)
             for path_with_id, e in self.embeddings.items()
             if e.symbol.symbol_kind.name() in query.kinds
         ]
@@ -462,14 +462,16 @@ async def test_index() -> None:
     ) -> None:
         start = time.time()
         query = Query(node, num_results=num_results, kinds=kinds)  #  ["Class", "File"]
-        scores = index.search(query)
+        scores: List[Tuple[PathWithId, float, IR.Symbol]] = index.search(query)
         print("\nSemantic Search Results:")
         # Determine the maximum width for each column
         max_file_width = max(len(file) for (file, _), _, _ in scores)
         max_id_width = max(len(id) for (_, id), _, _ in scores)
         # Print the aligned output
-        for (file, id), score, range in scores:
-            print(f"{score:.3f} {file:<{max_file_width + 1}} {id:<{max_id_width + 1}} {range}")
+        for (file, id), score, symbol in scores:
+            print(
+                f"{score:.3f} {file:<{max_file_width + 1}} {id:<{max_id_width + 1}} {symbol.range}"
+            )
         elapsed = time.time() - start
         print(f"\nSearched in {elapsed:.2f} seconds")
 
