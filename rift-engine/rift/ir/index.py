@@ -20,6 +20,13 @@ from rift.ir.IR import SymbolKindName, Vector
 from rift.ir.parser import parse_files_in_paths
 
 debug = False
+version = "0.0.3"
+MAX_TOKENS = 8192
+Encoder = tiktoken.get_encoding("cl100k_base")
+
+
+def token_length(string: str) -> int:
+    return len(Encoder.encode(string))
 
 
 @dataclass
@@ -186,8 +193,6 @@ class Embedding:
         return max(similarities)
 
 
-version = "0.0.3"
-
 PathWithId = Tuple[str, IR.QualifiedId]
 
 
@@ -198,7 +203,7 @@ def openai_embedding(document: str) -> Vector:
     print("openai embedding for", document[:20], "...")
     model = "text-embedding-ada-002"
     if token_length(document) >= MAX_TOKENS:
-        print("Truncating document to 8192 tokens")
+        print(f"Truncating document to {MAX_TOKENS} tokens")
         tokens = Encoder.encode(document)
         tokens = tokens[
             : MAX_TOKENS - 1
@@ -285,32 +290,34 @@ class Index:
         symbol: IR.Symbol
 
     @classmethod
-    def symbol_fits_length(cls, symbol: IR.Symbol, max_len: int) -> bool:
+    def symbol_fits_length(cls, symbol: IR.Symbol, max_tokens: int) -> bool:
         sub = symbol.substring
-        return sub[1] - sub[0] <= max_len
+        if sub[1] - sub[0] > max_tokens * 10:  # tiktoken dies on large strings
+            return False
+        return token_length(symbol.get_substring().decode()) <= max_tokens
 
     @classmethod
     def symbol_needs_indexing(
-        cls, symbol: IR.Symbol, kinds: List[SymbolKindName], max_len: int
+        cls, symbol: IR.Symbol, kinds: List[SymbolKindName], max_tokens: int
     ) -> bool:
         kind = symbol.symbol_kind
         if kind.name() in kinds:
             return True
         elif isinstance(kind, IR.MetaSymbolKind):
-            if symbol.parent and not cls.symbol_fits_length(symbol.parent, max_len):
+            if symbol.parent and not cls.symbol_fits_length(symbol.parent, max_tokens):
                 return True
         return False
 
     @classmethod
     def gather_nested_symbols(
-        cls, symbol: IR.Symbol, kinds: List[SymbolKindName], max_len: int
+        cls, symbol: IR.Symbol, kinds: List[SymbolKindName], max_tokens: int
     ) -> List["Index.EmbeddingItem"]:
         """Return references to documents in nested symbols"""
         items: List[Index.EmbeddingItem] = []
         for s in symbol.body:
-            if cls.symbol_needs_indexing(s, kinds, max_len):
+            if cls.symbol_needs_indexing(s, kinds, max_tokens):
                 items.append(Index.ReferenceItem(s))
-                items.extend(cls.gather_nested_symbols(s, kinds, max_len))
+                items.extend(cls.gather_nested_symbols(s, kinds, max_tokens))
         return items
 
     @classmethod
@@ -321,12 +328,12 @@ class Index:
 
     @classmethod
     def documents_for_symbol(
-        cls, file_path: str, symbol: IR.Symbol, kinds: List[SymbolKindName], max_len: int
+        cls, file_path: str, symbol: IR.Symbol, kinds: List[SymbolKindName], max_tokens: int
     ) -> List["Index.EmbeddingItem"]:
         """Return documents for a symbol used for embedding"""
-        if not cls.symbol_needs_indexing(symbol, kinds, max_len):
+        if not cls.symbol_needs_indexing(symbol, kinds, max_tokens):
             return []
-        if cls.symbol_fits_length(symbol, max_len):
+        if cls.symbol_fits_length(symbol, max_tokens):
             return [Index.DocumentItem(symbol, symbol.get_substring().decode())]
         else:
             items: List[Index.EmbeddingItem] = []
@@ -334,11 +341,11 @@ class Index:
             summary_doc = cls.get_summary_doc(symbol)
             if summary_doc:
                 items.append(summary_doc)
-            items.extend(cls.gather_nested_symbols(symbol, kinds, max_len))
+            items.extend(cls.gather_nested_symbols(symbol, kinds, max_tokens))
 
             if debug:
                 print(
-                    f"Symbol {symbol.get_qualified_id()} is too long ({len(symbol.get_substring().decode())} > {max_len}) {symbol.range} "
+                    f"Symbol '{symbol.get_qualified_id()}' is too long ({len(symbol.get_substring().decode())} chars > {max_tokens} tokens) {symbol.range} "
                 )
                 print(f"  Added {len(items)} items for {file_path}:{symbol.get_qualified_id()}")
 
@@ -351,13 +358,12 @@ class Index:
         kinds: List[SymbolKindName] = [
             "Function",
             "Class",
-            "File",
             "Def",
             "Section",
             "Structure",
             "Theorem",
         ],
-        max_len: int = 100,
+        max_tokens: int = MAX_TOKENS,
     ) -> "Index":
         """
         Creates an Index object from a given project and a function that returns embeddings for a given symbol.
@@ -377,8 +383,8 @@ class Index:
             file_path = file.path
             for symbol in all_symbols:
                 path_with_id = (file_path, symbol.get_qualified_id())
-                if cls.symbol_needs_indexing(symbol, kinds, max_len):
-                    items = cls.documents_for_symbol(file_path, symbol, kinds, max_len)
+                if cls.symbol_needs_indexing(symbol, kinds, max_tokens):
+                    items = cls.documents_for_symbol(file_path, symbol, kinds, max_tokens)
                     if len(items) > 0:
                         documents_to_embed.extend(
                             [i for i in items if isinstance(i, Index.DocumentItem)]
@@ -416,20 +422,12 @@ class Index:
         return cls(embeddings=embeddings, project=project)
 
 
-Encoder = tiktoken.get_encoding("cl100k_base")
-
-MAX_TOKENS = 8192
-
-
-def token_length(string: str) -> int:
-    return len(Encoder.encode(string))
-
-
 import pytest
 
 
 @pytest.mark.asyncio
 async def test_index() -> None:
+    global debug
     this_dir = os.path.dirname(__file__)
     project_root = __file__  # this file only
 
@@ -450,10 +448,8 @@ async def test_index() -> None:
         project = parse_files_in_paths([project_root], metasymbols=True)
         print("Creating index...")
         start = time.time()
-        index = await Index.create(
-            project=project,
-            kinds=["Function", "Class"],
-        )
+        debug = True
+        index = await Index.create(project=project, max_tokens=100)
 
         print(f"Created index in {time.time() - start:.2f} seconds")
         print(f"Saving index to file... {index_file}")
@@ -494,10 +490,10 @@ async def test_index() -> None:
 
     test_search(
         Text(
-            "Warning: symbol {symbol.get_qualified_id()} is too long ({len(symbol.get_substring().decode())} > {max_len}"
+            "Warning: symbol '{symbol.get_qualified_id()}' is too long ({len(symbol.get_substring().decode())} > {max_len}"
         ),
         # ["Function", "Class"],
-        ["Expression", "If", "Call", "Guard", "Body"],
+        ["Function", "Expression", "If", "Call", "Guard", "Body"],
         num_results=10,
     )
     # test_search(And([Text("load")]), ["File"])
