@@ -54,6 +54,7 @@ Source = "https://github.com/morph-labs/rift"
 
 [project.scripts]
 rift = "rift.server.core:entrypoint"
+morph = "rift.ir.morph:main"
 
 [tool.coverage.run]
 branch = true

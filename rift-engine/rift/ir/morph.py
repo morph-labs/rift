@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import argparse
 import asyncio
 import os
@@ -60,7 +58,7 @@ async def index_repo(args):
     print(f"Saved index in {time.time() - start:.2f} seconds")
 
 
-if __name__ == "__main__":
+def main():
     # Create the parser
     parser = argparse.ArgumentParser(
         description="Perform a search in the index or index a repository."
@@ -86,3 +84,7 @@ if __name__ == "__main__":
         search(args.arguments)
     elif args.command == "index":
         asyncio.run(index_repo(args.arguments))
+
+
+if __name__ == "__main__":
+    main()
