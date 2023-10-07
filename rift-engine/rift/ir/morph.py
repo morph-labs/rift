@@ -49,22 +49,7 @@ async def index_repo(args):
     print(f"Creating index...")
     start = time.time()
 
-    def documents_for_symbol(symbol: IR.Symbol) -> List[str]:
-        documents: List[str] = []
-        if isinstance(symbol.symbol_kind, IR.FunctionKind):
-            documents = [symbol.get_substring().decode()]
-        elif isinstance(symbol.symbol_kind, IR.ClassKind):
-            for s in symbol.body:
-                documents.extend(documents_for_symbol(s))
-            return documents
-        elif isinstance(symbol.symbol_kind, IR.FileKind):
-            for s in symbol.body:
-                documents.extend(documents_for_symbol(s))
-            return documents
-        return documents
-
     index = await Index.create(
-        documents_for_symbol=documents_for_symbol,
         project=project,
     )
 
