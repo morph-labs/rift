@@ -19,6 +19,8 @@ import rift.ir.IR as IR
 from rift.ir.IR import SymbolKindName, Vector
 from rift.ir.parser import parse_files_in_paths
 
+debug = False
+
 
 @dataclass
 class Node(ABC):
@@ -195,7 +197,6 @@ EmbeddingFunction = Callable[[str], Vector]
 def openai_embedding(document: str) -> Vector:
     print("openai embedding for", document[:20], "...")
     model = "text-embedding-ada-002"
-    MAX_TOKENS = 8192
     if token_length(document) >= MAX_TOKENS:
         print("Truncating document to 8192 tokens")
         tokens = Encoder.encode(document)
@@ -221,7 +222,7 @@ def set_embedding_function(openai: bool) -> None:
         nlp = spacy.load("en_core_web_md")
 
         def spacy_embedding(document: str) -> Vector:
-            # print("spacy embedding for", document[:20], "...")
+            print("spacy embedding for", document[:20], "...")
             return np.array(nlp(document).vector)
 
         embed_fun = spacy_embedding
@@ -312,14 +313,11 @@ class Index:
                 items.extend(cls.gather_nested_symbols(s, kinds, max_len))
         return items
 
-    @staticmethod
-    def symbol_is_leaf(symbol: IR.Symbol) -> bool:
-        """Return True if the symbol is a leaf symbol in terms of embedding: it does not contain any nested symbols"""
-        if isinstance(symbol.symbol_kind, IR.FunctionKind):
-            return True
-        if isinstance(symbol.symbol_kind, IR.MetaSymbolKind):
-            return True
-        return False
+    @classmethod
+    def get_summary_doc(cls, symbol: IR.Symbol) -> Optional["Index.EmbeddingItem"]:
+        """Return a document for a symbol without the body"""
+        if isinstance(symbol.symbol_kind, (IR.FunctionKind, IR.ClassKind)):
+            return Index.DocumentItem(symbol, symbol.get_substring_without_body().decode())
 
     @classmethod
     def documents_for_symbol(
@@ -328,21 +326,23 @@ class Index:
         """Return documents for a symbol used for embedding"""
         if not cls.symbol_needs_indexing(symbol, kinds, max_len):
             return []
-        if cls.symbol_is_leaf(symbol):
-            if cls.symbol_fits_length(symbol, max_len):
-                # treat leaf symbols as documents
-                return [Index.DocumentItem(symbol, symbol.get_substring().decode())]
-            else:
-                items = cls.gather_nested_symbols(symbol, kinds, max_len)
-
-                print(
-                    f"Warning: symbol {symbol.get_qualified_id()} is too long ({len(symbol.get_substring().decode())} > {max_len}) {symbol.range} "
-                )
-                print(f"WWW Added {len(items)} items for {file_path}:{symbol.get_qualified_id()}")
-
-                return items
+        if cls.symbol_fits_length(symbol, max_len):
+            return [Index.DocumentItem(symbol, symbol.get_substring().decode())]
         else:
-            return cls.gather_nested_symbols(symbol, kinds, max_len)
+            items: List[Index.EmbeddingItem] = []
+
+            summary_doc = cls.get_summary_doc(symbol)
+            if summary_doc:
+                items.append(summary_doc)
+            items.extend(cls.gather_nested_symbols(symbol, kinds, max_len))
+
+            if debug:
+                print(
+                    f"Symbol {symbol.get_qualified_id()} is too long ({len(symbol.get_substring().decode())} > {max_len}) {symbol.range} "
+                )
+                print(f"  Added {len(items)} items for {file_path}:{symbol.get_qualified_id()}")
+
+            return items
 
     @classmethod
     async def create(
@@ -418,6 +418,8 @@ class Index:
 
 Encoder = tiktoken.get_encoding("cl100k_base")
 
+MAX_TOKENS = 8192
+
 
 def token_length(string: str) -> int:
     return len(Encoder.encode(string))
@@ -435,7 +437,7 @@ async def test_index() -> None:
     #     os.path.dirname(os.path.dirname(this_dir))
     # )  # the whole rift project
 
-    openai = False
+    openai = True
 
     index_file = os.path.join(this_dir, "index.rci")
     set_embedding_function(openai=openai)
@@ -458,7 +460,6 @@ async def test_index() -> None:
         start = time.time()
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
-        # print(f"{project.dump_map()}")
 
     def test_search(
         node: Node, kinds: List[SymbolKindName] = ["Function"], num_results: int = 5
@@ -467,8 +468,12 @@ async def test_index() -> None:
         query = Query(node, num_results=num_results, kinds=kinds)  #  ["Class", "File"]
         scores = index.search(query)
         print("\nSemantic Search Results:")
-        for n, x, range in scores:
-            print(f"{n}  {x:.3f}  {range}")
+        # Determine the maximum width for each column
+        max_file_width = max(len(file) for (file, _), _, _ in scores)
+        max_id_width = max(len(id) for (_, id), _, _ in scores)
+        # Print the aligned output
+        for (file, id), score, range in scores:
+            print(f"{score:.3f} {file:<{max_file_width + 1}} {id:<{max_id_width + 1}} {range}")
         elapsed = time.time() - start
         print(f"\nSearched in {elapsed:.2f} seconds")
 
@@ -488,9 +493,12 @@ async def test_index() -> None:
     # in_class = Function(in_class_function)
 
     test_search(
-        Text("Warning: symbol {symbol.get_qualified_id()} is too long ({len(symbol.get_substring().decode())} > {max_len}"),
-        ["Function", "Expression", "If", "Call", "Guard", "Body"],
-        10,
+        Text(
+            "Warning: symbol {symbol.get_qualified_id()} is too long ({len(symbol.get_substring().decode())} > {max_len}"
+        ),
+        # ["Function", "Class"],
+        ["Expression", "If", "Call", "Guard", "Body"],
+        num_results=10,
     )
     # test_search(And([Text("load")]), ["File"])
     # test_search(And([Text("load"), Not(in_query), Not(in_class)]), ["Function", "File"])
