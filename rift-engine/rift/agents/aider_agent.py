@@ -17,6 +17,9 @@ import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
 from rift.lsp import LspServer
 from rift.util.TextStream import TextStream
+import rift.ir.IR as IR
+import rift.ir.index as index
+
 
 aider_available = False
 try:
@@ -166,10 +169,14 @@ class Aider(agent.ThirdPartyAgent):
                     agent.RequestChatRequest(messages=self.state.messages)
                 )
 
+                found_some_uri = False
+
                 def refactor_uri_match(resp) -> str:
                     dropped_symbols = False
 
                     def replacement(m: re.Match[str]):
+                        global found_some_uri
+                        found_some_uri = True
                         parsed_uri = m.group(1)
                         if "#" in uri:
                             nonlocal dropped_symbols
@@ -209,6 +216,33 @@ class Aider(agent.ThirdPartyAgent):
                     resp = refactor_uri_match(resp)
                 except:
                     pass
+
+                relative_path: Optional[str] = None
+                if not found_some_uri and len(resp) > 10:  # allow "y" and "n" etc
+                    # use the symbol index to find the most relevent file
+                    index_path = os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "ir", "index.rci"
+                    )
+                    # check if it exists
+                    if os.path.exists(index_path):
+                        i = index.Index.load(index_path)
+                        results = i.search(index.Query(index.Text(resp)))
+                        if len(results) > 0:
+                            path_with_id = results[0][0]
+                            file_path = path_with_id[0]
+                            project_root_path = i.project.root_path
+                            file_path = os.path.join(project_root_path, file_path)
+                            relative_path = os.path.relpath(
+                                file_path, self.state.params.workspaceFolderPath
+                            )
+                            logger.info(f"{file_path=}")
+                            logger.info(f"{relative_path=}")
+
+
+
+                if relative_path is not None:
+                    resp = f"`{relative_path}`\n{resp}"
+
                 self.state.messages.append(openai.Message.user(content=resp))
                 self.state.response_lock.release()
                 return resp

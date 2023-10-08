@@ -240,6 +240,18 @@ class Index:
     version: str = version
 
     def search(self, query: Query) -> List[Tuple[PathWithId, float, IR.Symbol]]:
+        """
+        Searches the index for symbols that match the given query.
+
+        Args:
+            query: A Query object representing the search query.
+
+        Returns:
+            A list of tuples, where each tuple contains a PathWithId object representing the path and ID of the symbol,
+            a float representing the similarity score between the symbol and the query, and an IR.Symbol object representing
+            the symbol itself.
+
+        """
         scores: List[Tuple[PathWithId, float, IR.Symbol]] = [
             (path_with_id, e.similarity(query=query), e.symbol)
             for path_with_id, e in self.embeddings.items()
@@ -431,9 +443,7 @@ async def test_index() -> None:
     this_dir = os.path.dirname(__file__)
     project_root = __file__  # this file only
 
-    # project_root = os.path.dirname(
-    #     os.path.dirname(os.path.dirname(this_dir))
-    # )  # the whole rift project
+    project_root = os.path.dirname((os.path.dirname(this_dir)))  # the whole rift project
 
     openai = True
 
@@ -449,7 +459,7 @@ async def test_index() -> None:
         print("Creating index...")
         start = time.time()
         debug = True
-        index = await Index.create(project=project, max_tokens=100)
+        index = await Index.create(project=project)
 
         print(f"Created index in {time.time() - start:.2f} seconds")
         print(f"Saving index to file... {index_file}")
@@ -492,11 +502,8 @@ async def test_index() -> None:
 
     test_search(
         Text(
-            "Warning: symbol '{symbol.get_qualified_id()}' is too long ({len(symbol.get_substring().decode())} > {max_len}"
+            "Change the function that searches the index for symbols to return an object of a newly created class instead of a list of tuples."
         ),
-        # ["Function", "Class"],
-        ["Function", "Expression", "If", "Call", "Guard", "Body"],
-        num_results=10,
     )
     # test_search(And([Text("load")]), ["File"])
     # test_search(And([Text("load"), Not(in_query), Not(in_class)]), ["Function", "File"])
