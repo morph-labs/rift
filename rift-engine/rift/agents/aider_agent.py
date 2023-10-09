@@ -12,6 +12,7 @@ from rich.text import Text
 
 import rift.agents.abstract as agent
 import rift.agents.registry as registry
+import rift.ir.IR as IR
 import rift.llm.openai_types as openai
 import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
@@ -171,7 +172,7 @@ class Aider(agent.ThirdPartyAgent):
 
                     def replacement(m: re.Match[str]):
                         parsed_uri = m.group(1)
-                        if "#" in uri:
+                        if "#" in parsed_uri:
                             nonlocal dropped_symbols
                             dropped_symbols = True
                             uri, symbol = parsed_uri.split("#")[0], parsed_uri.split("#")[1]
