@@ -3,6 +3,7 @@
 # python -m spacy download en_core_web_md
 
 import asyncio
+import hashlib
 import math
 import os
 import pickle
@@ -13,6 +14,7 @@ from typing import Awaitable, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import openai
+import pytest
 import tiktoken
 
 import rift.ir.IR as IR
@@ -20,7 +22,7 @@ from rift.ir.IR import SymbolKindName, Vector
 from rift.ir.parser import parse_files_in_paths
 
 debug = False
-version = "0.0.3"
+version = "0.0.4"
 MAX_TOKENS = 8192
 Encoder = tiktoken.get_encoding("cl100k_base")
 
@@ -233,9 +235,17 @@ def set_embedding_function(openai: bool) -> None:
         embed_fun = spacy_embedding
 
 
+def compute_code_hash(code: IR.Code) -> str:
+    """Compute the hash of a document."""
+    sha256 = hashlib.sha256()
+    sha256.update(code.bytes)
+    return sha256.hexdigest()
+
+
 @dataclass
 class Index:
     embeddings: Dict[PathWithId, Embedding]  # (file_path, id) -> embedding
+    file_hashes: Dict[str, str]  # file_path -> file hash
     project: IR.Project
     version: str = version
 
@@ -364,7 +374,8 @@ class Index:
             "Theorem",
         ],
         max_tokens: int = MAX_TOKENS,
-    ) -> "Index":
+        old_index: Optional["Index"] = None,
+    ) -> Tuple["Index", bool]:
         """
         Creates an Index object from a given project and a function that returns embeddings for a given symbol.
 
@@ -374,13 +385,25 @@ class Index:
 
         Returns:
             An Index object containing the embeddings for the symbols in the project.
+            And a boolean indicating whether the index was modified.
         """
         documents_to_embed: List["Index.DocumentItem"] = []
         symbol_embeddings: List["Index.SymbolEmbedding"] = []
+        file_hashes: Dict[str, str] = {}
+        modified = False
+        if old_index:
+            file_hashes = old_index.file_hashes
 
         for file in project.get_files():
             all_symbols = file.search_symbol(lambda _: True)
             file_path = file.path
+            code_hash = compute_code_hash(file.code)
+            if file_path in file_hashes and file_hashes[file_path] == code_hash:
+                print(f"Skipping {file_path} (unchanged)")
+                continue
+            else:
+                file_hashes[file_path] = code_hash
+                modified = True
             for symbol in all_symbols:
                 path_with_id = (file_path, symbol.get_qualified_id())
                 if cls.symbol_needs_indexing(symbol, kinds, max_tokens):
@@ -419,10 +442,10 @@ class Index:
             )
             for symbol_embedding in symbol_embeddings
         }
-        return cls(embeddings=embeddings, project=project)
-
-
-import pytest
+        if old_index:
+            return (old_index, modified)
+        else:
+            return (cls(embeddings=embeddings, file_hashes=file_hashes, project=project), True)
 
 
 @pytest.mark.asyncio
@@ -439,29 +462,36 @@ async def test_index() -> None:
 
     index_file = os.path.join(this_dir, "index.rci")
     set_embedding_function(openai=openai)
+    old_index: Optional[Index] = None
     if os.path.exists(index_file):
         start = time.time()
         print(f"Loading index from file... {index_file}")
-        index = Index.load(index_file)
+        old_index = Index.load(index_file)
         print(f"Loaded index in {time.time() - start:.2f} seconds")
-    else:
-        project = parse_files_in_paths([project_root], metasymbols=True)
-        print("Creating index...")
-        start = time.time()
-        debug = True
-        index = await Index.create(project=project, max_tokens=100)
 
-        print(f"Created index in {time.time() - start:.2f} seconds")
+    project = parse_files_in_paths([project_root], metasymbols=True)
+    if os.path.exists(index_file):
+        print("Updating index...")
+    else:
+        print("Creating index...")
+    start = time.time()
+    debug = True
+    (index, modified) = await Index.create(project=project, max_tokens=100, old_index=old_index)
+
+    print(f"Created index in {time.time() - start:.2f} seconds")
+    if modified:
         print(f"Saving index to file... {index_file}")
         start = time.time()
         index.save(index_file)
         print(f"Saved index in {time.time() - start:.2f} seconds")
+    else:
+        print("Index not modified")
 
     def test_search(
         node: Node, kinds: List[SymbolKindName] = ["Function"], num_results: int = 5
     ) -> None:
         start = time.time()
-        query = Query(node, num_results=num_results, kinds=kinds)  #  ["Class", "File"]
+        query = Query(node, num_results=num_results, kinds=kinds)  # ["Class", "File"]
         scores: List[Tuple[PathWithId, float, IR.Symbol]] = index.search(query)
         print("\nSemantic Search Results:")
         # Determine the maximum width for each column
