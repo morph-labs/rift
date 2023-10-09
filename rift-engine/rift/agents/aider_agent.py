@@ -12,6 +12,7 @@ from rich.text import Text
 
 import rift.agents.abstract as agent
 import rift.agents.registry as registry
+import rift.ir.IR as IR
 import rift.llm.openai_types as openai
 import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
