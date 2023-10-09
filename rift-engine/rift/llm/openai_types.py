@@ -47,15 +47,15 @@ class Message(BaseModel):
 
 
 class MessageDelta(BaseModel):
-    role: Optional[MessageRole]
-    content: Optional[str]
-    name: Optional[str]
+    role: Optional[MessageRole] = None
+    content: Optional[str] = None
+    name: Optional[str] = None
 
 
 class ChatCompletionChoiceDelta(BaseModel):
     delta: MessageDelta
     index: int
-    finish_reason: Optional[FinishReason]
+    finish_reason: Optional[FinishReason] = None
 
 
 class ChatCompletionChunk(BaseModel):
@@ -121,7 +121,7 @@ class Usage(BaseModel):
 class Choice(BaseModel):
     index: int
     message: Message
-    finish_reason: Optional[FinishReason]
+    finish_reason: Optional[FinishReason] = None
 
 
 class ChatCompletionResponse(BaseModel):
@@ -129,7 +129,7 @@ class ChatCompletionResponse(BaseModel):
     object: str
     created: datetime
     choices: list[Choice]
-    usage: Optional[Usage]  # [todo] not optional?
+    usage: Optional[Usage] = None  # [todo] not optional?
 
 
 class Logprob(BaseModel):
@@ -171,7 +171,7 @@ class TextCompletionResponse(BaseModel):
     created: datetime
     model: str
     choices: list[TextChoice]
-    usage: Optional[Usage]
+    usage: Optional[Usage] = None
 
 
 class EmbeddingRequest(BaseModel):
@@ -196,7 +196,7 @@ class EmbeddingResponse(BaseModel):
 class ModelInfo(BaseModel):
     id: str
     owned_by: str
-    permission: Any
+    permission: Any = None
 
 
 class ModelList(BaseModel):

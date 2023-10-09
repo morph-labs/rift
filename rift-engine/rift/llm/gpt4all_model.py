@@ -15,7 +15,6 @@ from gpt4all.pyllmodel import (
     ResponseCallback,
     llmodel,
 )
-from pydantic import BaseSettings
 
 from rift.llm.abstract import (
     AbstractChatCompletionProvider,
@@ -39,6 +38,7 @@ from threading import Lock
 # ENCODER = get_encoding("cl100k_base")
 # from transformers import LlamaTokenizer
 import transformers
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENCODER_LOCK = Lock()
 
@@ -142,11 +142,7 @@ class Gpt4AllSettings(BaseSettings):
     model_name: str = DEFAULT_MODEL_NAME
     model_path: Optional[Path] = None
     model_type: Optional[str] = None
-
-    class Config:
-        env_prefix = "GPT4ALL_"
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(env_prefix="GPT4ALL_", env_file=".env", env_file_encoding="utf-8")
 
     def __str__(self):
         s = self.model_name

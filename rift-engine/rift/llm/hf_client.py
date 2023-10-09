@@ -7,13 +7,14 @@ import time
 from typing import Any, Optional
 
 import torch
-from pydantic import BaseModel, BaseSettings
+from pydantic import BaseModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from rift.llm.abstract import AbstractCodeCompletionProvider, InsertCodeResult
 from rift.util.TextStream import TextStream
 
 from .openai_types import Message
+from pydantic_settings import BaseSettings
 
 logger = logging.getLogger(__name__)
 
