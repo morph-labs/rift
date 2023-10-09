@@ -382,6 +382,8 @@ class Index:
         Args:
             project: The project to index.
             kinds: The kinds of symbols to index.
+            max_tokens: The maximum number of tokens before breaking up a symbol into multiple documents.
+            old_index: An optional old index. If provided, the new index will be an incremental update of the old index.
 
         Returns:
             An Index object containing the embeddings for the symbols in the project.
