@@ -1,26 +1,38 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import get_package_paths
-
+from PyInstaller.utils.hooks import get_package_paths, copy_metadata
 
 block_cipher = None
 
-added_files = [
+datas = [
          ('vendor/tree-sitter-rescript/src', 'vendor/tree-sitter-rescript/src' ),
          (get_package_paths('mentat')[1] + '/default_config.json', 'mentat/'),
          (get_package_paths('gpt_engineer')[1] + '/preprompts', 'gpt_engineer/preprompts'),
          (get_package_paths('langchain')[1] + '/chains/llm_summarization_checker/prompts', 'langchain//chains/llm_summarization_checker/prompts'),
          (get_package_paths('gpt4all')[1] + '/llmodel_DO_NOT_MODIFY/build', 'gpt4all/llmodel_DO_NOT_MODIFY/build'),
          (get_package_paths('tree_sitter_languages')[1], 'tree_sitter_languages'),
+         (get_package_paths('llama_cpp')[1], 'llama_cpp'),
           # hack to touch "__init__.pyc" as Language#build_library() wants it to exist to check its mtime
          (get_package_paths('tree_sitter')[1] + '/__init__.py', 'tree_sitter/__init__.pyc')
          ]
+
+datas += copy_metadata('tqdm')
+datas += copy_metadata('regex')
+datas += copy_metadata('requests')
+datas += copy_metadata('packaging')
+datas += copy_metadata('filelock')
+datas += copy_metadata('numpy')
+datas += copy_metadata('tokenizers')
+datas += copy_metadata('huggingface-hub')
+datas += copy_metadata('safetensors')
+datas += copy_metadata('transformers')
+datas += copy_metadata('pyyaml')
 
 a = Analysis(
     ['rift/server/core.py'],
     pathex=[],
     binaries=[],
-    datas=added_files,
-    hiddenimports=['tiktoken_ext.openai_public', 'tiktoken_ext', 'tree-sitter-rescript'],
+    datas=datas,
+    hiddenimports=['tiktoken_ext.openai_public', 'tiktoken_ext', 'tree-sitter-rescript', 'tqdm', 'transformers'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
