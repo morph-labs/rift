@@ -5,8 +5,7 @@ from dataclasses import dataclass, field
 from textwrap import dedent
 from typing import Any, Callable, Dict, List, Union
 
-import rift.ir.IR as IR
-import rift.ir.parser as parser
+from . import IR, parser
 
 logger = logging.getLogger(__name__)
 

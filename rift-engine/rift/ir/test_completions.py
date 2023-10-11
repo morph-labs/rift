@@ -1,10 +1,7 @@
 import difflib
 import os
 
-import rift.ir.completions as completions
-import rift.ir.IR as IR
-import rift.ir.parser as parser
-import rift.ir.test_parser as test_parser
+from . import IR, completions, parser, test_parser
 
 
 def test_completions_file():

@@ -2,11 +2,9 @@ import difflib
 import os
 from textwrap import dedent
 
-import rift.ir.IR as IR
-import rift.ir.parser as parser
-import rift.ir.response as response
-from rift.ir.missing_docstrings import functions_missing_docstrings_in_file
-from rift.ir.missing_types import functions_missing_types_in_file
+from . import IR, parser, response
+from .missing_docstrings import functions_missing_docstrings_in_file
+from .missing_types import functions_missing_types_in_file
 
 
 class Test:

@@ -2,8 +2,7 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
-import rift.ir.IR as IR
-import rift.ir.parser as parser
+from . import IR, parser
 
 
 @dataclass

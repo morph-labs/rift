@@ -4,19 +4,17 @@ from typing import Callable, List, Optional
 from tree_sitter import Parser
 from tree_sitter_languages import get_parser as get_tree_sitter_parser
 
-import rift.ir.custom_parsers as custom_parser
-import rift.ir.IR as IR
-import rift.ir.parser_core as parser_core
+from . import IR, custom_parsers, parser_core
 
 
 def get_parser(language: IR.Language) -> Parser:
-    if language == "rescript" and custom_parser.active:
-        parser = custom_parser.parser
-        parser.set_language(custom_parser.ReScript)
+    if language == "rescript" and custom_parsers.active:
+        parser = custom_parsers.parser
+        parser.set_language(custom_parsers.ReScript)
         return parser
-    elif language == "lean" and custom_parser.active:
-        parser = custom_parser.parser
-        parser.set_language(custom_parser.Lean)
+    elif language == "lean" and custom_parsers.active:
+        parser = custom_parsers.parser
+        parser.set_language(custom_parsers.Lean)
         return parser
     else:
         return get_tree_sitter_parser(language)

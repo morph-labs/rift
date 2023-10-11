@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Tuple
 
 from tree_sitter import Node
 
-from rift.ir.IR import (
+from .IR import (
     Block,
     BodyKind,
     CallKind,
