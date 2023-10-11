@@ -2,7 +2,7 @@ import json
 from dataclasses import asdict, dataclass
 from typing import Dict, List
 
-import rift.ir.IR as IR
+from . import IR
 
 
 @dataclass

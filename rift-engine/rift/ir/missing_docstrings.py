@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-import rift.ir.IR as IR
+from . import IR
 
 
 @dataclass

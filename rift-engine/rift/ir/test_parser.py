@@ -3,9 +3,7 @@ import os
 from textwrap import dedent
 from typing import List
 
-import rift.ir.custom_parsers as custom_parsers
-import rift.ir.IR as IR
-import rift.ir.parser as parser
+from . import IR, custom_parsers, parser
 
 
 class Tests:

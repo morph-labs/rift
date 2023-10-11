@@ -6,7 +6,7 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 import numpy as np
 import numpy.typing as npt
 
-import rift.ir.custom_parsers as custom_parsers
+from . import custom_parsers
 
 Language = Literal[
     "c",

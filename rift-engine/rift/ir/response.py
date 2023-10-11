@@ -4,9 +4,7 @@ import textwrap
 from enum import Enum
 from typing import List, Optional, Set, Tuple
 
-import rift.ir.IR as IR
-import rift.ir.parser as parser
-import rift.ir.python_typing as python_typing
+from . import IR, parser, python_typing
 
 logger = logging.getLogger(__name__)
 
