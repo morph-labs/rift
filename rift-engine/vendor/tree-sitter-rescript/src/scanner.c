@@ -113,7 +113,7 @@ static bool scan_comment(TSLexer *lexer) {
       // Single-line comment
       do {
         advance(lexer);
-      } while (lexer->lookahead != '\n');
+      } while (lexer->lookahead != '\n' && !lexer->eof(lexer));
       return true;
 
     case '*':
