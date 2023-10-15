@@ -186,9 +186,9 @@ Function: tsx
 === Symbol Table for test.py ===
 File: test.py
    language: python
-   range: ((0, 0), (56, 15))
-   substring: (0, 1111)
-   body_sub: (0, 1111)
+   range: ((0, 0), (57, 32))
+   substring: (0, 1144)
+   body_sub: (0, 1144)
    body: ['A', 'B', 'import_statement', 'import_statement', 'import_statement', 'import_from_statement', 'import_from_statement', 'outer_fun', 'some_conditionals', 'with_nested_conditionals', 'for$0']
 Expression: expression$0
    language: python
@@ -527,19 +527,35 @@ Call: call$0
    parent: for$0.body$0
    function_name: print
    arguments: ['i+1']
+Call: call$1
+   language: python
+   range: ((57, 14), (57, 31))
+   substring: (1126, 1143)
+   scope: for$0.body$0.expression$0.
+   parent: for$0.body$0.expression$0
+   function_name: get_some_value
+   arguments: ['i']
+Expression: expression$0
+   language: python
+   range: ((57, 4), (57, 32))
+   substring: (1116, 1144)
+   scope: for$0.body$0.
+   body: ['call$1']
+   parent: for$0.body$0
+   code: x = await(call$1)
 Body: body$0
    language: python
-   range: ((56, 4), (56, 15))
-   substring: (1100, 1111)
+   range: ((56, 4), (57, 32))
+   substring: (1100, 1144)
    scope: for$0.
-   body: ['call$0']
+   body: ['call$0', 'expression$0']
    parent: for$0
-   block: ['call$0']
+   block: ['call$0', 'expression$0']
 For: for$0
    language: python
-   range: ((55, 0), (56, 15))
-   substring: (1076, 1111)
-   body_sub: (1100, 1111)
+   range: ((55, 0), (57, 32))
+   substring: (1076, 1144)
+   body_sub: (1100, 1144)
    body: ['call$0', 'body$0']
    parent: test.py
    for i in call$0: body$0
@@ -882,8 +898,10 @@ File: test.py
             call$1 = `print("world")`
   for$0 = `for i in call$0: body$0`
     call$0 = `range(10)`
-    body$0 = `['call$0']`
+    body$0 = `['call$0', 'expression$0']`
       call$0 = `print(i+1)`
+      expression$0 = `x = await(call$1)`
+        call$1 = `get_some_value(i)`
 File: test.cpp
   namespace namespace_name
     void add(int& someRef, int* somePtr)
