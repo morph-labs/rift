@@ -137,6 +137,7 @@ class Tests:
                     
         for i in range(10):
             print (i+1)
+            x = await(get_some_value(i))
     """
         )
         .lstrip()
