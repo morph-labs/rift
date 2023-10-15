@@ -353,6 +353,27 @@ class FileKind(MetaSymbolKind):
 
 
 @dataclass
+class ForKind(MetaSymbolKind):
+    """A symbol kind representing an for loop."""
+
+    left: str
+    right: Expression
+    body: "Symbol"
+
+    def name(self) -> SymbolKindName:
+        return "For"
+
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   for {self.left} in {self.right}: {self.body.name}")
+
+    def __str__(self) -> str:
+        return f"for {self.left} in {self.right}: {self.body.name}"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+@dataclass
 class FunctionKind(SymbolKind):
     """Represents a function symbol in the intermediate representation (IR) of the Rift engine.
 

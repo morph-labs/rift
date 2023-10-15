@@ -185,10 +185,10 @@ Function: tsx
 === Symbol Table for test.py ===
 File: test.py
    language: python
-   range: ((0, 0), (53, 26))
-   substring: (0, 1074)
-   body_sub: (0, 1074)
-   body: ['A', 'B', 'import_statement', 'import_statement', 'import_statement', 'import_from_statement', 'import_from_statement', 'outer_fun', 'some_conditionals', 'with_nested_conditionals']
+   range: ((0, 0), (56, 15))
+   substring: (0, 1111)
+   body_sub: (0, 1111)
+   body: ['A', 'B', 'import_statement', 'import_statement', 'import_statement', 'import_from_statement', 'import_from_statement', 'outer_fun', 'some_conditionals', 'with_nested_conditionals', 'for$0']
 Expression: expression$0
    language: python
    range: ((1, 4), (4, 7))
@@ -508,6 +508,38 @@ Function: with_nested_conditionals
    parent: test.py
    parameters: [cond:str]
    return_type: None
+Call: call$0
+   language: python
+   range: ((55, 9), (55, 18))
+   substring: (1085, 1094)
+   scope: for$0.
+   parent: for$0
+   function_name: range
+   arguments: ['10']
+Call: call$0
+   language: python
+   range: ((56, 4), (56, 15))
+   substring: (1100, 1111)
+   scope: for$0.body$0.
+   parent: for$0.body$0
+   function_name: print
+   arguments: ['i+1']
+Body: body$0
+   language: python
+   range: ((56, 4), (56, 15))
+   substring: (1100, 1111)
+   scope: for$0.
+   body: ['call$0']
+   parent: for$0
+   block: ['call$0']
+For: for$0
+   language: python
+   range: ((55, 0), (56, 15))
+   substring: (1076, 1111)
+   body_sub: (1100, 1111)
+   body: ['call$0', 'body$0']
+   parent: test.py
+   for i in call$0: body$0
 === Symbol Table for test.cpp ===
 File: test.cpp
    language: python
@@ -845,6 +877,10 @@ File: test.py
           body$1 = `['call$0', 'call$1']`
             call$0 = `print("hello")`
             call$1 = `print("world")`
+  for$0 = `for i in call$0: body$0`
+    call$0 = `range(10)`
+    body$0 = `['call$0']`
+      call$0 = `print(i+1)`
 File: test.cpp
   namespace namespace_name
     void add(int& someRef, int* somePtr)
