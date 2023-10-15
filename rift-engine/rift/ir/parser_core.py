@@ -526,6 +526,7 @@ class SymbolParser:
             or (node.type in ["method"] and language in ["ruby"])
         ):
             id: Optional[Node] = None
+            is_async = node.text.startswith(b"async ")
             for child in node.children:
                 if child.type in ["identifier", "property_identifier"]:
                     id = child
@@ -563,7 +564,10 @@ class SymbolParser:
             self.update_dummy_symbol(
                 symbol,
                 FunctionKind(
-                    has_return=self.has_return, parameters=parameters, return_type=return_type
+                    has_return=self.has_return,
+                    is_async=is_async,
+                    parameters=parameters,
+                    return_type=return_type,
                 ),
             )
             self.file.add_symbol(symbol)

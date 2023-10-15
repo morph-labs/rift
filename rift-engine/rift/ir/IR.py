@@ -202,6 +202,7 @@ SymbolKindName = Literal[
     "Def",
     "Expression",
     "File",
+    "For",
     "Function",
     "Guard",
     "If",
@@ -385,12 +386,15 @@ class FunctionKind(SymbolKind):
 
     has_return: bool
     parameters: List[Parameter]
+    is_async: bool = False
     return_type: Optional[Type] = None
 
     def name(self) -> SymbolKindName:
         return "Function"
 
     def dump(self, lines: List[str]) -> None:
+        if self.is_async:
+            lines.append(f"   async")
         if self.parameters != []:
             lines.append(f"   parameters: {self.parameters}")
         if self.return_type is not None:

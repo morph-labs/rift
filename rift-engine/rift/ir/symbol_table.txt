@@ -147,6 +147,7 @@ Function: load
    scope: A.
    body_sub: (198, 222)
    parent: A
+   async
    parameters: [v:number]
    has_return: True
 Class: A
@@ -236,6 +237,7 @@ Function: insert_code
    body_sub: (307, 311)
    body: ['pass_statement']
    parent: B
+   async
    parameters: [self, document:str, cursor_offset:int, goal:Optional<str>=None]
    return_type: InsertCodeResult
 Function: load
@@ -246,6 +248,7 @@ Function: load
    body_sub: (349, 353)
    body: ['pass_statement']
    parent: B
+   async
    parameters: [self, v]
 Function: nested
    language: python
