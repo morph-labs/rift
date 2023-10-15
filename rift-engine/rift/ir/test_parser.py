@@ -134,6 +134,9 @@ class Tests:
                 if cond == "c":
                     print("hello")
                     print("world")
+                    
+        for i in range(10):
+            print (i+1)
     """
         )
         .lstrip()

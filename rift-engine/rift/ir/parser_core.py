@@ -16,6 +16,7 @@ from .IR import (
     ExpressionKind,
     Field,
     File,
+    ForKind,
     FunctionKind,
     GuardKind,
     IfKind,
@@ -1063,6 +1064,21 @@ class SymbolParser:
                 self.update_dummy_symbol(symbol=if_symbol, symbol_kind=if_kind)
                 self.file.add_symbol(if_symbol)
                 return if_symbol
+
+        elif node.type == "for_statement" and language == "python":
+            left_node = node.child_by_field_name("left")
+            right_node = node.child_by_field_name("right")
+            body_node = node.child_by_field_name("body")
+            if left_node is not None and right_node is not None and body_node is not None:
+                for_symbol = self.mk_dummy_metasymbol(counter, "for")
+                scope = self.scope
+                left = left_node.text.decode()
+                right = self.recurse(right_node, scope, parent=for_symbol).parse_expression(counter)
+                body = self.recurse(body_node, scope, parent=for_symbol).parse_body(counter)
+                for_kind = ForKind(left=left, right=right, body=body)
+                self.update_dummy_symbol(symbol=for_symbol, symbol_kind=for_kind)
+                self.file.add_symbol(for_symbol)
+                return for_symbol
 
         elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
             child = node.children[0]
