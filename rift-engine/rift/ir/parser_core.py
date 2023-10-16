@@ -775,11 +775,17 @@ class SymbolParser:
             def parse_res_parameters(exp: Node, parameters: List[Parameter]) -> None:
                 nonlocal return_type
                 if exp.type == "function":
+                    parameters_node = exp.child_by_field_name("parameters")
+                    if parameters_node is not None:
+                        for par in parameters_node.children:
+                            parse_res_parameter(par, parameters)
+                    parameter_node = exp.child_by_field_name("parameter")
+                    if parameter_node is not None:
+                        parameters.append(
+                            Parameter(default_value=None, name=parameter_node.text.decode())
+                        )
                     nodes = exp.children
                     if len(nodes) >= 2:
-                        if nodes[0].type == "formal_parameters":
-                            for par in nodes[0].children:
-                                parse_res_parameter(par, parameters)
                         if nodes[1].type == "type_annotation" and nodes[1].child_count >= 2:
                             return_type = parse_type(language, nodes[1].children[1])
                         if self.body_sub is not None:
