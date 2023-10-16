@@ -451,9 +451,7 @@ class IfKind(MetaSymbolKind):
 
     def __str__(self) -> str:
         if_str = f"if {self.if_case.guard.id}: {self.if_case.body.id}"
-        elif_str = "".join(
-            [f" elif {case.guard.id}: {case.body.id}" for case in self.elif_cases]
-        )
+        elif_str = "".join([f" elif {case.guard.id}: {case.body.id}" for case in self.elif_cases])
         else_str = f" else: {self.else_body.id}" if self.else_body else ""
         return f"{if_str}{elif_str}{else_str}"
 
@@ -623,7 +621,7 @@ class Symbol:
     parent: Optional["Symbol"]
     scope: Scope
     substring: Substring
-    symbol_kind: SymbolKind
+    kind: SymbolKind
     embedding: Optional[Vector] = None
 
     def get_substring(self) -> bytes:
@@ -667,7 +665,7 @@ class Symbol:
         Args:
             lines (List[str]): The list of strings to append the string representation to.
         """
-        signature = self.symbol_kind.signature()
+        signature = self.kind.signature()
         if signature is not None:
             id = self.id + signature
         else:
@@ -687,10 +685,10 @@ class Symbol:
             lines.append(f"   body: {self.body}")
         if self.parent:
             lines.append(f"   parent: {self.parent.get_qualified_id()}")
-        self.symbol_kind.dump(lines)
+        self.kind.dump(lines)
 
     def name(self) -> str:
-        return self.symbol_kind.name()
+        return self.kind.name()
 
 
 def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
@@ -711,7 +709,7 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
         last_char_in_line = end_byte - last_newline_pos - 1
     range = ((first_line, 0), (last_line, last_char_in_line))
 
-    dummy_kind : SymbolKind = None # type: ignore
+    dummy_kind: SymbolKind = None  # type: ignore
     symbol = Symbol(
         body=Block(),
         body_sub=body_sub,
@@ -724,9 +722,9 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
         range=range,
         scope="",
         substring=body_sub,
-        symbol_kind=dummy_kind,
+        kind=dummy_kind,
     )
-    symbol.symbol_kind = FileKind(symbol)
+    symbol.kind = FileKind(symbol)
     return symbol
 
 
@@ -780,29 +778,29 @@ class File:
         return [
             symbol
             for symbol in self._symbol_table.values()
-            if isinstance(symbol.symbol_kind, FunctionKind)
+            if isinstance(symbol.kind, FunctionKind)
         ]
 
     def dump_symbol_table(self, lines: List[str]) -> None:
         for _, symbol in self._symbol_table.items():
-            if not isinstance(symbol.symbol_kind, UnknownKind):
+            if not isinstance(symbol.kind, UnknownKind):
                 symbol.dump(lines)
 
     def dump_map(self, indent: int, lines: List[str]) -> None:
         def dump_symbol(symbol: Symbol, indent: int) -> None:
-            if isinstance(symbol.symbol_kind, UnknownKind):
+            if isinstance(symbol.kind, UnknownKind):
                 pass
-            elif not isinstance(symbol.symbol_kind, MetaSymbolKind):
+            elif not isinstance(symbol.kind, MetaSymbolKind):
                 decl_without_body = symbol.get_substring_without_body().decode().strip()
                 # indent the declaration
                 decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
                 lines.append(f"{' ' * indent}{decl_without_body}")
             else:
-                lines.append(f"{' ' * indent}{symbol.id} = `{symbol.symbol_kind}`")
+                lines.append(f"{' ' * indent}{symbol.id} = `{symbol.kind}`")
             for s in symbol.body:
                 dump_symbol(s, indent + 2)
 
-        assert self.symbol and isinstance(self.symbol.symbol_kind, FileKind)
+        assert self.symbol and isinstance(self.symbol.kind, FileKind)
         for symbol in self.symbol.body:
             dump_symbol(symbol, indent)
 

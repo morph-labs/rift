@@ -28,7 +28,7 @@ def get_symbol_completions_raw(project: IR.Project) -> List[Dict[str, Symbol]]:
     for file_ir in project.get_files():
         symbols: List[Symbol] = []
         for symbol in file_ir.search_symbol(lambda _: True):
-            if isinstance(symbol.symbol_kind, IR.MetaSymbolKind):
+            if isinstance(symbol.kind, IR.MetaSymbolKind):
                 continue  # don't emit completions for statements inside bodies
             symbol = Symbol(symbol.id, symbol.scope, symbol.name(), symbol.range)
             symbols.append(symbol)
