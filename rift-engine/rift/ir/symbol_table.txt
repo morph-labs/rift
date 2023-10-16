@@ -176,43 +176,46 @@ Guard: guard$0
    scope: if$0.
    parent: if$0
    condition: (true)
-Expression: expression$0
+Call: call$0
    language: typescript
    range: ((16, 4), (16, 23))
    substring: (383, 402)
    scope: if$0.body$0.
    parent: if$0.body$0
-   code: console.log("true")
-Expression: expression$1
+   function_name: console.log
+   arguments: ['"true"']
+Call: call$1
    language: typescript
    range: ((17, 4), (17, 19))
    substring: (407, 422)
    scope: if$0.body$0.
    parent: if$0.body$0
-   code: congole.log(42)
+   function_name: congole.log
+   arguments: ['42']
 Body: body$0
    language: typescript
    range: ((15, 10), (18, 1))
    substring: (377, 424)
    scope: if$0.
-   body: ['expression$0', 'expression$1']
+   body: ['call$0', 'call$1']
    parent: if$0
-   block: ['expression$0', 'expression$1']
-Expression: expression$0
+   block: ['call$0', 'call$1']
+Call: call$0
    language: typescript
    range: ((19, 4), (19, 24))
    substring: (436, 456)
    scope: if$0.body$1.
    parent: if$0.body$1
-   code: console.log("false")
+   function_name: console.log
+   arguments: ['"false"']
 Body: body$1
    language: typescript
    range: ((18, 7), (20, 1))
    substring: (430, 458)
    scope: if$0.
-   body: ['expression$0']
+   body: ['call$0']
    parent: if$0
-   block: ['expression$0']
+   block: ['call$0']
 If: if$0
    language: typescript
    range: ((15, 0), (20, 1))
@@ -909,11 +912,11 @@ File: test.ts
   type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
   if$0 = `if guard$0: body$0 else: body$1`
     guard$0 = `(true)`
-    body$0 = `['expression$0', 'expression$1']`
-      expression$0 = `console.log("true")`
-      expression$1 = `congole.log(42)`
-    body$1 = `['expression$0']`
-      expression$0 = `console.log("false")`
+    body$0 = `['call$0', 'call$1']`
+      call$0 = `console.log("true")`
+      call$1 = `congole.log(42)`
+    body$1 = `['call$0']`
+      call$0 = `console.log("false")`
 File: test.tsx
   expression$0 = `d = <div> "abc" </div>`
   function tsx()

@@ -244,6 +244,20 @@ class Tests:
 
         type myRecord = {x: int, y?: option<string>}
         type myList = list<int>
+
+        let conditional = () => {
+            if (x == 1) {
+                Console.log("x is 1")
+            } else {
+                Console.log("x is not 1")
+            }
+        }
+
+        let sw = x =>
+            switch x {
+            | 1 => Console.log("x is 1")
+            | _ => Console.log("x is not 1")
+         }
     """
         )
         .lstrip()
