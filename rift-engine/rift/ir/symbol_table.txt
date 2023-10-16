@@ -788,6 +788,163 @@ Module: N
    body_sub: (169, 365)
    body: ['struct', 'with_named_args', 'f1', 'f2', 'v1', 'v2', 'end']
    parent: test.ml
+=== Symbol Table for test.res ===
+File: test.res
+   language: python
+   range: ((0, 0), (31, 1))
+   substring: (0, 636)
+   body_sub: (0, 636)
+   body: ['z0', 'z1', 'z2', 'z', 'zz', 'zzz', 'mulWithDefault', 'SomeRSModule', 'multiple', 'bindings', 'let_declaration', 'myRecord', 'myList', 'expression$0']
+Value: z0
+   language: rescript
+   range: ((0, 0), (0, 12))
+   substring: (0, 12)
+   body_sub: (9, 12)
+   parent: test.res
+Value: z1
+   language: rescript
+   range: ((1, 0), (1, 14))
+   substring: (13, 27)
+   body_sub: (24, 27)
+   parent: test.res
+   type: int
+Value: z2
+   language: rescript
+   range: ((2, 0), (2, 16))
+   substring: (28, 44)
+   body_sub: (41, 44)
+   parent: test.res
+   type: int
+Value: z
+   language: rescript
+   range: ((3, 0), (3, 15))
+   substring: (45, 60)
+   body_sub: (57, 60)
+   parent: test.res
+Value: zz
+   language: rescript
+   range: ((4, 0), (4, 22))
+   substring: (61, 83)
+   body_sub: (80, 83)
+   parent: test.res
+Value: zzz
+   language: rescript
+   range: ((5, 0), (5, 25))
+   substring: (84, 109)
+   body_sub: (106, 109)
+   parent: test.res
+Function: mulWithDefault
+   language: rescript
+   range: ((7, 0), (12, 1))
+   substring: (111, 211)
+   body_sub: (150, 211)
+   parent: test.res
+   parameters: [~def:int, x, y]
+Function: annot
+   language: rescript
+   range: ((15, 2), (15, 34))
+   substring: (239, 271)
+   scope: SomeRSModule.
+   body_sub: (265, 271)
+   parent: SomeRSModule
+   parameters: [x:int]
+   return_type: int
+Function: paramsWithDefault
+   language: rescript
+   range: ((16, 2), (16, 79))
+   substring: (274, 351)
+   scope: SomeRSModule.
+   body_sub: (347, 351)
+   parent: SomeRSModule
+   parameters: [~x:int=3, ~y=4.0, ~z:option<int>=?, ~w=?, ()]
+Module: SomeRSModule
+   language: rescript
+   range: ((14, 0), (17, 1))
+   substring: (213, 353)
+   body_sub: (232, 353)
+   body: ['annot', 'paramsWithDefault']
+   parent: test.res
+Function: multiple
+   language: rescript
+   range: ((19, 0), (19, 56))
+   substring: (355, 411)
+   body_sub: (395, 411)
+   parent: test.res
+   parameters: [x:int, y:int]
+   return_type: int
+Function: bindings
+   language: rescript
+   range: ((20, 0), (20, 40))
+   substring: (412, 452)
+   body_sub: (435, 452)
+   parent: test.res
+   parameters: [z:int]
+   return_type: int
+TypeDefinition: myRecord
+   language: rescript
+   range: ((24, 0), (24, 44))
+   substring: (490, 534)
+   parent: test.res
+   type: {x: int, y?: option<string>}
+TypeDefinition: myList
+   language: rescript
+   range: ((25, 0), (25, 23))
+   substring: (535, 558)
+   parent: test.res
+   type: list<int>
+Guard: guard$0
+   language: rescript
+   range: ((27, 3), (27, 11))
+   substring: (563, 571)
+   scope: expression$0.if$0.
+   parent: expression$0.if$0
+   condition: (x == 1)
+Expression: expression$0
+   language: rescript
+   range: ((28, 2), (28, 23))
+   substring: (576, 597)
+   scope: expression$0.if$0.body$0.
+   parent: expression$0.if$0.body$0
+   code: Console.log("x is 1")
+Body: body$0
+   language: rescript
+   range: ((27, 12), (29, 1))
+   substring: (572, 599)
+   scope: expression$0.if$0.
+   body: ['expression$0']
+   parent: expression$0.if$0
+   block: ['expression$0']
+Expression: expression$0
+   language: rescript
+   range: ((30, 2), (30, 27))
+   substring: (609, 634)
+   scope: expression$0.if$0.body$1.
+   parent: expression$0.if$0.body$1
+   code: Console.log("x is not 1")
+Body: body$1
+   language: rescript
+   range: ((29, 7), (31, 1))
+   substring: (605, 636)
+   scope: expression$0.if$0.
+   body: ['expression$0']
+   parent: expression$0.if$0
+   block: ['expression$0']
+If: if$0
+   language: rescript
+   range: ((27, 0), (31, 1))
+   substring: (560, 636)
+   scope: expression$0.
+   body: ['guard$0', 'body$0', 'body$1']
+   parent: expression$0
+   if_case: Case(guard$0, body$0)
+   else_body: body$1
+Expression: expression$0
+   language: rescript
+   range: ((27, 0), (31, 1))
+   substring: (560, 636)
+   body: ['if$0']
+   parent: test.res
+   code: if$0
 === Symbol Table for test.rb ===
 File: test.rb
    language: python
@@ -882,6 +1039,45 @@ Module: Foo
    body_sub: (807, 1015)
    body: ['module', 'constant', 'Bar', 'end']
    parent: test.rb
+=== Symbol Table for test.lean ===
+File: test.lean
+   language: python
+   range: ((0, 0), (31, 72))
+   substring: (0, 1415)
+   body_sub: (0, 1415)
+   body: ['comment', 'getGreeting', 'comment', 'comment', 'main', 'Prio', 'constAlgHom_eq_algebra_ofId']
+Def: getGreeting
+   language: lean
+   range: ((1, 0), (1, 71))
+   substring: (65, 136)
+   body_sub: (97, 99)
+   parent: test.lean
+Def: main
+   language: lean
+   range: ((4, 0), (11, 27))
+   substring: (276, 549)
+   body_sub: (295, 297)
+   parent: test.lean
+Structure: Algebra
+   language: lean
+   range: ((21, 0), (25, 22))
+   substring: (993, 1233)
+   scope: Prio.
+   body_sub: (1007, 1233)
+   parent: Prio
+Section: Prio
+   language: lean
+   range: ((12, 0), (26, 8))
+   substring: (550, 1242)
+   body_sub: (562, 1242)
+   body: ['section', 'identifier', 'comment', 'comment', 'comment', 'comment', 'comment', 'Algebra', 'end', 'identifier']
+   parent: test.lean
+Theorem: constAlgHom_eq_algebra_ofId
+   language: lean
+   range: ((27, 0), (30, 71))
+   substring: (1243, 1414)
+   body_sub: (1334, 1336)
+   parent: test.lean
 
 === Project Map ===
 File: test.c
@@ -990,6 +1186,28 @@ File: test.ml
     and f2 (x:int) : int
     let v1
     let v2:int
+File: test.res
+  let (z0)
+  let z1:int
+  let (z2:int)
+  let z3 as z
+  let (z4:int) as zz
+  let ((z5:int) as zzz)
+  let mulWithDefault = (~def: int, x, y)
+  module SomeRSModule
+    let annot = (x:int) : int
+    let paramsWithDefault = (~x: int=3, ~y=4.0, ~z: option<int>=?, ~w=?, ())
+  let rec multiple = (x:int, y:int) : int
+  and bindings = (z:int)
+  type myRecord = {x: int, y?: option<string>}
+  type myList = list<int>
+  expression$0 = `if$0`
+    if$0 = `if guard$0: body$0 else: body$1`
+      guard$0 = `(x == 1)`
+      body$0 = `['expression$0']`
+        expression$0 = `Console.log("x is 1")`
+      body$1 = `['expression$0']`
+        expression$0 = `Console.log("x is not 1")`
 File: test.rb
   def sum(a, b)
   def output
@@ -1003,3 +1221,10 @@ File: test.rb
   module Foo
     class Bar
       def pour(container, liquid)
+File: test.lean
+  def getGreeting (name : String)
+  def main : IO Unit
+  section Prio
+    class Algebra
+  @[simp]
+  theorem constAlgHom_eq_algebra_ofId : constAlgHom R A R = Algebra.ofId R (A → R)

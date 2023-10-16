@@ -1068,6 +1068,26 @@ class SymbolParser:
                 self.file.add_symbol(if_symbol)
                 return if_symbol
 
+        elif node.type == "if_expression" and language in ["rescript"] and node.child_count >= 3:
+            print(f"XXX\n{dump_node(node)}\nXXX")
+            guard_node = node.children[1]
+            body_node = node.children[2]
+            else_node = None
+            if node.child_count >= 4:
+                else_node = node.children[3]
+            if_symbol = self.mk_dummy_metasymbol(counter, "if")
+            scope = self.scope
+            if_guard = self.recurse(guard_node, scope, parent=if_symbol).parse_guard(counter)
+            if_body = self.recurse(body_node, scope, parent=if_symbol).parse_body(counter)
+            if_case = Case(guard=if_guard, body=if_body)
+            else_body = None
+            if else_node is not None and else_node.child_count >= 2:
+                else_body = self.recurse(else_node.children[1], scope, parent=if_symbol).parse_body(counter)
+            if_kind = IfKind(if_case=if_case, elif_cases=[], else_body=else_body)
+            self.update_dummy_symbol(symbol=if_symbol, symbol_kind=if_kind)
+            self.file.add_symbol(if_symbol)
+            return if_symbol
+
         elif node.type == "for_statement" and language == "python":
             left_node = node.child_by_field_name("left")
             right_node = node.child_by_field_name("right")
@@ -1085,7 +1105,7 @@ class SymbolParser:
 
         elif (
             node.type == "expression_statement"
-            and language in ["python"] + jslangs
+            and language in ["python", "rescript"] + jslangs
             and node.child_count == 1
         ):
             child = node.children[0]
@@ -1173,6 +1193,8 @@ class SymbolParser:
                     self.file.add_symbol(symbol)
             else:
                 logger.warning(f"Unexpected expression: {node.type}")
+        elif node.type == "if_expression" and self.language == "rescript":
+            self.parse_symbols(counter)
         elif node.type in ["await", "assignment", "binary_operator", "parenthesized_expression"]:
             for child in node.children:
                 self.node = child
