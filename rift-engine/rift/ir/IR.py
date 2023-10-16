@@ -630,7 +630,8 @@ class Symbol:
         start, end = self.substring_
         return self.code.bytes[start:end]
 
-    def get_qualified_id(self) -> QualifiedId:
+    @property
+    def qualified_id(self) -> QualifiedId:
         """
         Returns the qualified identifier of the IR node, which is the concatenation of its scope and name.
         """
@@ -686,7 +687,7 @@ class Symbol:
         if self.body != []:
             lines.append(f"   body: {self.body}")
         if self.parent:
-            lines.append(f"   parent: {self.parent.get_qualified_id()}")
+            lines.append(f"   parent: {self.parent.qualified_id}")
         self.kind.dump(lines)
 
     def name(self) -> str:
@@ -771,7 +772,7 @@ class File:
     def add_symbol(self, symbol: Symbol) -> None:
         if symbol.parent:
             symbol.parent.body.append(symbol)
-        self._symbol_table[symbol.get_qualified_id()] = symbol
+        self._symbol_table[symbol.qualified_id] = symbol
 
     def add_import(self, import_: Import) -> None:
         self._imports.append(import_)
