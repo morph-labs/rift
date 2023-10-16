@@ -1034,7 +1034,12 @@ class SymbolParser:
         node = self.node
         language = self.language
 
-        if node.type == "if_statement" and language == "python":
+        if node.type == "if_statement" and language in [
+            "python",
+            "javascript",
+            "tsx",
+            "typescript",
+        ]:
             guard_n = node.child_by_field_name("condition")
             body_n = node.child_by_field_name("consequence")
             if guard_n is not None and body_n is not None:
@@ -1048,22 +1053,32 @@ class SymbolParser:
                 alternative_nodes = node.children_by_field_name("alternative")
                 elif_cases: List[Case] = []
                 else_body: Optional[Symbol] = None
-                for an in alternative_nodes:
-                    if an.type == "elif_clause":
-                        guard_n = an.child_by_field_name("condition")
-                        body_n = an.child_by_field_name("consequence")
-                        if guard_n is None or body_n is None:
-                            continue
-                        guard = self.recurse(guard_n, scope, parent=if_symbol).parse_guard(counter)
-                        body = self.recurse(body_n, scope, parent=if_symbol).parse_body(counter)
-                        elif_cases.append(Case(guard=guard, body=body))
-                    elif an.type == "else_clause":
-                        else_n = an.child_by_field_name("body")
-                        # TODO: there can be comments in the else clause before the body
-                        if else_n is not None:
-                            else_body = self.recurse(else_n, scope, parent=if_symbol).parse_body(
+                if language == "python":
+                    for an in alternative_nodes:
+                        if an.type == "elif_clause":
+                            guard_n = an.child_by_field_name("condition")
+                            body_n = an.child_by_field_name("consequence")
+                            if guard_n is None or body_n is None:
+                                continue
+                            guard = self.recurse(guard_n, scope, parent=if_symbol).parse_guard(
                                 counter
                             )
+                            body = self.recurse(body_n, scope, parent=if_symbol).parse_body(counter)
+                            elif_cases.append(Case(guard=guard, body=body))
+                        elif an.type == "else_clause":
+                            else_n = an.child_by_field_name("body")
+                            # TODO: there can be comments in the else clause before the body
+                            if else_n is not None:
+                                else_body = self.recurse(
+                                    else_n, scope, parent=if_symbol
+                                ).parse_body(counter)
+                elif len(alternative_nodes) == 1:
+                    an = alternative_nodes[0]
+                    if len(an.children) >= 2:  # else, body
+                        else_body = self.recurse(
+                            an.children[1], scope, parent=if_symbol
+                        ).parse_body(counter)
+
                 if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_body=else_body)
                 self.update_dummy_symbol(symbol=if_symbol, symbol_kind=if_kind)
                 self.file.add_symbol(if_symbol)

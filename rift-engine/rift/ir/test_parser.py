@@ -62,6 +62,12 @@ class Tests:
             text: string
         }
         type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
+
+        if (true) {
+            console.log("true")
+        } else {
+            console.log("false")
+        }
     """
         )
         .lstrip()
