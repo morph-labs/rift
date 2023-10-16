@@ -106,10 +106,10 @@ Interface: Animal
 === Symbol Table for test.ts ===
 File: test.ts
    language: python
-   range: ((0, 0), (13, 74))
-   substring: (0, 365)
-   body_sub: (0, 365)
-   body: ['a', 'ts', 'ts2', 'A', 'RunHelperSyncResult', 'HelperStatus']
+   range: ((0, 0), (19, 1))
+   substring: (0, 438)
+   body_sub: (0, 438)
+   body: ['a', 'ts', 'ts2', 'A', 'RunHelperSyncResult', 'HelperStatus', 'if$0']
 TypeDefinition: a
    language: typescript
    range: ((0, 0), (0, 24))
@@ -169,6 +169,37 @@ TypeDefinition: HelperStatus
    range: ((13, 0), (13, 74))
    substring: (291, 365)
    parent: test.ts
+Guard: guard$0
+   language: typescript
+   range: ((15, 3), (15, 9))
+   substring: (370, 376)
+   scope: if$0.
+   parent: if$0
+   condition: (true)
+Body: body$0
+   language: typescript
+   range: ((15, 10), (17, 1))
+   substring: (377, 404)
+   scope: if$0.
+   body: ['{', 'expression_statement', '}']
+   parent: if$0
+   block: ['{', 'expression_statement', '}']
+Body: body$1
+   language: typescript
+   range: ((17, 7), (19, 1))
+   substring: (410, 438)
+   scope: if$0.
+   body: ['{', 'expression_statement', '}']
+   parent: if$0
+   block: ['{', 'expression_statement', '}']
+If: if$0
+   language: typescript
+   range: ((15, 0), (19, 1))
+   substring: (367, 438)
+   body: ['guard$0', 'body$0', 'body$1']
+   parent: test.ts
+   if_case: Case(guard$0, body$0)
+   else_body: body$1
 === Symbol Table for test.tsx ===
 File: test.tsx
    language: python
@@ -849,6 +880,10 @@ File: test.ts
     async load(v: number)
   interface RunHelperSyncResult
   type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
+  if$0 = `if guard$0: body$0 else: body$1`
+    guard$0 = `(true)`
+    body$0 = `['{', 'expression_statement', '}']`
+    body$1 = `['{', 'expression_statement', '}']`
 File: test.tsx
   function tsx()
 File: test.py
