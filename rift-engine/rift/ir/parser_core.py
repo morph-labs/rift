@@ -30,6 +30,7 @@ from .IR import (
     SectionKind,
     StructureKind,
     Substring,
+    SwitchKind,
     Symbol,
     SymbolKind,
     TheoremKind,
@@ -769,6 +770,14 @@ class SymbolParser:
                         if self.body_sub is not None:
                             self.body_sub = (nodes[-2].start_byte, self.body_sub[1])
 
+            def parse_res_body(exp: Node, parent: Symbol, id_name: str) -> None:
+                if exp.type == "function":
+                    body_node = exp.child_by_field_name("body")
+                    if body_node is not None:
+                        counter = Counter()
+                        scope = self.scope + id_name + "."
+                        self.recurse(body_node, scope, parent=parent).parse_expression(counter)
+
             def parse_res_let_binding(nodes: List[Node], parents: List[Node]) -> Optional[Symbol]:
                 id = None
                 exp = None
@@ -813,13 +822,15 @@ class SymbolParser:
                         type: Optional[Type] = None
                         if typ is not None and typ.child_count >= 2:
                             type = parse_type(language, typ.children[1])
-                        declaration = self.mk_val_decl(id=id, parents=parents, type=type)
+                        symbol = self.mk_val_decl(id=id, parents=parents, type=type)
                     else:
-                        declaration = self.mk_fun_decl(
+                        symbol = self.mk_fun_decl(
                             id=id, parents=parents, parameters=parameters, return_type=return_type
                         )
-                    self.file.add_symbol(declaration)
-                    return declaration
+                    if exp is not None:
+                        parse_res_body(exp, symbol, id.text.decode())
+                    self.file.add_symbol(symbol)
+                    return symbol
 
             declarations: List[Symbol] = []
             for child in node.children:
@@ -1068,6 +1079,27 @@ class SymbolParser:
                 self.file.add_symbol(if_symbol)
                 return if_symbol
 
+        elif node.type == "if_expression" and language in ["rescript"] and node.child_count >= 3:
+            guard_node = node.children[1]
+            body_node = node.children[2]
+            else_node = None
+            if node.child_count >= 4:
+                else_node = node.children[3]
+            if_symbol = self.mk_dummy_metasymbol(counter, "if")
+            scope = self.scope
+            if_guard = self.recurse(guard_node, scope, parent=if_symbol).parse_guard(counter)
+            if_body = self.recurse(body_node, scope, parent=if_symbol).parse_body(counter)
+            if_case = Case(guard=if_guard, body=if_body)
+            else_body = None
+            if else_node is not None and else_node.child_count >= 2:
+                else_body = self.recurse(else_node.children[1], scope, parent=if_symbol).parse_body(
+                    counter
+                )
+            if_kind = IfKind(if_case=if_case, elif_cases=[], else_body=else_body)
+            self.update_dummy_symbol(symbol=if_symbol, symbol_kind=if_kind)
+            self.file.add_symbol(if_symbol)
+            return if_symbol
+
         elif node.type == "for_statement" and language == "python":
             left_node = node.child_by_field_name("left")
             right_node = node.child_by_field_name("right")
@@ -1085,7 +1117,7 @@ class SymbolParser:
 
         elif (
             node.type == "expression_statement"
-            and language in ["python"] + jslangs
+            and language in ["python", "rescript"] + jslangs
             and node.child_count == 1
         ):
             child = node.children[0]
@@ -1103,6 +1135,31 @@ class SymbolParser:
                 self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code))
                 self.file.add_symbol(symbol)
                 return symbol
+
+        elif node.type == "switch_expression" and language in ["rescript"]:
+            if node.child_count >= 3:
+                switch_symbol = self.mk_dummy_metasymbol(counter, "switch")
+                scope = self.scope
+                expression_node = node.children[1]
+                expression = self.recurse(expression_node, scope, parent=switch_symbol).parse_guard(
+                    counter
+                )
+                cases: List[Case] = []
+                for case_node in node.children[2:]:
+                    pattern_node = case_node.child_by_field_name("pattern")
+                    body_node = case_node.child_by_field_name("body")
+                    if pattern_node is not None and body_node is not None:
+                        pattern = self.recurse(
+                            pattern_node, scope, parent=switch_symbol
+                        ).parse_guard(counter)
+                        body = self.recurse(body_node, scope, parent=switch_symbol).parse_body(
+                            counter
+                        )
+                        cases.append(Case(guard=pattern, body=body))
+                switch_kind = SwitchKind(expression=expression, cases=cases, default=None)
+                self.update_dummy_symbol(symbol=switch_symbol, symbol_kind=switch_kind)
+                self.file.add_symbol(switch_symbol)
+                return switch_symbol
 
     def parse_expression(self, counter: Counter) -> Expression:
         """
@@ -1136,7 +1193,7 @@ class SymbolParser:
 
     @classmethod
     def expression_requires_node(cls, node: Node) -> bool:
-        if node.type in ["call"]:
+        if node.type in ["call", "call_expression"]:
             return True
         else:
             return False
@@ -1145,7 +1202,7 @@ class SymbolParser:
         node = self.node
         symbol: Optional[Symbol] = None
         if self.expression_requires_node(node):
-            if node.type == "call":
+            if node.type in ["call", "call_expression"]:
                 function_node = node.child_by_field_name("function")
                 if function_node is None:
                     logger.warning(f"Unexpected call node structure: {node.text.decode()}")
@@ -1173,6 +1230,10 @@ class SymbolParser:
                     self.file.add_symbol(symbol)
             else:
                 logger.warning(f"Unexpected expression: {node.type}")
+        elif node.type in ["if_expression", "switch_expression"] and self.language == "rescript":
+            self.parse_symbols(counter)
+        elif node.type == "block" and self.language == "rescript":
+            self.parse_block()
         elif node.type in ["await", "assignment", "binary_operator", "parenthesized_expression"]:
             for child in node.children:
                 self.node = child
