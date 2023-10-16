@@ -147,9 +147,9 @@ def replace_functions_in_document(
                 docstring = textwrap.indent(docstring, " " * old_indent)
                 new_bytes = docstring.encode("utf-8") + b"\n"
             elif replace == Replace.SIGNATURE:
-                new_function_text = function_in_blocks.get_substring_without_body()
+                new_function_text = function_in_blocks.substring_without_body
                 logger.info(f"{new_function_text=}")
-                old_function_text = function_declaration.get_substring_without_body()
+                old_function_text = function_declaration.substring_without_body
                 # Get trailing newline and/or whitespace from old text
                 old_trailing_whitespace = re.search(rb"\s*$", old_function_text)
                 # Add it to new text
