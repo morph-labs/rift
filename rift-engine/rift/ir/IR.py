@@ -673,7 +673,7 @@ class Symbol:
         else:
             id = self.id
         lines.append(
-            f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+            f"{self.name()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
         )
         if self.scope != "":
             lines.append(f"   scope: {self.scope}")
@@ -689,7 +689,7 @@ class Symbol:
             lines.append(f"   parent: {self.parent.get_qualified_id()}")
         self.symbol_kind.dump(lines)
 
-    def kind(self) -> str:
+    def name(self) -> str:
         return self.symbol_kind.name()
 
 
