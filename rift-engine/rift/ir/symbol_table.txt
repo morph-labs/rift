@@ -77,7 +77,7 @@ Class: Bicycle
    substring: (21, 205)
    docstring: // This is docstring
    body_sub: (42, 205)
-   body: ['{', 'line_comment', 'field_declaration', 'line_comment', 'braking', '}']
+   body: ['line_comment', 'field_declaration', 'line_comment', 'braking']
    parent: test.java
 Function: sum
    language: java
@@ -95,7 +95,7 @@ Class: Math
    substring: (231, 345)
    docstring: /* This is docstring */
    body_sub: (249, 345)
-   body: ['{', 'sum', '}']
+   body: ['sum']
    parent: test.java
 Interface: Animal
    language: java
@@ -156,7 +156,7 @@ Class: A
    substring: (141, 224)
    exported: True
    body_sub: (149, 224)
-   body: ['{', 'constructor', 'load', '}']
+   body: ['constructor', 'load']
    parent: test.ts
 Interface: RunHelperSyncResult
    language: typescript
@@ -181,17 +181,17 @@ Body: body$0
    range: ((15, 10), (17, 1))
    substring: (377, 404)
    scope: if$0.
-   body: ['{', 'expression_statement', '}']
+   body: ['expression_statement']
    parent: if$0
-   block: ['{', 'expression_statement', '}']
+   block: ['expression_statement']
 Body: body$1
    language: typescript
    range: ((17, 7), (19, 1))
    substring: (410, 438)
    scope: if$0.
-   body: ['{', 'expression_statement', '}']
+   body: ['expression_statement']
    parent: if$0
-   block: ['{', 'expression_statement', '}']
+   block: ['expression_statement']
 If: if$0
    language: typescript
    range: ((15, 0), (19, 1))
@@ -619,14 +619,14 @@ Class: student
    substring: (76, 139)
    scope: namespace_name::
    body_sub: (90, 139)
-   body: ['{', 'access_specifier', 'print', '}']
+   body: ['access_specifier', 'print']
    parent: namespace_name
 Namespace: namespace_name
    language: cpp
    range: ((0, 0), (7, 1))
    substring: (0, 142)
    body_sub: (26, 142)
-   body: ['{', 'add', 'student', ';', '}']
+   body: ['add', 'student', ';']
    parent: test.cpp
 === Symbol Table for test.cs ===
 File: test.cs
@@ -652,7 +652,7 @@ Class: SampleClass
    scope: SampleNamespace::
    docstring: // This is docstring
    body_sub: (100, 221)
-   body: ['{', 'sum', '}']
+   body: ['sum']
    parent: SampleNamespace
 Namespace: SampleNamespace
    language: c_sharp
@@ -660,7 +660,7 @@ Namespace: SampleNamespace
    substring: (21, 223)
    docstring: // This is docstring
    body_sub: (47, 223)
-   body: ['{', 'comment', 'SampleClass', '}']
+   body: ['comment', 'SampleClass']
    parent: test.cs
 Interface: IEquatable
    language: c_sharp
@@ -882,8 +882,8 @@ File: test.ts
   type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
   if$0 = `if guard$0: body$0 else: body$1`
     guard$0 = `(true)`
-    body$0 = `['{', 'expression_statement', '}']`
-    body$1 = `['{', 'expression_statement', '}']`
+    body$0 = `['expression_statement']`
+    body$1 = `['expression_statement']`
 File: test.tsx
   function tsx()
 File: test.py

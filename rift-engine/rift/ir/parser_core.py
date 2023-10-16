@@ -1194,6 +1194,8 @@ class SymbolParser:
         counter = Counter()
         self_ = self
         for child in self.node.children:
+            if child.type in ["{", "}"]:
+                continue
             self = self_.recurse(child, self_.scope, parent=self_.parent)
             symbols = self.recurse(self.node, self.scope, parent=self.parent).parse_symbols(counter)
             import_ = parse_import(self.node)
