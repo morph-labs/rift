@@ -229,6 +229,10 @@ class SymbolKind(ABC):
     @abstractproperty
     def name(self) -> SymbolKindName:
         raise NotImplementedError
+    
+    @property
+    def parent(self) -> Optional["Symbol"]:
+        return self.symbol.parent
 
     def dump(self, lines: List[str]) -> None:
         pass
