@@ -65,6 +65,7 @@ class Tests:
 
         if (true) {
             console.log("true")
+            congole.log(42)
         } else {
             console.log("false")
         }

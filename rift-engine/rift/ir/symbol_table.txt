@@ -106,9 +106,9 @@ Interface: Animal
 === Symbol Table for test.ts ===
 File: test.ts
    language: python
-   range: ((0, 0), (19, 1))
-   substring: (0, 438)
-   body_sub: (0, 438)
+   range: ((0, 0), (20, 1))
+   substring: (0, 458)
+   body_sub: (0, 458)
    body: ['a', 'ts', 'ts2', 'A', 'RunHelperSyncResult', 'HelperStatus', 'if$0']
 TypeDefinition: a
    language: typescript
@@ -183,33 +183,40 @@ Expression: expression$0
    scope: if$0.body$0.
    parent: if$0.body$0
    code: console.log("true")
+Expression: expression$1
+   language: typescript
+   range: ((17, 4), (17, 19))
+   substring: (407, 422)
+   scope: if$0.body$0.
+   parent: if$0.body$0
+   code: congole.log(42)
 Body: body$0
    language: typescript
-   range: ((15, 10), (17, 1))
-   substring: (377, 404)
+   range: ((15, 10), (18, 1))
+   substring: (377, 424)
    scope: if$0.
-   body: ['expression$0']
+   body: ['expression$0', 'expression$1']
    parent: if$0
-   block: ['expression$0']
+   block: ['expression$0', 'expression$1']
 Expression: expression$0
    language: typescript
-   range: ((18, 4), (18, 24))
-   substring: (416, 436)
+   range: ((19, 4), (19, 24))
+   substring: (436, 456)
    scope: if$0.body$1.
    parent: if$0.body$1
    code: console.log("false")
 Body: body$1
    language: typescript
-   range: ((17, 7), (19, 1))
-   substring: (410, 438)
+   range: ((18, 7), (20, 1))
+   substring: (430, 458)
    scope: if$0.
    body: ['expression$0']
    parent: if$0
    block: ['expression$0']
 If: if$0
    language: typescript
-   range: ((15, 0), (19, 1))
-   substring: (367, 438)
+   range: ((15, 0), (20, 1))
+   substring: (367, 458)
    body: ['guard$0', 'body$0', 'body$1']
    parent: test.ts
    if_case: Case(guard$0, body$0)
@@ -902,8 +909,9 @@ File: test.ts
   type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
   if$0 = `if guard$0: body$0 else: body$1`
     guard$0 = `(true)`
-    body$0 = `['expression$0']`
+    body$0 = `['expression$0', 'expression$1']`
       expression$0 = `console.log("true")`
+      expression$1 = `congole.log(42)`
     body$1 = `['expression$0']`
       expression$0 = `console.log("false")`
 File: test.tsx
