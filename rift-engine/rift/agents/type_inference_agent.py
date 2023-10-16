@@ -206,7 +206,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
         code_blocks = extract_blocks_from_response(response)
         if self.debug:
             logger.info(f"code_blocks:\n{code_blocks}\n")
-        filter_function_ids = [mt.function_declaration.get_qualified_id() for mt in missing_types]
+        filter_function_ids = [mt.function_declaration.qualified_id for mt in missing_types]
         return replace_functions_from_code_blocks(
             code_blocks=code_blocks,
             document=document,
@@ -408,7 +408,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
                 missing_types = [
                     mt
                     for mt in fmt.missing_types
-                    if mt.function_declaration.get_qualified_id() in symbols_per_file[full_path]
+                    if mt.function_declaration.qualified_id in symbols_per_file[full_path]
                 ]
                 if missing_types != []:
                     fmt.missing_types = missing_types
