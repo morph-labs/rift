@@ -223,6 +223,8 @@ SymbolKindName = Literal[
 class SymbolKind(ABC):
     """Abstract class for symbol kinds."""
 
+    symbol: "Symbol"
+
     @abstractmethod
     def name(self) -> SymbolKindName:
         raise NotImplementedError
@@ -709,7 +711,8 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
         last_char_in_line = end_byte - last_newline_pos - 1
     range = ((first_line, 0), (last_line, last_char_in_line))
 
-    return Symbol(
+    dummy_kind : SymbolKind = None # type: ignore
+    symbol = Symbol(
         body=Block(),
         body_sub=body_sub,
         code=code,
@@ -721,8 +724,10 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
         range=range,
         scope="",
         substring=body_sub,
-        symbol_kind=FileKind(),
+        symbol_kind=dummy_kind,
     )
+    symbol.symbol_kind = FileKind(symbol)
+    return symbol
 
 
 @dataclass
