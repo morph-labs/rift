@@ -252,6 +252,12 @@ class Tests:
                 Console.log("x is not 1")
             }
         }
+
+        let sw = x =>
+            switch x {
+            | 1 => Console.log("x is 1")
+            | _ => Console.log("x is not 1")
+         }
     """
         )
         .lstrip()
