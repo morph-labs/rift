@@ -176,22 +176,36 @@ Guard: guard$0
    scope: if$0.
    parent: if$0
    condition: (true)
+Expression: expression$0
+   language: typescript
+   range: ((16, 4), (16, 23))
+   substring: (383, 402)
+   scope: if$0.body$0.
+   parent: if$0.body$0
+   code: console.log("true")
 Body: body$0
    language: typescript
    range: ((15, 10), (17, 1))
    substring: (377, 404)
    scope: if$0.
-   body: ['expression_statement']
+   body: ['expression$0']
    parent: if$0
-   block: ['expression_statement']
+   block: ['expression$0']
+Expression: expression$0
+   language: typescript
+   range: ((18, 4), (18, 24))
+   substring: (416, 436)
+   scope: if$0.body$1.
+   parent: if$0.body$1
+   code: console.log("false")
 Body: body$1
    language: typescript
    range: ((17, 7), (19, 1))
    substring: (410, 438)
    scope: if$0.
-   body: ['expression_statement']
+   body: ['expression$0']
    parent: if$0
-   block: ['expression_statement']
+   block: ['expression$0']
 If: if$0
    language: typescript
    range: ((15, 0), (19, 1))
@@ -206,7 +220,13 @@ File: test.tsx
    range: ((0, 0), (1, 27))
    substring: (0, 50)
    body_sub: (0, 50)
-   body: ['expression_statement', 'tsx']
+   body: ['expression$0', 'tsx']
+Expression: expression$0
+   language: tsx
+   range: ((0, 0), (0, 22))
+   substring: (0, 22)
+   parent: test.tsx
+   code: d = <div> "abc" </div>
 Function: tsx
    language: tsx
    range: ((1, 0), (1, 27))
@@ -882,9 +902,12 @@ File: test.ts
   type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
   if$0 = `if guard$0: body$0 else: body$1`
     guard$0 = `(true)`
-    body$0 = `['expression_statement']`
-    body$1 = `['expression_statement']`
+    body$0 = `['expression$0']`
+      expression$0 = `console.log("true")`
+    body$1 = `['expression$0']`
+      expression$0 = `console.log("false")`
 File: test.tsx
+  expression$0 = `d = <div> "abc" </div>`
   function tsx()
 File: test.py
   class A(C,D):
