@@ -70,7 +70,7 @@ class Block(List["Symbol"]):
     pass
 
     def __str__(self) -> str:
-        return f"{[x.name for x in self]}"
+        return f"{[x.id for x in self]}"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -82,7 +82,7 @@ class Case:
     body: "Symbol"
 
     def __str__(self) -> str:
-        return f"Case({self.guard.name}, {self.body.name})"
+        return f"Case({self.guard.id}, {self.body.id})"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -368,10 +368,10 @@ class ForKind(MetaSymbolKind):
         return "For"
 
     def dump(self, lines: List[str]) -> None:
-        lines.append(f"   for {self.left} in {self.right}: {self.body.name}")
+        lines.append(f"   for {self.left} in {self.right}: {self.body.id}")
 
     def __str__(self) -> str:
-        return f"for {self.left} in {self.right}: {self.body.name}"
+        return f"for {self.left} in {self.right}: {self.body.id}"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -447,14 +447,14 @@ class IfKind(MetaSymbolKind):
         if self.elif_cases != []:
             lines.append(f"   elif_cases: {self.elif_cases}")
         if self.else_body:
-            lines.append(f"   else_body: {self.else_body.name}")
+            lines.append(f"   else_body: {self.else_body.id}")
 
     def __str__(self) -> str:
-        if_str = f"if {self.if_case.guard.name}: {self.if_case.body.name}"
+        if_str = f"if {self.if_case.guard.id}: {self.if_case.body.id}"
         elif_str = "".join(
-            [f" elif {case.guard.name}: {case.body.name}" for case in self.elif_cases]
+            [f" elif {case.guard.id}: {case.body.id}" for case in self.elif_cases]
         )
-        else_str = f" else: {self.else_body.name}" if self.else_body else ""
+        else_str = f" else: {self.else_body.id}" if self.else_body else ""
         return f"{if_str}{elif_str}{else_str}"
 
     def __repr__(self) -> str:
@@ -521,14 +521,14 @@ class SwitchKind(MetaSymbolKind):
         return "Switch"
 
     def dump(self, lines: List[str]) -> None:
-        lines.append(f"   expression: {self.expression.name}")
+        lines.append(f"   expression: {self.expression.id}")
         lines.append(f"   cases: {self.cases}")
         if self.default:
-            lines.append(f"   default: {self.default.name}")
+            lines.append(f"   default: {self.default.id}")
 
     def __str__(self) -> str:
-        default_str = f" default: {self.default.name}" if self.default else ""
-        return f" switch {self.expression.name}: {self.cases}{default_str}"
+        default_str = f" default: {self.default.id}" if self.default else ""
+        return f" switch {self.expression.id}: {self.cases}{default_str}"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -618,7 +618,7 @@ class Symbol:
     docstring_sub: Optional[Substring]
     exported: bool
     language: Language
-    name: str
+    id: str
     range: Range
     parent: Optional["Symbol"]
     scope: Scope
@@ -635,7 +635,7 @@ class Symbol:
         """
         Returns the qualified identifier of the IR node, which is the concatenation of its scope and name.
         """
-        return self.scope + self.name
+        return self.scope + self.id
 
     def get_substring_without_body(self) -> bytes:
         """
@@ -669,9 +669,9 @@ class Symbol:
         """
         signature = self.symbol_kind.signature()
         if signature is not None:
-            id = self.name + signature
+            id = self.id + signature
         else:
-            id = self.name
+            id = self.id
         lines.append(
             f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
         )
@@ -719,7 +719,7 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
         docstring_sub=None,
         exported=False,
         language=language,
-        name=path,
+        id=path,
         parent=None,
         range=range,
         scope="",
@@ -758,9 +758,9 @@ class File:
     def search_symbol(self, name: Union[str, Callable[[str], bool]]) -> List[Symbol]:
         if callable(name):
             name_filter = name
-            return [symbol for symbol in self._symbol_table.values() if name_filter(symbol.name)]
+            return [symbol for symbol in self._symbol_table.values() if name_filter(symbol.id)]
         else:
-            return [symbol for symbol in self._symbol_table.values() if symbol.name == name]
+            return [symbol for symbol in self._symbol_table.values() if symbol.id == name]
 
     def search_module_import(self, module_name: str) -> Optional[Import]:
         for import_ in self._imports:
@@ -798,7 +798,7 @@ class File:
                 decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
                 lines.append(f"{' ' * indent}{decl_without_body}")
             else:
-                lines.append(f"{' ' * indent}{symbol.name} = `{symbol.symbol_kind}`")
+                lines.append(f"{' ' * indent}{symbol.id} = `{symbol.symbol_kind}`")
             for s in symbol.body:
                 dump_symbol(s, indent + 2)
 

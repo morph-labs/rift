@@ -313,7 +313,7 @@ class SymbolParser:
             docstring_sub=self.docstring_sub,
             exported=self.exported,
             language=self.language,
-            name=name,
+            id=name,
             parent=self.parent,
             range=(parents[0].start_point, parents[-1].end_point),
             scope=self.scope,
@@ -1204,7 +1204,7 @@ class SymbolParser:
             end -= self.node.start_byte
             # Ensure the symbol's start and end are within bounds of the code's length
             if start >= 0 and end <= len(code):
-                code = code[:start] + symbol.name + code[end:]
+                code = code[:start] + symbol.id + code[end:]
 
         return code
 
