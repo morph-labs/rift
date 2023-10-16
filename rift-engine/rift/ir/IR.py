@@ -636,7 +636,8 @@ class Symbol:
         """
         return self.scope + self.id
 
-    def get_substring_without_body(self) -> bytes:
+    @property
+    def substring_without_body(self) -> bytes:
         """
         Returns a substring of the code bytes that excludes the body of the IR node.
         If the body_sub attribute is None, returns the full substring of the IR node.
@@ -792,7 +793,7 @@ class File:
             if isinstance(symbol.kind, UnknownKind):
                 pass
             elif not isinstance(symbol.kind, MetaSymbolKind):
-                decl_without_body = symbol.get_substring_without_body().decode().strip()
+                decl_without_body = symbol.substring_without_body.decode().strip()
                 # indent the declaration
                 decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
                 lines.append(f"{' ' * indent}{decl_without_body}")

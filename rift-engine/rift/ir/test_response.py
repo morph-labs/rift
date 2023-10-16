@@ -151,7 +151,7 @@ class Test:
         class TestAddDocs:
             def dump_elements(self, elements: List[str]) -> None:
                 def dump_symbol(symbol: SymbolInfo) -> None:
-                    decl_without_body = symbol.get_substring_without_body().decode()
+                    decl_without_body = symbol.substring_without_body.decode()
                     elements.append(decl_without_body)
                     if isinstance(symbol, ContainerDeclaration):
                         for statement in symbol.body:
