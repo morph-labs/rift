@@ -211,6 +211,7 @@ SymbolKindName = Literal[
     "Namespace",
     "Section",
     "Structure",
+    "Switch",
     "Theorem",
     "TypeDefinition",
     "Unknown",
@@ -504,6 +505,31 @@ class StructureKind(SymbolKind):
 
     def name(self) -> SymbolKindName:
         return "Structure"
+
+
+@dataclass
+class SwitchKind(MetaSymbolKind):
+    """A symbol kind representing a switch statement."""
+
+    expression: "Symbol"
+    cases: List[Case]
+    default: Optional["Symbol"]
+
+    def name(self) -> SymbolKindName:
+        return "Switch"
+
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   expression: {self.expression.name}")
+        lines.append(f"   cases: {self.cases}")
+        if self.default:
+            lines.append(f"   default: {self.default.name}")
+
+    def __str__(self) -> str:
+        default_str = f" default: {self.default.name}" if self.default else ""
+        return f" switch {self.expression.name}: {self.cases}{default_str}"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 @dataclass

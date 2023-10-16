@@ -833,16 +833,74 @@ Value: zzz
    substring: (84, 109)
    body_sub: (106, 109)
    parent: test.res
+Guard: guard$0
+   language: rescript
+   range: ((8, 11), (8, 18))
+   substring: (166, 173)
+   scope: mulWithDefault.expression$0.switch$0.
+   parent: mulWithDefault.expression$0.switch$0
+   condition: (x * y)
+Guard: guard$1
+   language: rescript
+   range: ((9, 6), (9, 7))
+   substring: (182, 183)
+   scope: mulWithDefault.expression$0.switch$0.
+   parent: mulWithDefault.expression$0.switch$0
+   condition: 0
+Expression: expression$0
+   language: rescript
+   range: ((9, 11), (9, 14))
+   substring: (187, 190)
+   scope: mulWithDefault.expression$0.switch$0.body$0.
+   parent: mulWithDefault.expression$0.switch$0.body$0
+   code: def
+Body: body$0
+   language: rescript
+   range: ((9, 11), (9, 14))
+   substring: (187, 190)
+   scope: mulWithDefault.expression$0.switch$0.
+   body: ['expression$0']
+   parent: mulWithDefault.expression$0.switch$0
+   block: ['expression$0']
+Guard: guard$2
+   language: rescript
+   range: ((10, 6), (10, 7))
+   substring: (197, 198)
+   scope: mulWithDefault.expression$0.switch$0.
+   parent: mulWithDefault.expression$0.switch$0
+   condition: z
+Expression: expression$0
+   language: rescript
+   range: ((10, 11), (10, 12))
+   substring: (202, 203)
+   scope: mulWithDefault.expression$0.switch$0.body$1.
+   parent: mulWithDefault.expression$0.switch$0.body$1
+   code: z
+Body: body$1
+   language: rescript
+   range: ((10, 11), (10, 12))
+   substring: (202, 203)
+   scope: mulWithDefault.expression$0.switch$0.
+   body: ['expression$0']
+   parent: mulWithDefault.expression$0.switch$0
+   block: ['expression$0']
+Switch: switch$0
+   language: rescript
+   range: ((8, 4), (11, 5))
+   substring: (159, 209)
+   scope: mulWithDefault.expression$0.
+   body: ['guard$0', 'guard$1', 'body$0', 'guard$2', 'body$1']
+   parent: mulWithDefault.expression$0
+   expression: guard$0
+   cases: [Case(guard$1, body$0), Case(guard$2, body$1)]
 Expression: expression$0
    language: rescript
    range: ((8, 4), (11, 5))
    substring: (159, 209)
    scope: mulWithDefault.
+   body: ['switch$0']
    parent: mulWithDefault
-   code: switch (x * y) {
-    | 0 => def
-    | z => z
-    }
+   code: switch$0
 Function: mulWithDefault
    language: rescript
    range: ((7, 0), (12, 1))
@@ -964,11 +1022,72 @@ Value: conditional
    body_sub: (581, 688)
    body: ['expression$0']
    parent: test.res
+Guard: guard$0
+   language: rescript
+   range: ((36, 11), (36, 12))
+   substring: (715, 716)
+   scope: sw.switch$0.
+   parent: sw.switch$0
+   condition: x
+Guard: guard$1
+   language: rescript
+   range: ((37, 6), (37, 7))
+   substring: (725, 726)
+   scope: sw.switch$0.
+   parent: sw.switch$0
+   condition: 1
+Expression: expression$0
+   language: rescript
+   range: ((37, 11), (37, 32))
+   substring: (730, 751)
+   scope: sw.switch$0.body$0.
+   parent: sw.switch$0.body$0
+   code: Console.log("x is 1")
+Body: body$0
+   language: rescript
+   range: ((37, 11), (37, 32))
+   substring: (730, 751)
+   scope: sw.switch$0.
+   body: ['expression$0']
+   parent: sw.switch$0
+   block: ['expression$0']
+Guard: guard$2
+   language: rescript
+   range: ((38, 6), (38, 7))
+   substring: (758, 759)
+   scope: sw.switch$0.
+   parent: sw.switch$0
+   condition: _
+Expression: expression$0
+   language: rescript
+   range: ((38, 11), (38, 36))
+   substring: (763, 788)
+   scope: sw.switch$0.body$1.
+   parent: sw.switch$0.body$1
+   code: Console.log("x is not 1")
+Body: body$1
+   language: rescript
+   range: ((38, 11), (38, 36))
+   substring: (763, 788)
+   scope: sw.switch$0.
+   body: ['expression$0']
+   parent: sw.switch$0
+   block: ['expression$0']
+Switch: switch$0
+   language: rescript
+   range: ((36, 4), (39, 2))
+   substring: (708, 791)
+   scope: sw.
+   body: ['guard$0', 'guard$1', 'body$0', 'guard$2', 'body$1']
+   parent: sw
+   expression: guard$0
+   cases: [Case(guard$1, body$0), Case(guard$2, body$1)]
 Value: sw
    language: rescript
    range: ((35, 0), (39, 2))
    substring: (690, 791)
    body_sub: (701, 791)
+   body: ['switch$0']
    parent: test.res
 === Symbol Table for test.rb ===
 File: test.rb
@@ -1219,10 +1338,15 @@ File: test.res
   let (z4:int) as zz
   let ((z5:int) as zzz)
   let mulWithDefault = (~def: int, x, y)
-    expression$0 = `switch (x * y) {
-    | 0 => def
-    | z => z
-    }`
+    expression$0 = `switch$0`
+      switch$0 = ` switch guard$0: [Case(guard$1, body$0), Case(guard$2, body$1)]`
+        guard$0 = `(x * y)`
+        guard$1 = `0`
+        body$0 = `['expression$0']`
+          expression$0 = `def`
+        guard$2 = `z`
+        body$1 = `['expression$0']`
+          expression$0 = `z`
   module SomeRSModule
     let annot = (x:int) : int
     let paramsWithDefault = (~x: int=3, ~y=4.0, ~z: option<int>=?, ~w=?, ())
@@ -1239,6 +1363,14 @@ File: test.res
         body$1 = `['expression$0']`
           expression$0 = `Console.log("x is not 1")`
   let sw = x
+    switch$0 = ` switch guard$0: [Case(guard$1, body$0), Case(guard$2, body$1)]`
+      guard$0 = `x`
+      guard$1 = `1`
+      body$0 = `['expression$0']`
+        expression$0 = `Console.log("x is 1")`
+      guard$2 = `_`
+      body$1 = `['expression$0']`
+        expression$0 = `Console.log("x is not 1")`
 File: test.rb
   def sum(a, b)
   def output

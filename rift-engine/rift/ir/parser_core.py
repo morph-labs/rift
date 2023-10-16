@@ -30,6 +30,7 @@ from .IR import (
     SectionKind,
     StructureKind,
     Substring,
+    SwitchKind,
     Symbol,
     SymbolKind,
     TheoremKind,
@@ -1136,8 +1137,30 @@ class SymbolParser:
                 return symbol
 
         elif node.type == "switch_expression" and language in ["rescript"]:
-            print("TODO: switch_expression")
- 
+            if node.child_count >= 3:
+                switch_symbol = self.mk_dummy_metasymbol(counter, "switch")
+                scope = self.scope
+                expression_node = node.children[1]
+                expression = self.recurse(expression_node, scope, parent=switch_symbol).parse_guard(
+                    counter
+                )
+                cases: List[Case] = []
+                for case_node in node.children[2:]:
+                    pattern_node = case_node.child_by_field_name("pattern")
+                    body_node = case_node.child_by_field_name("body")
+                    if pattern_node is not None and body_node is not None:
+                        pattern = self.recurse(
+                            pattern_node, scope, parent=switch_symbol
+                        ).parse_guard(counter)
+                        body = self.recurse(body_node, scope, parent=switch_symbol).parse_body(
+                            counter
+                        )
+                        cases.append(Case(guard=pattern, body=body))
+                switch_kind = SwitchKind(expression=expression, cases=cases, default=None)
+                self.update_dummy_symbol(symbol=switch_symbol, symbol_kind=switch_kind)
+                self.file.add_symbol(switch_symbol)
+                return switch_symbol
+
     def parse_expression(self, counter: Counter) -> Expression:
         """
         Parse an expression to generate its corresponding code with symbols replaced by their names.
