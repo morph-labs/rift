@@ -242,7 +242,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
 
         response_stream._feed_task = asyncio.create_task(  # type: ignore
             self.add_task(  # type: ignore
-                f"Generate type annotations for {'/'.join(mt.function_declaration.name for mt in missing_types)}",
+                f"Generate type annotations for {'/'.join(mt.function_declaration.id for mt in missing_types)}",
                 feed_task,
             ).run()
         )
@@ -266,7 +266,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
 
             # also split if a function with the same name is in the current group (e.g. from another class)
             for mt2 in group:
-                if mt.function_declaration.name == mt2.function_declaration.name:
+                if mt.function_declaration.id == mt2.function_declaration.id:
                     do_split = True
                     break
 

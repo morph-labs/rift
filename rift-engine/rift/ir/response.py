@@ -84,7 +84,7 @@ def replace_functions_in_document(
     updated_functions: List[IR.Symbol] = []
 
     for function_declaration in function_declarations_in_document:
-        function_in_blocks_ = ir_blocks.search_symbol(function_declaration.name)
+        function_in_blocks_ = ir_blocks.search_symbol(function_declaration.id)
         function_in_blocks = None
         if len(function_in_blocks_) == 1:
             f0 = function_in_blocks_[0]
@@ -101,11 +101,11 @@ def replace_functions_in_document(
                 new_bytes = function_in_blocks.get_substring()
             elif replace == Replace.DOC:
                 if function_in_blocks.docstring is None:
-                    logger.warning(f"No docstring for function {function_declaration.name}")
+                    logger.warning(f"No docstring for function {function_declaration.id}")
                     continue
                 if function_declaration.docstring_sub is not None:
                     logger.warning(
-                        f"Docstring already exists for function {function_declaration.name}"
+                        f"Docstring already exists for function {function_declaration.id}"
                     )
                     continue
 
@@ -140,7 +140,7 @@ def replace_functions_in_document(
                             old_function_start - old_indent,
                         )
                 else:
-                    logger.warning(f"No body for function {function_declaration.name}")
+                    logger.warning(f"No body for function {function_declaration.id}")
                     continue
 
                 docstring = textwrap.dedent(" " * new_indent + function_in_blocks.docstring)
