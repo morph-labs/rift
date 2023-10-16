@@ -65,7 +65,7 @@ class MissingDocStringPrompt:
         n = 0
         for function in functions_missing_docstrings:
             n += 1
-            missing_str += f"{n}. {function.function_declaration.name}\n"
+            missing_str += f"{n}. {function.function_declaration.id}\n"
 
         return dedent(
             f"""
@@ -267,7 +267,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
 
         response_stream._feed_task = asyncio.create_task(  # type: ignore
             self.add_task(  # type: ignore
-                f"Write doc strings for {'/'.join(function.function_declaration.name for function in functions_missing_docstrings)}",
+                f"Write doc strings for {'/'.join(function.function_declaration.id for function in functions_missing_docstrings)}",
                 feed_task,
             ).run()
         )
@@ -292,7 +292,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
             split = len(group) == Config.max_size_group_missing_docstrings
             # also split if a function with the same name is in the current group (e.g. from another class)
             for function2 in group:
-                if function.function_declaration.name == function2.function_declaration.name:
+                if function.function_declaration.id == function2.function_declaration.id:
                     split = True
                     break
             if split:
@@ -380,7 +380,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
         async def log_missing(file_missing_docstrings: FileMissingDocstrings):
             await info_update(f"File: {file_missing_docstrings.ir_name.path}")
             for function in file_missing_docstrings.functions_missing_docstrings:
-                logger.info(f"Missing: {function.function_declaration.name}")
+                logger.info(f"Missing: {function.function_declaration.id}")
 
         async def get_user_response() -> str:
             result = await self.request_chat(

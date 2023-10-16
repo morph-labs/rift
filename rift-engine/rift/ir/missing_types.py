@@ -12,7 +12,7 @@ class MissingType:
     return_type: bool = False
 
     def __str__(self) -> str:
-        s = f"Function `{self.function_declaration.name}` is missing type annotations"
+        s = f"Function `{self.function_declaration.id}` is missing type annotations"
         if self.parameters != []:
             if len(self.parameters) == 1:
                 s += f" in parameter '{self.parameters[0]}'"
