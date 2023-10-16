@@ -220,8 +220,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
         if self.debug:
             logger.info(f"code_blocks: \n{code_blocks}\n")
         filter_function_ids = [
-            function.function_declaration.get_qualified_id()
-            for function in functions_missing_docstrings
+            function.function_declaration.qualified_id for function in functions_missing_docstrings
         ]
         x = replace_functions_from_code_blocks(
             code_blocks=code_blocks,
@@ -439,7 +438,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
                 functions_missing_docstrings = [
                     function_missing_docstrings
                     for function_missing_docstrings in file_missing_docstrings.functions_missing_docstrings
-                    if function_missing_docstrings.function_declaration.get_qualified_id()
+                    if function_missing_docstrings.function_declaration.qualified_id
                     in symbols_per_file[full_path]
                 ]
                 if functions_missing_docstrings != []:

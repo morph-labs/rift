@@ -76,7 +76,7 @@ class MetaLanguage:
                 if isinstance(x, IR.Symbol):
                     if not b:
                         self.report_check_failed(
-                            f"Check failed on {x.get_qualified_id()} in {self.get_file_path(x)}"
+                            f"Check failed on {x.qualified_id} in {self.get_file_path(x)}"
                         )
                 elif isinstance(
                     x, (IR.Field, IR.FunctionKind, IR.Parameter, IR.TypeDefinitionKind)

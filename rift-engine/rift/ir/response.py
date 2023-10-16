@@ -93,7 +93,7 @@ def replace_functions_in_document(
         if filter_function_ids is None:
             filter = True
         else:
-            filter = function_declaration.get_qualified_id() in filter_function_ids
+            filter = function_declaration.qualified_id in filter_function_ids
         if filter and function_in_blocks is not None:
             updated_functions.append(function_in_blocks)
             if replace == Replace.ALL:
