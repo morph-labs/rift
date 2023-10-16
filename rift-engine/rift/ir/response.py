@@ -88,7 +88,7 @@ def replace_functions_in_document(
         function_in_blocks = None
         if len(function_in_blocks_) == 1:
             f0 = function_in_blocks_[0]
-            if isinstance(f0.symbol_kind, IR.FunctionKind):
+            if isinstance(f0.kind, IR.FunctionKind):
                 function_in_blocks = f0
         if filter_function_ids is None:
             filter = True
@@ -177,8 +177,8 @@ def update_typing_imports(
     if typing_import is not None:
         typing_names = set(typing_import.names)
     for f in updated_functions:
-        if isinstance(f.symbol_kind, IR.FunctionKind):
-            fun_kind = f.symbol_kind
+        if isinstance(f.kind, IR.FunctionKind):
+            fun_kind = f.kind
             types_in_function = [p.type for p in fun_kind.parameters if p.type is not None]
             if fun_kind.return_type is not None:
                 types_in_function.append(fun_kind.return_type)

@@ -47,28 +47,28 @@ class MetaLanguage:
             if "Class" not in self.locals:
                 classes: List[IR.Symbol] = []
                 for symbol in self._all_symbols:
-                    if isinstance(symbol.symbol_kind, IR.ClassKind):
+                    if isinstance(symbol.kind, IR.ClassKind):
                         classes.append(symbol)
                 self.locals["Class"] = classes
         elif mv == "Function":
             if "Function" not in self.locals:
                 functions: List[IR.FunctionKind] = []
                 for symbol in self._all_symbols:
-                    if isinstance(symbol.symbol_kind, IR.FunctionKind):
-                        f = symbol.symbol_kind
+                    if isinstance(symbol.kind, IR.FunctionKind):
+                        f = symbol.kind
                         self.set_file_path(f, self.get_file_path(symbol))
                         for p in f.parameters:
                             self.set_file_path(p, self.get_file_path(symbol))
-                        functions.append(symbol.symbol_kind)
+                        functions.append(symbol.kind)
                 self.locals["Function"] = functions
         elif mv == "TypeDefinition":
             if "TypeDefinition" not in self.locals:
                 type_definitions: List[IR.TypeDefinitionKind] = []
                 for symbol in self._all_symbols:
-                    if isinstance(symbol.symbol_kind, IR.TypeDefinitionKind):
-                        td = symbol.symbol_kind
+                    if isinstance(symbol.kind, IR.TypeDefinitionKind):
+                        td = symbol.kind
                         self.set_file_path(td, self.get_file_path(symbol))
-                        type_definitions.append(symbol.symbol_kind)
+                        type_definitions.append(symbol.kind)
                 self.locals["TypeDefinition"] = type_definitions
         elif mv == "check":
 
