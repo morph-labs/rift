@@ -176,43 +176,46 @@ Guard: guard$0
    scope: if$0.
    parent: if$0
    condition: (true)
-Expression: expression$0
+Call: call$0
    language: typescript
    range: ((16, 4), (16, 23))
    substring: (383, 402)
    scope: if$0.body$0.
    parent: if$0.body$0
-   code: console.log("true")
-Expression: expression$1
+   function_name: console.log
+   arguments: ['"true"']
+Call: call$1
    language: typescript
    range: ((17, 4), (17, 19))
    substring: (407, 422)
    scope: if$0.body$0.
    parent: if$0.body$0
-   code: congole.log(42)
+   function_name: congole.log
+   arguments: ['42']
 Body: body$0
    language: typescript
    range: ((15, 10), (18, 1))
    substring: (377, 424)
    scope: if$0.
-   body: ['expression$0', 'expression$1']
+   body: ['call$0', 'call$1']
    parent: if$0
-   block: ['expression$0', 'expression$1']
-Expression: expression$0
+   block: ['call$0', 'call$1']
+Call: call$0
    language: typescript
    range: ((19, 4), (19, 24))
    substring: (436, 456)
    scope: if$0.body$1.
    parent: if$0.body$1
-   code: console.log("false")
+   function_name: console.log
+   arguments: ['"false"']
 Body: body$1
    language: typescript
    range: ((18, 7), (20, 1))
    substring: (430, 458)
    scope: if$0.
-   body: ['expression$0']
+   body: ['call$0']
    parent: if$0
-   block: ['expression$0']
+   block: ['call$0']
 If: if$0
    language: typescript
    range: ((15, 0), (20, 1))
@@ -933,19 +936,37 @@ Module: SomeRSModule
    body_sub: (232, 353)
    body: ['annot', 'paramsWithDefault']
    parent: test.res
+Call: call$0
+   language: rescript
+   range: ((19, 43), (19, 56))
+   substring: (398, 411)
+   scope: multiple.
+   parent: multiple
+   function_name: bindings
+   arguments: ['x+y']
 Function: multiple
    language: rescript
    range: ((19, 0), (19, 56))
    substring: (355, 411)
    body_sub: (395, 411)
+   body: ['call$0']
    parent: test.res
    parameters: [x:int, y:int]
    return_type: int
+Call: call$0
+   language: rescript
+   range: ((20, 26), (20, 40))
+   substring: (438, 452)
+   scope: bindings.
+   parent: bindings
+   function_name: multiple
+   arguments: ['z', ',', 'z']
 Function: bindings
    language: rescript
    range: ((20, 0), (20, 40))
    substring: (412, 452)
    body_sub: (435, 452)
+   body: ['call$0']
    parent: test.res
    parameters: [z:int]
    return_type: int
@@ -968,36 +989,38 @@ Guard: guard$0
    scope: conditional.expression$0.if$0.
    parent: conditional.expression$0.if$0
    condition: (x == 1)
-Expression: expression$0
+Call: call$0
    language: rescript
    range: ((29, 8), (29, 29))
    substring: (612, 633)
    scope: conditional.expression$0.if$0.body$0.
    parent: conditional.expression$0.if$0.body$0
-   code: Console.log("x is 1")
+   function_name: Console.log
+   arguments: ['"x is 1"']
 Body: body$0
    language: rescript
    range: ((28, 16), (30, 5))
    substring: (602, 639)
    scope: conditional.expression$0.if$0.
-   body: ['expression$0']
+   body: ['call$0']
    parent: conditional.expression$0.if$0
-   block: ['expression$0']
-Expression: expression$0
+   block: ['call$0']
+Call: call$0
    language: rescript
    range: ((31, 8), (31, 33))
    substring: (655, 680)
    scope: conditional.expression$0.if$0.body$1.
    parent: conditional.expression$0.if$0.body$1
-   code: Console.log("x is not 1")
+   function_name: Console.log
+   arguments: ['"x is not 1"']
 Body: body$1
    language: rescript
    range: ((30, 11), (32, 5))
    substring: (645, 686)
    scope: conditional.expression$0.if$0.
-   body: ['expression$0']
+   body: ['call$0']
    parent: conditional.expression$0.if$0
-   block: ['expression$0']
+   block: ['call$0']
 If: if$0
    language: rescript
    range: ((28, 4), (32, 5))
@@ -1036,21 +1059,22 @@ Guard: guard$1
    scope: sw.switch$0.
    parent: sw.switch$0
    condition: 1
-Expression: expression$0
+Call: call$0
    language: rescript
    range: ((37, 11), (37, 32))
    substring: (730, 751)
    scope: sw.switch$0.body$0.
    parent: sw.switch$0.body$0
-   code: Console.log("x is 1")
+   function_name: Console.log
+   arguments: ['"x is 1"']
 Body: body$0
    language: rescript
    range: ((37, 11), (37, 32))
    substring: (730, 751)
    scope: sw.switch$0.
-   body: ['expression$0']
+   body: ['call$0']
    parent: sw.switch$0
-   block: ['expression$0']
+   block: ['call$0']
 Guard: guard$2
    language: rescript
    range: ((38, 6), (38, 7))
@@ -1058,21 +1082,22 @@ Guard: guard$2
    scope: sw.switch$0.
    parent: sw.switch$0
    condition: _
-Expression: expression$0
+Call: call$0
    language: rescript
    range: ((38, 11), (38, 36))
    substring: (763, 788)
    scope: sw.switch$0.body$1.
    parent: sw.switch$0.body$1
-   code: Console.log("x is not 1")
+   function_name: Console.log
+   arguments: ['"x is not 1"']
 Body: body$1
    language: rescript
    range: ((38, 11), (38, 36))
    substring: (763, 788)
    scope: sw.switch$0.
-   body: ['expression$0']
+   body: ['call$0']
    parent: sw.switch$0
-   block: ['expression$0']
+   block: ['call$0']
 Switch: switch$0
    language: rescript
    range: ((36, 4), (39, 2))
@@ -1249,11 +1274,11 @@ File: test.ts
   type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
   if$0 = `if guard$0: body$0 else: body$1`
     guard$0 = `(true)`
-    body$0 = `['expression$0', 'expression$1']`
-      expression$0 = `console.log("true")`
-      expression$1 = `congole.log(42)`
-    body$1 = `['expression$0']`
-      expression$0 = `console.log("false")`
+    body$0 = `['call$0', 'call$1']`
+      call$0 = `console.log("true")`
+      call$1 = `congole.log(42)`
+    body$1 = `['call$0']`
+      call$0 = `console.log("false")`
 File: test.tsx
   expression$0 = `d = <div> "abc" </div>`
   function tsx()
@@ -1351,26 +1376,28 @@ File: test.res
     let annot = (x:int) : int
     let paramsWithDefault = (~x: int=3, ~y=4.0, ~z: option<int>=?, ~w=?, ())
   let rec multiple = (x:int, y:int) : int
+    call$0 = `bindings(x+y)`
   and bindings = (z:int)
+    call$0 = `multiple(z, ,, z)`
   type myRecord = {x: int, y?: option<string>}
   type myList = list<int>
   let conditional = ()
     expression$0 = `if$0`
       if$0 = `if guard$0: body$0 else: body$1`
         guard$0 = `(x == 1)`
-        body$0 = `['expression$0']`
-          expression$0 = `Console.log("x is 1")`
-        body$1 = `['expression$0']`
-          expression$0 = `Console.log("x is not 1")`
+        body$0 = `['call$0']`
+          call$0 = `Console.log("x is 1")`
+        body$1 = `['call$0']`
+          call$0 = `Console.log("x is not 1")`
   let sw = x
     switch$0 = ` switch guard$0: [Case(guard$1, body$0), Case(guard$2, body$1)]`
       guard$0 = `x`
       guard$1 = `1`
-      body$0 = `['expression$0']`
-        expression$0 = `Console.log("x is 1")`
+      body$0 = `['call$0']`
+        call$0 = `Console.log("x is 1")`
       guard$2 = `_`
-      body$1 = `['expression$0']`
-        expression$0 = `Console.log("x is not 1")`
+      body$1 = `['call$0']`
+        call$0 = `Console.log("x is not 1")`
 File: test.rb
   def sum(a, b)
   def output

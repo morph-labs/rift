@@ -1193,7 +1193,7 @@ class SymbolParser:
 
     @classmethod
     def expression_requires_node(cls, node: Node) -> bool:
-        if node.type in ["call"]:
+        if node.type in ["call", "call_expression"]:
             return True
         else:
             return False
@@ -1202,7 +1202,7 @@ class SymbolParser:
         node = self.node
         symbol: Optional[Symbol] = None
         if self.expression_requires_node(node):
-            if node.type == "call":
+            if node.type in ["call", "call_expression"]:
                 function_node = node.child_by_field_name("function")
                 if function_node is None:
                     logger.warning(f"Unexpected call node structure: {node.text.decode()}")
