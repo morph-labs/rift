@@ -317,7 +317,7 @@ class SymbolParser:
             parent=self.parent,
             range=(parents[0].start_point, parents[-1].end_point),
             scope=self.scope,
-            substring=(parents[0].start_byte, parents[-1].end_byte),
+            substring_=(parents[0].start_byte, parents[-1].end_byte),
             kind=symbol_kind,
         )
 
@@ -1194,11 +1194,11 @@ class SymbolParser:
         symbols = self.parent.body
 
         # Sort the symbols based on their starting substring index in descending order for accurate replacement
-        sorted_symbols = sorted(symbols, key=lambda s: s.substring[0], reverse=True)
+        sorted_symbols = sorted(symbols, key=lambda s: s.substring_[0], reverse=True)
 
         # Replace each symbol in the code with its name
         for symbol in sorted_symbols:
-            start, end = symbol.substring
+            start, end = symbol.substring_
             # Adjust start and end based on the node's starting byte
             start -= self.node.start_byte
             end -= self.node.start_byte

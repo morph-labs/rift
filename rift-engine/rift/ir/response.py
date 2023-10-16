@@ -97,8 +97,8 @@ def replace_functions_in_document(
         if filter and function_in_blocks is not None:
             updated_functions.append(function_in_blocks)
             if replace == Replace.ALL:
-                substring = function_declaration.substring
-                new_bytes = function_in_blocks.get_substring()
+                substring = function_declaration.substring_
+                new_bytes = function_in_blocks.substring
             elif replace == Replace.DOC:
                 if function_in_blocks.docstring is None:
                     logger.warning(f"No docstring for function {function_declaration.id}")
@@ -129,11 +129,11 @@ def replace_functions_in_document(
                         substring = (body_start - old_indent, body_start - old_indent)
                     else:
                         # add the doc comment before the function
-                        old_function_start = function_declaration.substring[0]
+                        old_function_start = function_declaration.substring_[0]
                         old_indent = find_indent(
                             function_declaration.code.bytes, old_function_start
                         )
-                        new_function_start = function_in_blocks.substring[0]
+                        new_function_start = function_in_blocks.substring_[0]
                         new_indent = find_indent(function_in_blocks.code.bytes, new_function_start)
                         substring = (
                             old_function_start - old_indent,
@@ -158,7 +158,7 @@ def replace_functions_in_document(
                     logger.info(f"{new_function_text=}")
                     new_function_text += old_trailing_whitespace.group(0)
                     logger.info(f"{new_function_text=}")
-                start_replace = function_declaration.substring[0]
+                start_replace = function_declaration.substring_[0]
                 end_replace = start_replace + len(old_function_text)
                 substring = (start_replace, end_replace)
                 new_bytes = new_function_text
