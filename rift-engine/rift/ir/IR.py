@@ -620,13 +620,14 @@ class Symbol:
     range: Range
     parent: Optional["Symbol"]
     scope: Scope
-    substring: Substring
+    substring_: Substring
     kind: SymbolKind
     embedding: Optional[Vector] = None
 
-    def get_substring(self) -> bytes:
+    @property
+    def substring(self) -> bytes:
         """Returns the substring of the document that corresponds to this symbol info."""
-        start, end = self.substring
+        start, end = self.substring_
         return self.code.bytes[start:end]
 
     def get_qualified_id(self) -> QualifiedId:
@@ -641,9 +642,9 @@ class Symbol:
         If the body_sub attribute is None, returns the full substring of the IR node.
         """
         if self.body_sub is None:
-            return self.get_substring()
+            return self.substring
         else:
-            start, _end = self.substring
+            start, _end = self.substring_
             body_start, _body_end = self.body_sub
             return self.code.bytes[start:body_start]
 
@@ -671,7 +672,7 @@ class Symbol:
         else:
             id = self.id
         lines.append(
-            f"{self.name()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+            f"{self.name()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring_}"
         )
         if self.scope != "":
             lines.append(f"   scope: {self.scope}")
@@ -721,7 +722,7 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
         parent=None,
         range=range,
         scope="",
-        substring=body_sub,
+        substring_=body_sub,
         kind=dummy_kind,
     )
     symbol.kind = FileKind(symbol)

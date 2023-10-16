@@ -85,7 +85,7 @@ class MissingDocStringPrompt:
     ) -> IR.Code:
         bytes = b""
         for function in functions_missing_docstrings:
-            bytes += function.function_declaration.get_substring()
+            bytes += function.function_declaration.substring
             bytes += b"\n"
         return IR.Code(bytes)
 
