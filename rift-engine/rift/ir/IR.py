@@ -681,6 +681,10 @@ class Symbol:
             start, end = self.docstring_sub
             return self.code.bytes[start:end].decode()
 
+    @property
+    def name(self) -> str:
+        return self.kind.name()
+
     def dump(self, lines: List[str]) -> None:
         """
         Appends a string representation of the IR node to the given list of strings.
@@ -694,7 +698,7 @@ class Symbol:
         else:
             id = self.id
         lines.append(
-            f"{self.name()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring_}"
+            f"{self.name}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring_}"
         )
         if self.scope != "":
             lines.append(f"   scope: {self.scope}")
@@ -709,9 +713,6 @@ class Symbol:
         if self.parent:
             lines.append(f"   parent: {self.parent.qualified_id}")
         self.kind.dump(lines)
-
-    def name(self) -> str:
-        return self.kind.name()
 
 
 def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
