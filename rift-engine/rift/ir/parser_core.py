@@ -47,12 +47,11 @@ def dump_node(node: Node) -> str:
     return f"  type:{node.type} children:{node.child_count}\n  code:{node.text.decode()}\n  sexp:{node.sexp()}"
 
 
+jslangs = ["javascript", "typescript", "tsx"]
+
+
 def parse_type(language: Language, node: Node) -> Type:
-    if (
-        language in ["typescript", "tsx"]
-        and node.type == "type_annotation"
-        and len(node.children) >= 2
-    ):
+    if language in jslangs and node.type == "type_annotation" and len(node.children) >= 2:
         # TS: first child should be ":" and second child should be type
         second_child = node.children[1]
         return Type.unknown(second_child.text.decode())
@@ -432,10 +431,7 @@ class SymbolParser:
 
         if (
             (node.type in ["class_specifier"] and language in ["c", "cpp"])
-            or (
-                node.type in ["class_declaration"]
-                and language in ["javascript", "tsx", "typescript", "c_sharp", "java"]
-            )
+            or (node.type in ["class_declaration"] and language in jslangs + ["c_sharp", "java"])
             or (node.type in ["class_definition"] and language in ["python"])
             or (node.type in ["namespace_definition"] and language in ["cpp"])
             or (node.type in ["namespace_declaration"] and language in ["c_sharp"])
@@ -517,10 +513,7 @@ class SymbolParser:
             return [declaration]
 
         elif (
-            (
-                node.type in ["function_declaration", "method_definition"]
-                and language in ["javascript", "tsx", "typescript"]
-            )
+            (node.type in ["function_declaration", "method_definition"] and language in jslangs)
             or (node.type in ["function_definition"] and language in ["python"])
             or (node.type in ["method_declaration"] and language in ["c_sharp", "java"])
             or (node.type in ["method"] and language in ["ruby"])
@@ -573,11 +566,7 @@ class SymbolParser:
             self.file.add_symbol(symbol)
             return [symbol]
 
-        elif node.type in ["lexical_declaration", "variable_declaration"] and language in [
-            "javascript",
-            "typescript",
-            "tsx",
-        ]:
+        elif node.type in ["lexical_declaration", "variable_declaration"] and language in jslangs:
             # arrow functions in js/ts e.g. let foo = x => x+1
             for child in node.children:
                 if child.type == "variable_declarator":
@@ -594,16 +583,16 @@ class SymbolParser:
                         self.file.add_symbol(declaration)
                         return [declaration]
 
-        elif node.type == "export_statement" and language in ["js", "typescript", "tsx"]:
+        elif node.type == "export_statement" and language in jslangs:
             if len(node.children) >= 2:
                 self.node = node.children[1]
                 self.exported = True
                 return self.parse_symbols(counter)
 
-        elif node.type in ["interface_declaration", "type_alias_declaration"] and language in [
-            "js",
-            "typescript",
-            "tsx",
+        elif node.type in [
+            "interface_declaration",
+            "type_alias_declaration",
+        ] and language in jslangs + [
             "c_sharp",
             "java",
         ]:
@@ -1034,12 +1023,7 @@ class SymbolParser:
         node = self.node
         language = self.language
 
-        if node.type == "if_statement" and language in [
-            "python",
-            "javascript",
-            "tsx",
-            "typescript",
-        ]:
+        if node.type == "if_statement" and language in ["python"] + jslangs:
             guard_n = node.child_by_field_name("condition")
             body_n = node.child_by_field_name("consequence")
             if guard_n is not None and body_n is not None:
@@ -1099,7 +1083,11 @@ class SymbolParser:
                 self.file.add_symbol(for_symbol)
                 return for_symbol
 
-        elif node.type == "expression_statement" and language == "python" and node.child_count == 1:
+        elif (
+            node.type == "expression_statement"
+            and language in ["python"] + jslangs
+            and node.child_count == 1
+        ):
             child = node.children[0]
             if self.expression_requires_node(child) and self.parent:
                 # Don't need to create a sybmol as parsing the expression will create one
