@@ -7,7 +7,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 TREE_SITTER_LANGUAGES_PATH = os.path.join(PROJECT_DIR, "build", "tree-sitter-languages.so")
 VENDOR_PATH = os.path.join(PROJECT_DIR, "vendor")
 
-active = True
+active = False
 
 ReScript = None
 Lean = None
