@@ -791,10 +791,10 @@ Module: N
 === Symbol Table for test.res ===
 File: test.res
    language: python
-   range: ((0, 0), (31, 1))
-   substring: (0, 636)
-   body_sub: (0, 636)
-   body: ['z0', 'z1', 'z2', 'z', 'zz', 'zzz', 'mulWithDefault', 'SomeRSModule', 'multiple', 'bindings', 'let_declaration', 'myRecord', 'myList', 'expression$0']
+   range: ((0, 0), (33, 1))
+   substring: (0, 688)
+   body_sub: (0, 688)
+   body: ['z0', 'z1', 'z2', 'z', 'zz', 'zzz', 'mulWithDefault', 'SomeRSModule', 'multiple', 'bindings', 'let_declaration', 'myRecord', 'myList', 'conditional']
 Value: z0
    language: rescript
    range: ((0, 0), (0, 12))
@@ -833,28 +833,64 @@ Value: zzz
    substring: (84, 109)
    body_sub: (106, 109)
    parent: test.res
+Expression: expression$0
+   language: rescript
+   range: ((8, 4), (11, 5))
+   substring: (159, 209)
+   scope: mulWithDefault.body$0.
+   parent: mulWithDefault.body$0
+   code: switch (x * y) {
+    | 0 => def
+    | z => z
+    }
+Body: body$0
+   language: rescript
+   range: ((7, 42), (12, 1))
+   substring: (153, 211)
+   scope: mulWithDefault.
+   body: ['expression$0']
+   parent: mulWithDefault
+   block: ['expression$0']
 Function: mulWithDefault
    language: rescript
    range: ((7, 0), (12, 1))
    substring: (111, 211)
    body_sub: (150, 211)
+   body: ['body$0']
    parent: test.res
    parameters: [~def:int, x, y]
+Body: body$0
+   language: rescript
+   range: ((15, 31), (15, 34))
+   substring: (268, 271)
+   scope: SomeRSModule.annot.
+   body: ['value_identifier', '+', 'number']
+   parent: SomeRSModule.annot
+   block: ['value_identifier', '+', 'number']
 Function: annot
    language: rescript
    range: ((15, 2), (15, 34))
    substring: (239, 271)
    scope: SomeRSModule.
    body_sub: (265, 271)
+   body: ['body$0']
    parent: SomeRSModule
    parameters: [x:int]
    return_type: int
+Body: body$0
+   language: rescript
+   range: ((16, 78), (16, 79))
+   substring: (350, 351)
+   scope: SomeRSModule.paramsWithDefault.
+   parent: SomeRSModule.paramsWithDefault
+   block: []
 Function: paramsWithDefault
    language: rescript
    range: ((16, 2), (16, 79))
    substring: (274, 351)
    scope: SomeRSModule.
    body_sub: (347, 351)
+   body: ['body$0']
    parent: SomeRSModule
    parameters: [~x:int=3, ~y=4.0, ~z:option<int>=?, ~w=?, ()]
 Module: SomeRSModule
@@ -864,19 +900,37 @@ Module: SomeRSModule
    body_sub: (232, 353)
    body: ['annot', 'paramsWithDefault']
    parent: test.res
+Body: body$0
+   language: rescript
+   range: ((19, 43), (19, 56))
+   substring: (398, 411)
+   scope: multiple.
+   body: ['value_identifier', 'arguments']
+   parent: multiple
+   block: ['value_identifier', 'arguments']
 Function: multiple
    language: rescript
    range: ((19, 0), (19, 56))
    substring: (355, 411)
    body_sub: (395, 411)
+   body: ['body$0']
    parent: test.res
    parameters: [x:int, y:int]
    return_type: int
+Body: body$0
+   language: rescript
+   range: ((20, 26), (20, 40))
+   substring: (438, 452)
+   scope: bindings.
+   body: ['value_identifier', 'arguments']
+   parent: bindings
+   block: ['value_identifier', 'arguments']
 Function: bindings
    language: rescript
    range: ((20, 0), (20, 40))
    substring: (412, 452)
    body_sub: (435, 452)
+   body: ['body$0']
    parent: test.res
    parameters: [z:int]
    return_type: int
@@ -894,57 +948,73 @@ TypeDefinition: myList
    type: list<int>
 Guard: guard$0
    language: rescript
-   range: ((27, 3), (27, 11))
-   substring: (563, 571)
-   scope: expression$0.if$0.
-   parent: expression$0.if$0
+   range: ((28, 7), (28, 15))
+   substring: (593, 601)
+   scope: conditional.body$0.expression$0.if$0.
+   parent: conditional.body$0.expression$0.if$0
    condition: (x == 1)
 Expression: expression$0
    language: rescript
-   range: ((28, 2), (28, 23))
-   substring: (576, 597)
-   scope: expression$0.if$0.body$0.
-   parent: expression$0.if$0.body$0
+   range: ((29, 8), (29, 29))
+   substring: (612, 633)
+   scope: conditional.body$0.expression$0.if$0.body$0.
+   parent: conditional.body$0.expression$0.if$0.body$0
    code: Console.log("x is 1")
 Body: body$0
    language: rescript
-   range: ((27, 12), (29, 1))
-   substring: (572, 599)
-   scope: expression$0.if$0.
+   range: ((28, 16), (30, 5))
+   substring: (602, 639)
+   scope: conditional.body$0.expression$0.if$0.
    body: ['expression$0']
-   parent: expression$0.if$0
+   parent: conditional.body$0.expression$0.if$0
    block: ['expression$0']
 Expression: expression$0
    language: rescript
-   range: ((30, 2), (30, 27))
-   substring: (609, 634)
-   scope: expression$0.if$0.body$1.
-   parent: expression$0.if$0.body$1
+   range: ((31, 8), (31, 33))
+   substring: (655, 680)
+   scope: conditional.body$0.expression$0.if$0.body$1.
+   parent: conditional.body$0.expression$0.if$0.body$1
    code: Console.log("x is not 1")
 Body: body$1
    language: rescript
-   range: ((29, 7), (31, 1))
-   substring: (605, 636)
-   scope: expression$0.if$0.
+   range: ((30, 11), (32, 5))
+   substring: (645, 686)
+   scope: conditional.body$0.expression$0.if$0.
    body: ['expression$0']
-   parent: expression$0.if$0
+   parent: conditional.body$0.expression$0.if$0
    block: ['expression$0']
 If: if$0
    language: rescript
-   range: ((27, 0), (31, 1))
-   substring: (560, 636)
-   scope: expression$0.
+   range: ((28, 4), (32, 5))
+   substring: (590, 686)
+   scope: conditional.body$0.expression$0.
    body: ['guard$0', 'body$0', 'body$1']
-   parent: expression$0
+   parent: conditional.body$0.expression$0
    if_case: Case(guard$0, body$0)
    else_body: body$1
 Expression: expression$0
    language: rescript
-   range: ((27, 0), (31, 1))
-   substring: (560, 636)
+   range: ((28, 4), (32, 5))
+   substring: (590, 686)
+   scope: conditional.body$0.
    body: ['if$0']
-   parent: test.res
+   parent: conditional.body$0
    code: if$0
+Body: body$0
+   language: rescript
+   range: ((27, 24), (33, 1))
+   substring: (584, 688)
+   scope: conditional.
+   body: ['expression$0']
+   parent: conditional
+   block: ['expression$0']
+Value: conditional
+   language: rescript
+   range: ((27, 0), (33, 1))
+   substring: (560, 688)
+   body_sub: (581, 688)
+   body: ['body$0']
+   parent: test.res
 === Symbol Table for test.rb ===
 File: test.rb
    language: python
@@ -1194,20 +1264,31 @@ File: test.res
   let (z4:int) as zz
   let ((z5:int) as zzz)
   let mulWithDefault = (~def: int, x, y)
+    body$0 = `['expression$0']`
+      expression$0 = `switch (x * y) {
+    | 0 => def
+    | z => z
+    }`
   module SomeRSModule
     let annot = (x:int) : int
+      body$0 = `['value_identifier', '+', 'number']`
     let paramsWithDefault = (~x: int=3, ~y=4.0, ~z: option<int>=?, ~w=?, ())
+      body$0 = `[]`
   let rec multiple = (x:int, y:int) : int
+    body$0 = `['value_identifier', 'arguments']`
   and bindings = (z:int)
+    body$0 = `['value_identifier', 'arguments']`
   type myRecord = {x: int, y?: option<string>}
   type myList = list<int>
-  expression$0 = `if$0`
-    if$0 = `if guard$0: body$0 else: body$1`
-      guard$0 = `(x == 1)`
-      body$0 = `['expression$0']`
-        expression$0 = `Console.log("x is 1")`
-      body$1 = `['expression$0']`
-        expression$0 = `Console.log("x is not 1")`
+  let conditional = ()
+    body$0 = `['expression$0']`
+      expression$0 = `if$0`
+        if$0 = `if guard$0: body$0 else: body$1`
+          guard$0 = `(x == 1)`
+          body$0 = `['expression$0']`
+            expression$0 = `Console.log("x is 1")`
+          body$1 = `['expression$0']`
+            expression$0 = `Console.log("x is not 1")`
 File: test.rb
   def sum(a, b)
   def output

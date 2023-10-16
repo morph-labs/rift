@@ -769,6 +769,15 @@ class SymbolParser:
                         if self.body_sub is not None:
                             self.body_sub = (nodes[-2].start_byte, self.body_sub[1])
 
+            def parse_res_body(exp: Node, parent:Symbol, id_name:str) -> None:
+                if exp.type == "function":
+                    body_node = exp.child_by_field_name("body")
+                    if body_node is not None:
+                        counter = Counter()
+                        scope = self.scope + id_name + "."
+                        self.recurse(body_node, scope, parent=parent).parse_body(counter)
+
+
             def parse_res_let_binding(nodes: List[Node], parents: List[Node]) -> Optional[Symbol]:
                 id = None
                 exp = None
@@ -813,13 +822,15 @@ class SymbolParser:
                         type: Optional[Type] = None
                         if typ is not None and typ.child_count >= 2:
                             type = parse_type(language, typ.children[1])
-                        declaration = self.mk_val_decl(id=id, parents=parents, type=type)
+                        symbol = self.mk_val_decl(id=id, parents=parents, type=type)
                     else:
-                        declaration = self.mk_fun_decl(
+                        symbol = self.mk_fun_decl(
                             id=id, parents=parents, parameters=parameters, return_type=return_type
                         )
-                    self.file.add_symbol(declaration)
-                    return declaration
+                    if exp is not None:
+                        parse_res_body(exp, symbol, id.text.decode())
+                    self.file.add_symbol(symbol)
+                    return symbol
 
             declarations: List[Symbol] = []
             for child in node.children:
@@ -1069,7 +1080,6 @@ class SymbolParser:
                 return if_symbol
 
         elif node.type == "if_expression" and language in ["rescript"] and node.child_count >= 3:
-            print(f"XXX\n{dump_node(node)}\nXXX")
             guard_node = node.children[1]
             body_node = node.children[2]
             else_node = None
