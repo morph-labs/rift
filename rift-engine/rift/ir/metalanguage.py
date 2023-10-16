@@ -3,7 +3,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from textwrap import dedent
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from . import IR, parser
 
@@ -22,25 +22,21 @@ class MetaLanguage:
     _all_symbols: List[IR.Symbol] = field(default_factory=list)
 
     SymbolicType = Union[
-        IR.FunctionKind,
-        IR.ClassKind,
         IR.Field,
         IR.Parameter,
-        IR.Symbol,
-        IR.TypeDefinitionKind,
     ]
 
     @classmethod
     def set_file_path(
         cls,
         x: SymbolicType,
-        path: str,
+        path: Optional[str],
     ) -> None:
-        x._file_path = path  # type: ignore
+        x.file_path = path  # type: ignore
 
     @classmethod
     def get_file_path(cls, x: SymbolicType) -> str:
-        return x._file_path  # type: ignore
+        return x.file_path  # type: ignore
 
     def process_meta_variable(self, mv: str) -> None:
         if mv == "Class":
@@ -56,9 +52,8 @@ class MetaLanguage:
                 for symbol in self._all_symbols:
                     if isinstance(symbol.kind, IR.FunctionKind):
                         f = symbol.kind
-                        self.set_file_path(f, self.get_file_path(symbol))
                         for p in f.parameters:
-                            self.set_file_path(p, self.get_file_path(symbol))
+                            self.set_file_path(p, symbol.file_path)
                         functions.append(symbol.kind)
                 self.locals["Function"] = functions
         elif mv == "TypeDefinition":
@@ -66,8 +61,6 @@ class MetaLanguage:
                 type_definitions: List[IR.TypeDefinitionKind] = []
                 for symbol in self._all_symbols:
                     if isinstance(symbol.kind, IR.TypeDefinitionKind):
-                        td = symbol.kind
-                        self.set_file_path(td, self.get_file_path(symbol))
                         type_definitions.append(symbol.kind)
                 self.locals["TypeDefinition"] = type_definitions
         elif mv == "check":
@@ -76,11 +69,12 @@ class MetaLanguage:
                 if isinstance(x, IR.Symbol):
                     if not b:
                         self.report_check_failed(
-                            f"Check failed on {x.qualified_id} in {self.get_file_path(x)}"
+                            f"Check failed on {x.qualified_id} in {x.file_path}"
                         )
-                elif isinstance(
-                    x, (IR.Field, IR.FunctionKind, IR.Parameter, IR.TypeDefinitionKind)
-                ):
+                elif isinstance(x, (IR.FunctionKind, IR.TypeDefinitionKind)):
+                    if not b:
+                        self.report_check_failed(f"Check failed on: {x} in {x.file_path}")
+                elif isinstance(x, (IR.Field, IR.Parameter)):
                     if not b:
                         self.report_check_failed(f"Check failed on: {x} in {self.get_file_path(x)}")
                 else:
@@ -102,9 +96,8 @@ class MetaLanguage:
     def _populate_symbols(self) -> None:
         self._all_symbols = []
         for file_ir in self.project.get_files():
-            for symbol_info in file_ir.search_symbol(lambda _: True):
-                self.set_file_path(symbol_info, file_ir.path)
-                self._all_symbols.append(symbol_info)
+            for symbol in file_ir.search_symbol(lambda _: True):
+                self._all_symbols.append(symbol)
 
     def eval(self) -> None:
         self._populate_symbols()
@@ -148,6 +141,7 @@ def test_meta_language():
         report_check_failed=report_check_failed,
     )
     ml.eval()
+    print(f"\nMetalanguage Test")
     for f in failures:
         print(f)
-    # assert len(failures) == 1
+    # assert len(failures) == 2

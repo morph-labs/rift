@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 import numpy as np
 import numpy.typing as npt
 
+
 from . import custom_parsers
 
 Language = Literal[
@@ -234,6 +235,13 @@ class SymbolKind(ABC):
 
     def signature(self) -> Optional[str]:
         return None
+
+    @property
+    def file_path(self) -> Optional[str]:
+        """
+        Returns the file path of the symbol, or None if the symbol is not associated with a file.
+        """
+        return self.symbol.file_path
 
 
 @dataclass
@@ -623,6 +631,18 @@ class Symbol:
     substring_: Substring
     kind: SymbolKind
     embedding: Optional[Vector] = None
+
+    @property
+    def file_path(self) -> Optional[str]:
+        """
+        Returns the file path of the symbol, or None if the symbol is not associated with a file.
+        """
+        symbol = self
+        while not isinstance(symbol.kind, FileKind):
+            if symbol.parent is None:
+                return None
+            symbol = symbol.parent
+        return symbol.id
 
     @property
     def substring(self) -> bytes:
