@@ -39,12 +39,19 @@ class MetaLanguage:
         return x.file_path  # type: ignore
 
     def process_meta_variable(self, mv: str) -> None:
-        if mv == "Class":
+        if mv == "Call":
+            if "Call" not in self.locals:
+                calls: List[IR.CallKind] = []
+                for symbol in self._all_symbols:
+                    if isinstance(symbol.kind, IR.CallKind):
+                        calls.append(symbol.kind)
+                self.locals["Call"] = calls
+        elif mv == "Class":
             if "Class" not in self.locals:
-                classes: List[IR.Symbol] = []
+                classes: List[IR.ClassKind] = []
                 for symbol in self._all_symbols:
                     if isinstance(symbol.kind, IR.ClassKind):
-                        classes.append(symbol)
+                        classes.append(symbol.kind)
                 self.locals["Class"] = classes
         elif mv == "Function":
             if "Function" not in self.locals:
@@ -71,7 +78,7 @@ class MetaLanguage:
                         self.report_check_failed(
                             f"Check failed on {x.qualified_id} in {x.file_path}"
                         )
-                elif isinstance(x, (IR.FunctionKind, IR.TypeDefinitionKind)):
+                elif isinstance(x, (IR.CallKind, IR.FunctionKind, IR.TypeDefinitionKind)):
                     if not b:
                         self.report_check_failed(f"Check failed on: {x} in {x.file_path}")
                 elif isinstance(x, (IR.Field, IR.Parameter)):
@@ -109,7 +116,7 @@ class MetaLanguage:
 
 
 def test_meta_language():
-    code1 = dedent(
+    code0 = dedent(
         """
         for x in $TypeDefinition:
             if x.type.kind == 'record':
@@ -118,18 +125,25 @@ def test_meta_language():
                         $check(x, f.type.name != 'option')
         """
     ).lstrip()
-    code2 = dedent(
+    code1 = dedent(
         """
         for x in $Function: 
             for p in x.parameters:
                 $check(p, p.default_value != "[]")
         """
     ).lstrip()
+    code2 = dedent(
+        """
+        for x in $Call:
+            if x.function_name in ['useState', 'useEffect', 'useContext', 'useReducer', 'useCallback', 'useMemo', 'useRef', 'useImperativeHandle', 'useLayoutEffect', 'useDebugValue']:
+                $check(x.parent, x.parent.name == 'Function')
+        """
+    ).lstrip()
 
-    code = [code1, code2]
+    code = [code0, code1, code2]
     this_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(this_dir)
-    project = parser.parse_files_in_paths([project_root])
+    project = parser.parse_files_in_paths([project_root], metasymbols=True)
     failures: List[str] = []
 
     def report_check_failed(msg: str) -> None:
@@ -137,7 +151,7 @@ def test_meta_language():
 
     ml = MetaLanguage(
         project=project,
-        raw_code=code[1],
+        raw_code=code[2],
         report_check_failed=report_check_failed,
     )
     ml.eval()
