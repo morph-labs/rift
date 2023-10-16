@@ -81,7 +81,7 @@ class MissingTypePrompt:
     def code_for_missing_types(missing_types: List[MissingType]) -> IR.Code:
         bytes = b""
         for mt in missing_types:
-            bytes += mt.function_declaration.get_substring()
+            bytes += mt.function_declaration.substring
             bytes += b"\n"
         return IR.Code(bytes)
 

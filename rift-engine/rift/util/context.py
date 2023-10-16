@@ -34,7 +34,7 @@ def lookup_match(match: str, server: "Server") -> str:
         reference_some_function = IR.Reference.from_uri(match)
         symbol_ref = project.lookup_reference(reference_some_function)
         if symbol_ref is not None and symbol_ref.symbol is not None:
-            body = symbol_ref.symbol.get_substring().decode().strip()
+            body = symbol_ref.symbol.substring.decode().strip()
             logger.info(f"[lookup_match] symbol reference found")
             return body
 
