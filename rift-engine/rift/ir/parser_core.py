@@ -326,7 +326,10 @@ class SymbolParser:
             name: str = id
         else:
             name = id.text.decode()
-        return self.mk_symbol_decl(id=name, parents=parents, symbol_kind=ValueKind())
+        dummy_kind: SymbolKind = None  # type: ignore
+        symbol = self.mk_symbol_decl(id=name, parents=parents, symbol_kind=dummy_kind)
+        symbol.symbol_kind = ValueKind(symbol)
+        return symbol
 
     def mk_dummy_metasymbol(self, counter: Counter, name: str) -> Symbol:
         count = counter.next(name)
@@ -347,22 +350,33 @@ class SymbolParser:
     ) -> Symbol:
         if parameters is None:
             parameters = []
+        symbol = self.mk_dummy_symbol(id=id, parents=parents)
         symbol_kind = FunctionKind(
-            has_return=self.has_return, parameters=parameters, return_type=return_type
+            has_return=self.has_return,
+            parameters=parameters,
+            return_type=return_type,
+            symbol=symbol,
         )
-        return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
+        self.update_dummy_symbol(symbol, symbol_kind)
+        return symbol
 
     def mk_val_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None) -> Symbol:
-        symbol_kind = ValueKind(type=type)
-        return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
+        symbol = self.mk_dummy_symbol(id=id, parents=parents)
+        symbol_kind = ValueKind(type=type, symbol=symbol)
+        self.update_dummy_symbol(symbol, symbol_kind)
+        return symbol
 
     def mk_type_decl(self, id: Node, parents: List[Node], type: Optional[Type] = None) -> Symbol:
-        symbol_kind = TypeDefinitionKind(type)
-        return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
+        symbol = self.mk_dummy_symbol(id=id, parents=parents)
+        symbol_kind = TypeDefinitionKind(type=type, symbol=symbol)
+        self.update_dummy_symbol(symbol, symbol_kind)
+        return symbol
 
     def mk_interface_decl(self, id: Node, parents: List[Node]) -> Symbol:
-        symbol_kind = InterfaceKind()
-        return self.mk_symbol_decl(id=id, parents=parents, symbol_kind=symbol_kind)
+        symbol = self.mk_dummy_symbol(id=id, parents=parents)
+        symbol_kind = InterfaceKind(symbol)
+        self.update_dummy_symbol(symbol, symbol_kind)
+        return symbol
 
     def process_ocaml_body(self, n: Node) -> Tuple[Optional[Type], Optional[Node]]:
         type = None
@@ -473,11 +487,11 @@ class SymbolParser:
                     symbol.docstring_sub = (docstring_node.start_byte, docstring_node.end_byte)
 
                 if is_namespace:
-                    self.update_dummy_symbol(symbol, NamespaceKind())
+                    self.update_dummy_symbol(symbol, NamespaceKind(symbol))
                 elif is_module:
-                    self.update_dummy_symbol(symbol, ModuleKind())
+                    self.update_dummy_symbol(symbol, ModuleKind(symbol))
                 else:
-                    self.update_dummy_symbol(symbol, ClassKind(superclasses=superclasses))
+                    self.update_dummy_symbol(symbol, ClassKind(symbol, superclasses))
                 self.file.add_symbol(symbol)
                 return [symbol]
 
@@ -558,6 +572,7 @@ class SymbolParser:
             self.update_dummy_symbol(
                 symbol,
                 FunctionKind(
+                    symbol,
                     has_return=self.has_return,
                     is_async=is_async,
                     parameters=parameters,
@@ -720,7 +735,7 @@ class SymbolParser:
                         symbol = self.mk_dummy_symbol(id=name, parents=[node])
                         if body_node is not None:
                             self.recurse(body_node, new_scope, parent=symbol).parse_block()
-                        self.update_dummy_symbol(symbol, ModuleKind())
+                        self.update_dummy_symbol(symbol, ModuleKind(symbol))
                         self.file.add_symbol(symbol)
                         return [symbol]
 
@@ -876,7 +891,7 @@ class SymbolParser:
                     new_scope = self.scope + id.text.decode() + "."
                     symbol = self.mk_dummy_symbol(id=id, parents=[node])
                     self.recurse(body, new_scope, parent=symbol).parse_block()
-                    self.update_dummy_symbol(symbol, ModuleKind())
+                    self.update_dummy_symbol(symbol, ModuleKind(symbol))
                     self.file.add_symbol(symbol)
                     return [symbol]
                 else:
@@ -961,24 +976,18 @@ class SymbolParser:
                 if name_node is not None:
                     symbol = None
                     if node0.type == "def":
-                        symbol_kind = DefKind()
-                        symbol = self.mk_symbol_decl(
-                            id=name_node, parents=[node], symbol_kind=symbol_kind
-                        )
+                        symbol = self.mk_dummy_symbol(id=name_node, parents=[node])
+                        self.update_dummy_symbol(symbol, DefKind(symbol))
                     elif node0.type == "structure":
                         # a structure/class does not have a body
                         node_after_name = name_node.next_sibling
                         if node_after_name is not None:
                             self.body_sub = (node_after_name.start_byte, node.end_byte)
-                        symbol_kind = StructureKind()
-                        symbol = self.mk_symbol_decl(
-                            id=name_node, parents=[node], symbol_kind=symbol_kind
-                        )
+                        symbol = self.mk_dummy_symbol(id=name_node, parents=[node])
+                        self.update_dummy_symbol(symbol, StructureKind(symbol))
                     elif node0.type == "theorem":
-                        symbol_kind = TheoremKind()
-                        symbol = self.mk_symbol_decl(
-                            id=name_node, parents=[node], symbol_kind=symbol_kind
-                        )
+                        symbol = self.mk_dummy_symbol(id=name_node, parents=[node])
+                        self.update_dummy_symbol(symbol, TheoremKind(symbol))
                     else:
                         logger.warning(f"Lean: Unknown node0 type: {node0.type}")
                     if symbol is not None:
@@ -994,9 +1003,9 @@ class SymbolParser:
                 symbol = self.mk_dummy_symbol(id=name, parents=[node])
                 self.recurse(node, new_scope, parent=symbol).parse_block()
                 if node.type == "namespace":
-                    self.update_dummy_symbol(symbol, NamespaceKind())
+                    self.update_dummy_symbol(symbol, NamespaceKind(symbol))
                 else:
-                    self.update_dummy_symbol(symbol, SectionKind())
+                    self.update_dummy_symbol(symbol, SectionKind(symbol))
                 self.file.add_symbol(symbol)
                 return [symbol]
             elif node.type == "end":
@@ -1018,7 +1027,9 @@ class SymbolParser:
         guard_symbol = self.mk_dummy_metasymbol(counter, "guard")
         guard_counter = Counter()
         condition = self.parse_expression(guard_counter)
-        self.update_dummy_symbol(symbol=guard_symbol, symbol_kind=GuardKind(condition))
+        self.update_dummy_symbol(
+            symbol=guard_symbol, symbol_kind=GuardKind(guard_symbol, condition)
+        )
         self.file.add_symbol(guard_symbol)
         return guard_symbol
 
@@ -1026,7 +1037,9 @@ class SymbolParser:
         """Parse the body of a conditional branch"""
         body_symbol = self.mk_dummy_metasymbol(counter, "body")
         self.recurse(self.node, self.scope, parent=body_symbol).parse_block()
-        self.update_dummy_symbol(symbol=body_symbol, symbol_kind=BodyKind(body_symbol.body))
+        self.update_dummy_symbol(
+            symbol=body_symbol, symbol_kind=BodyKind(body_symbol, body_symbol.body)
+        )
         self.file.add_symbol(body_symbol)
         return body_symbol
 
@@ -1074,7 +1087,9 @@ class SymbolParser:
                             an.children[1], scope, parent=if_symbol
                         ).parse_body(counter)
 
-                if_kind = IfKind(if_case=if_case, elif_cases=elif_cases, else_body=else_body)
+                if_kind = IfKind(
+                    if_symbol, if_case=if_case, elif_cases=elif_cases, else_body=else_body
+                )
                 self.update_dummy_symbol(symbol=if_symbol, symbol_kind=if_kind)
                 self.file.add_symbol(if_symbol)
                 return if_symbol
@@ -1095,7 +1110,7 @@ class SymbolParser:
                 else_body = self.recurse(else_node.children[1], scope, parent=if_symbol).parse_body(
                     counter
                 )
-            if_kind = IfKind(if_case=if_case, elif_cases=[], else_body=else_body)
+            if_kind = IfKind(if_symbol, if_case=if_case, elif_cases=[], else_body=else_body)
             self.update_dummy_symbol(symbol=if_symbol, symbol_kind=if_kind)
             self.file.add_symbol(if_symbol)
             return if_symbol
@@ -1110,7 +1125,7 @@ class SymbolParser:
                 left = left_node.text.decode()
                 right = self.recurse(right_node, scope, parent=for_symbol).parse_expression(counter)
                 body = self.recurse(body_node, scope, parent=for_symbol).parse_body(counter)
-                for_kind = ForKind(left=left, right=right, body=body)
+                for_kind = ForKind(for_symbol, left=left, right=right, body=body)
                 self.update_dummy_symbol(symbol=for_symbol, symbol_kind=for_kind)
                 self.file.add_symbol(for_symbol)
                 return for_symbol
@@ -1132,7 +1147,7 @@ class SymbolParser:
             else:
                 symbol = self.mk_dummy_metasymbol(counter, "expression")
                 code = self.recurse(child, self.scope, parent=symbol).parse_expression(counter)
-                self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(code))
+                self.update_dummy_symbol(symbol=symbol, symbol_kind=ExpressionKind(symbol, code))
                 self.file.add_symbol(symbol)
                 return symbol
 
@@ -1156,7 +1171,9 @@ class SymbolParser:
                             counter
                         )
                         cases.append(Case(guard=pattern, body=body))
-                switch_kind = SwitchKind(expression=expression, cases=cases, default=None)
+                switch_kind = SwitchKind(
+                    switch_symbol, expression=expression, cases=cases, default=None
+                )
                 self.update_dummy_symbol(symbol=switch_symbol, symbol_kind=switch_kind)
                 self.file.add_symbol(switch_symbol)
                 return switch_symbol
@@ -1224,9 +1241,7 @@ class SymbolParser:
                                 arg, self.scope, parent=symbol
                             ).parse_expression(arg_counter)
                             arguments.append(expression)
-                    self.update_dummy_symbol(
-                        symbol=symbol, symbol_kind=CallKind(function_name, arguments)
-                    )
+                    self.update_dummy_symbol(symbol, CallKind(symbol, function_name, arguments))
                     self.file.add_symbol(symbol)
             else:
                 logger.warning(f"Unexpected expression: {node.type}")
@@ -1251,7 +1266,6 @@ class SymbolParser:
             if import_ is not None:
                 self.file.add_import(import_)
             if symbols == []:
-                symbol = self.mk_symbol_decl(
-                    id=self.node.type, parents=[self.node], symbol_kind=UnknownKind()
-                )
+                symbol = self.mk_dummy_symbol(id=self.node.type, parents=[self.node])
+                self.update_dummy_symbol(symbol, UnknownKind(symbol))
                 self.file.add_symbol(symbol)
