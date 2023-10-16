@@ -1,5 +1,5 @@
 import os
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
@@ -226,7 +226,7 @@ class SymbolKind(ABC):
 
     symbol: "Symbol"
 
-    @abstractmethod
+    @abstractproperty
     def name(self) -> SymbolKindName:
         raise NotImplementedError
 
@@ -268,6 +268,7 @@ class BodyKind(MetaSymbolKind):
 
     block: Block
 
+    @property
     def name(self) -> SymbolKindName:
         return "Body"
 
@@ -290,6 +291,7 @@ class CallKind(MetaSymbolKind):
     function_name: str
     arguments: List[Expression]
 
+    @property
     def name(self) -> SymbolKindName:
         return "Call"
 
@@ -313,6 +315,7 @@ class ClassKind(SymbolKind):
 
     superclasses: Optional[str]
 
+    @property
     def name(self) -> SymbolKindName:
         return "Class"
 
@@ -327,6 +330,7 @@ class DefKind(SymbolKind):
     Represents a mathematical definition in Lean: https://leanprover.github.io/lean4/doc/definitions.html
     """
 
+    @property
     def name(self) -> SymbolKindName:
         return "Def"
 
@@ -341,6 +345,7 @@ class ExpressionKind(MetaSymbolKind):
 
     code: str
 
+    @property
     def name(self) -> SymbolKindName:
         return "Expression"
 
@@ -360,6 +365,7 @@ class FileKind(MetaSymbolKind):
     Represents a file in the IR.
     """
 
+    @property
     def name(self) -> SymbolKindName:
         return "File"
 
@@ -372,6 +378,7 @@ class ForKind(MetaSymbolKind):
     right: Expression
     body: "Symbol"
 
+    @property
     def name(self) -> SymbolKindName:
         return "For"
 
@@ -400,6 +407,7 @@ class FunctionKind(SymbolKind):
     is_async: bool = False
     return_type: Optional[Type] = None
 
+    @property
     def name(self) -> SymbolKindName:
         return "Function"
 
@@ -420,6 +428,7 @@ class GuardKind(MetaSymbolKind):
 
     condition: Expression
 
+    @property
     def name(self) -> SymbolKindName:
         return "Guard"
 
@@ -447,6 +456,7 @@ class IfKind(MetaSymbolKind):
     elif_cases: List[Case]
     else_body: Optional["Symbol"]
 
+    @property
     def name(self) -> SymbolKindName:
         return "If"
 
@@ -473,6 +483,7 @@ class InterfaceKind(SymbolKind):
     Represents a kind of symbol that defines an interface.
     """
 
+    @property
     def name(self) -> SymbolKindName:
         return "Interface"
 
@@ -483,6 +494,7 @@ class ModuleKind(SymbolKind):
     Represents a module in the IR.
     """
 
+    @property
     def name(self) -> SymbolKindName:
         return "Module"
 
@@ -493,6 +505,7 @@ class NamespaceKind(SymbolKind):
     Represents a namespace in the IR.
     """
 
+    @property
     def name(self) -> SymbolKindName:
         return "Namespace"
 
@@ -501,6 +514,7 @@ class NamespaceKind(SymbolKind):
 class SectionKind(SymbolKind):
     """Represents a Lean section: https://leanprover.github.io/lean4/doc/sections.html"""
 
+    @property
     def name(self) -> SymbolKindName:
         return "Section"
 
@@ -511,6 +525,7 @@ class StructureKind(SymbolKind):
     Represents a structure in Lean: https://lean-lang.org/lean4/doc/struct.html
     """
 
+    @property
     def name(self) -> SymbolKindName:
         return "Structure"
 
@@ -523,6 +538,7 @@ class SwitchKind(MetaSymbolKind):
     cases: List[Case]
     default: Optional["Symbol"]
 
+    @property
     def name(self) -> SymbolKindName:
         return "Switch"
 
@@ -546,6 +562,7 @@ class TheoremKind(SymbolKind):
     Represents a theorem in Lean: https://lean-lang.org/theorem_proving_in_lean4/title_page.html
     """
 
+    @property
     def name(self) -> SymbolKindName:
         return "Theorem"
 
@@ -558,6 +575,7 @@ class TypeDefinitionKind(SymbolKind):
 
     type: Optional[Type] = None
 
+    @property
     def name(self) -> SymbolKindName:
         return "TypeDefinition"
 
@@ -567,7 +585,7 @@ class TypeDefinitionKind(SymbolKind):
 
     def __str__(self) -> str:
         if self.type is None:
-            return f"{self.name()}"
+            return f"{self.name}"
         else:
             return f"{self.type}"
 
@@ -578,6 +596,7 @@ class UnknownKind(MetaSymbolKind):
     Represents an unknown symbol kind.
     """
 
+    @property
     def name(self) -> SymbolKindName:
         return "Unknown"
 
@@ -590,6 +609,7 @@ class ValueKind(SymbolKind):
 
     type: Optional[Type] = None
 
+    @property
     def name(self) -> SymbolKindName:
         return "Value"
 
@@ -683,7 +703,7 @@ class Symbol:
 
     @property
     def name(self) -> str:
-        return self.kind.name()
+        return self.kind.name
 
     def dump(self, lines: List[str]) -> None:
         """
