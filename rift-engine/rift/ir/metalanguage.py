@@ -43,26 +43,26 @@ class MetaLanguage:
             if "Call" not in self.locals:
                 calls: List[IR.CallKind] = []
                 for symbol in self._all_symbols:
-                    if isinstance(symbol.kind, IR.CallKind):
-                        calls.append(symbol.kind)
+                    if isinstance(symbol.symbol_kind, IR.CallKind):
+                        calls.append(symbol.symbol_kind)
                 self.locals["Call"] = calls
         elif mv == "Class":
             if "Class" not in self.locals:
                 classes: List[IR.ClassKind] = []
                 for symbol in self._all_symbols:
-                    if isinstance(symbol.kind, IR.ClassKind):
-                        classes.append(symbol.kind)
+                    if isinstance(symbol.symbol_kind, IR.ClassKind):
+                        classes.append(symbol.symbol_kind)
                 self.locals["Class"] = classes
         elif mv == "Function":
             if "Function" not in self.locals:
                 functions: List[IR.FunctionKind] = []
                 for symbol in self._all_symbols:
-                    if isinstance(symbol.kind, IR.FunctionKind):
-                        f = symbol.kind
+                    if isinstance(symbol.symbol_kind, IR.FunctionKind):
+                        f = symbol.symbol_kind
 
                         for p in f.parameters:
                             self.set_file_path(p, symbol.file_path)
-                        functions.append(symbol.kind)
+                        functions.append(symbol.symbol_kind)
                 self.locals["Function"] = functions
         elif mv == "TypeDefinition":
             if "TypeDefinition" not in self.locals:
@@ -76,10 +76,10 @@ class MetaLanguage:
                         traverse_type(f.type, file_path)
 
                 for symbol in self._all_symbols:
-                    if isinstance(symbol.kind, IR.TypeDefinitionKind):
-                        type_definitions.append(symbol.kind)
-                        if symbol.kind.type is not None and symbol.file_path is not None:
-                            traverse_type(symbol.kind.type, symbol.file_path)
+                    if isinstance(symbol.symbol_kind, IR.TypeDefinitionKind):
+                        type_definitions.append(symbol.symbol_kind)
+                        if symbol.symbol_kind.type is not None and symbol.file_path is not None:
+                            traverse_type(symbol.symbol_kind.type, symbol.file_path)
                 self.locals["TypeDefinition"] = type_definitions
         elif mv == "check":
 
@@ -150,8 +150,16 @@ def test_meta_language():
                 $check(x.parent, x.parent.name == 'Function')
         """
     ).lstrip()
+    code3 = dedent(
+        """
+        for x in $Call:
+            if x.function_name.startswith('use'):
+                if x.parent.name != 'Function':
+                    $check(x, False)
+        """
+    ).lstrip()
 
-    codes = [code0, code1, code2]
+    codes = [code0, code1, code2, code3]
     this_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(this_dir)
     project = parser.parse_files_in_paths([project_root], metasymbols=True)
