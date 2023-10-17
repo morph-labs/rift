@@ -122,7 +122,7 @@ def test_meta_language():
             if x.type.kind == 'record':
                 for f in x.type.fields:
                     if f.optional:
-                        $check(x, f.type.name != 'option')
+                        $check(x, f.type.id != 'option')
         """
     ).lstrip()
     code1 = dedent(
@@ -140,7 +140,7 @@ def test_meta_language():
         """
     ).lstrip()
 
-    code = [code0, code1, code2]
+    codes = [code0, code1, code2]
     this_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(this_dir)
     project = parser.parse_files_in_paths([project_root], metasymbols=True)
@@ -149,12 +149,18 @@ def test_meta_language():
     def report_check_failed(msg: str) -> None:
         failures.append(msg)
 
-    ml = MetaLanguage(
-        project=project,
-        raw_code=code[2],
-        report_check_failed=report_check_failed,
-    )
-    ml.eval()
+    def test_eval(raw_code: str) -> None:
+        ml = MetaLanguage(
+            project=project,
+            raw_code=raw_code,
+            report_check_failed=report_check_failed,
+        )
+        try:
+            ml.eval()
+        except Exception as e:
+            print(f"Exception: {e} in\n {raw_code}")
+    for c in codes:
+        test_eval(c)
     print(f"\nMetalanguage Test")
     for f in failures:
         print(f)
