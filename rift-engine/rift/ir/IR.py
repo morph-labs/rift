@@ -103,7 +103,7 @@ class Type:
     ]
     arguments: List["Type"] = field(default_factory=list)
     fields: List["Field"] = field(default_factory=list)
-    name: Optional[str] = None
+    id: Optional[str] = None
 
     def array(self) -> "Type":
         return Type(kind="array", arguments=[self])
@@ -112,7 +112,7 @@ class Type:
     def constructor(name: str, arguments: Optional[List["Type"]] = None) -> "Type":
         if arguments is None:
             arguments = []
-        return Type(kind="constructor", name=name, arguments=arguments)
+        return Type(kind="constructor", id=name, arguments=arguments)
 
     def function(self) -> "Type":
         return Type(kind="function")
@@ -132,16 +132,16 @@ class Type:
 
     @staticmethod
     def unknown(s: str) -> "Type":
-        return Type(kind="unknown", name=s)
+        return Type(kind="unknown", id=s)
 
     def __str__(self) -> str:
         if self.kind == "array":
             return f"{self.arguments[0]}[]"
         elif self.kind == "constructor":
             if self.arguments != []:
-                return f"{self.name}<{', '.join([str(arg) for arg in self.arguments])}>"
+                return f"{self.id}<{', '.join([str(arg) for arg in self.arguments])}>"
             else:
-                return self.name or "unknown"
+                return self.id or "unknown"
         elif self.kind == "function":
             return f"{self.arguments[0]}()"
         elif self.kind == "pointer":
@@ -153,7 +153,7 @@ class Type:
         elif self.kind == "type_of":
             return f"typeof({self.arguments[0]})"
         elif self.kind == "unknown":
-            return self.name or "unknown"
+            return self.id or "unknown"
         else:
             raise Exception(f"Unknown type kind: {self.kind}")
 
