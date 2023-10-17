@@ -38,7 +38,7 @@ def functions_missing_types_in_file(file: IR.File) -> List[MissingType]:
     for d in function_declarations:
         if d.language not in ["javascript", "ocaml", "python", "rescript", "tsx", "typescript"]:
             continue
-        function_kind = d.kind
+        function_kind = d.symbol_kind
         if not isinstance(function_kind, IR.FunctionKind):
             raise Exception(f"Expected function kind, got {function_kind}")
         missing_parameters: List[str] = []
