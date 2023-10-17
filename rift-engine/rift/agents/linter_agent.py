@@ -101,8 +101,8 @@ class GenerateCodePrompt:
 
 
 @registry.agent(
-    agent_description="Natural language linter",
-    display_name="Linter",
+    agent_description="Natural Bug Killers",
+    display_name="Natural Bug Killers",
     agent_icon="""\
 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_636_8979)">
