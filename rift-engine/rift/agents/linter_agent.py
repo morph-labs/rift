@@ -72,6 +72,8 @@ class GenerateCodePrompt:
                 - `t.id in ["option", "list", "int", ...] when `t` is a type
                 - `t.fields` when `d` is a record type definition
                 - `f.id` and `f.type` and `f.optional` when `f` is a field
+                - 'c.function_name` and `c.arguments` when `c` is in "$Call"
+            - A call is at toplevel if the parent is a function
 
             Example:
             Given this user prompt:
