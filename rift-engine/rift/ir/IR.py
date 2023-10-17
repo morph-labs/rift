@@ -230,6 +230,10 @@ class SymbolKind(ABC):
         raise NotImplementedError
 
     @property
+    def id(self) -> str:
+        return self.symbol.id
+
+    @property
     def parent(self) -> Optional["Symbol"]:
         return self.symbol.parent
 
