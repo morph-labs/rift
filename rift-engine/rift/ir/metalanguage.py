@@ -59,6 +59,7 @@ class MetaLanguage:
                 for symbol in self._all_symbols:
                     if isinstance(symbol.kind, IR.FunctionKind):
                         f = symbol.kind
+
                         for p in f.parameters:
                             self.set_file_path(p, symbol.file_path)
                         functions.append(symbol.kind)
@@ -66,12 +67,14 @@ class MetaLanguage:
         elif mv == "TypeDefinition":
             if "TypeDefinition" not in self.locals:
                 type_definitions: List[IR.TypeDefinitionKind] = []
+
                 def traverse_type(t: IR.Type, file_path: str) -> None:
                     for a in t.arguments:
                         traverse_type(a, file_path)
                     for f in t.fields:
                         self.set_file_path(f, file_path)
                         traverse_type(f.type, file_path)
+
                 for symbol in self._all_symbols:
                     if isinstance(symbol.kind, IR.TypeDefinitionKind):
                         type_definitions.append(symbol.kind)
@@ -167,6 +170,7 @@ def test_meta_language():
             ml.eval()
         except Exception as e:
             print(f"Exception: {e} in\n {raw_code}")
+
     for c in codes:
         test_eval(c)
     print(f"\nMetalanguage Test")

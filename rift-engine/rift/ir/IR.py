@@ -6,7 +6,6 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 import numpy as np
 import numpy.typing as npt
 
-
 from . import custom_parsers
 
 Language = Literal[
@@ -229,7 +228,7 @@ class SymbolKind(ABC):
     @abstractproperty
     def name(self) -> SymbolKindName:
         raise NotImplementedError
-    
+
     @property
     def parent(self) -> Optional["Symbol"]:
         return self.symbol.parent
