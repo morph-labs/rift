@@ -60,18 +60,18 @@ class GenerateCodePrompt:
             
             The function must be written in the following subset of Python:
             - `for each __set__: __body__`
-            - sets `__set__` can be one of ["$Class", "$File", "$Function", "$Method", "$Module", "$Namespace", "$TypeDefinition"]
+            - sets `__set__` can be one of ["$Call", "$Class", "$File", "$Function", "$Method", "$Module", "$Namespace", "$TypeDefinition"]
             - __body__ performs a check on using the following functions:
                 - `$check(x, __expression__)` where `x` is an element of a __set__
             - __expression__ can be one of the following categories:
-                - `x.name`
+                - `x.id`
                 - boolean, and equality operations
                 - string operations
-                - `d.name` and `d.type` when `d` is a type definition
+                - `d.id` and `d.type` when `d` is a type definition
                 - `t.kind in ["record", "array", ...]` when `t` is a type
-                - `t.name in ["option", "list", "int", ...] when `t` is a type
+                - `t.id in ["option", "list", "int", ...] when `t` is a type
                 - `t.fields` when `d` is a record type definition
-                - `f.name` and `f.type` and `f.optional` when `f` is a field
+                - `f.id` and `f.type` and `f.optional` when `f` is a field
 
             Example:
             Given this user prompt:
@@ -80,7 +80,7 @@ class GenerateCodePrompt:
             ```
             You will generate the following *code block*:
             ```python
-            for x in $Function: $check(x, x.name[0] == 'f')
+            for x in $Function: $check(x, x.id[0] == 'f')
             ```
 
             Example:
