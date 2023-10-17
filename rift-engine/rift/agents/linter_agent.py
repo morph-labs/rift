@@ -156,7 +156,7 @@ class LinterAgent(agent.ThirdPartyAgent):
 
     def parse_current_repo(self) -> IR.Project:
         project_root = self.get_project_root()
-        return parser.parse_files_in_paths([project_root])
+        return parser.parse_files_in_paths([project_root], metasymbols=True)
 
     async def generate_code(self, user_prompt: str) -> Optional[IR.Code]:
         prompt = GenerateCodePrompt.create(user_prompt)
