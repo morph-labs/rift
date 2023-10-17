@@ -66,9 +66,17 @@ class MetaLanguage:
         elif mv == "TypeDefinition":
             if "TypeDefinition" not in self.locals:
                 type_definitions: List[IR.TypeDefinitionKind] = []
+                def traverse_type(t: IR.Type, file_path: str) -> None:
+                    for a in t.arguments:
+                        traverse_type(a, file_path)
+                    for f in t.fields:
+                        self.set_file_path(f, file_path)
+                        traverse_type(f.type, file_path)
                 for symbol in self._all_symbols:
                     if isinstance(symbol.kind, IR.TypeDefinitionKind):
                         type_definitions.append(symbol.kind)
+                        if symbol.kind.type is not None and symbol.file_path is not None:
+                            traverse_type(symbol.kind.type, symbol.file_path)
                 self.locals["TypeDefinition"] = type_definitions
         elif mv == "check":
 
@@ -122,7 +130,7 @@ def test_meta_language():
             if x.type.kind == 'record':
                 for f in x.type.fields:
                     if f.optional:
-                        $check(x, f.type.id != 'option')
+                        $check(f, f.type.id != 'option')
         """
     ).lstrip()
     code1 = dedent(
