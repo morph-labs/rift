@@ -59,8 +59,8 @@ def get_typing_names_from_types(types: List[IR.Type]) -> Set[str]:
     """
     names: Set[str] = set()
     for t in types:
-        if t.name and python_typing.is_typing_type(t.name):
-            names.add(t.name)
+        if t.id and python_typing.is_typing_type(t.id):
+            names.add(t.id)
         new_names = get_typing_names_from_types(t.arguments)
         names = names.union(new_names)
     return names
