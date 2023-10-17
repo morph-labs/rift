@@ -656,7 +656,7 @@ class Symbol:
     parent: Optional["Symbol"]
     scope: Scope
     substring_: Substring
-    kind: SymbolKind
+    symbol_kind: SymbolKind
     embedding: Optional[Vector] = None
 
     @property
@@ -665,7 +665,7 @@ class Symbol:
         Returns the file path of the symbol, or None if the symbol is not associated with a file.
         """
         symbol = self
-        while not isinstance(symbol.kind, FileKind):
+        while not isinstance(symbol.symbol_kind, FileKind):
             if symbol.parent is None:
                 return None
             symbol = symbol.parent
@@ -710,7 +710,7 @@ class Symbol:
 
     @property
     def name(self) -> str:
-        return self.kind.name
+        return self.symbol_kind.name
 
     def dump(self, lines: List[str]) -> None:
         """
@@ -719,7 +719,7 @@ class Symbol:
         Args:
             lines (List[str]): The list of strings to append the string representation to.
         """
-        signature = self.kind.signature()
+        signature = self.symbol_kind.signature()
         if signature is not None:
             id = self.id + signature
         else:
@@ -739,7 +739,7 @@ class Symbol:
             lines.append(f"   body: {self.body}")
         if self.parent:
             lines.append(f"   parent: {self.parent.qualified_id}")
-        self.kind.dump(lines)
+        self.symbol_kind.dump(lines)
 
 
 def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
@@ -773,9 +773,9 @@ def create_file_symbol(code: Code, language: Language, path: str) -> Symbol:
         range=range,
         scope="",
         substring_=body_sub,
-        kind=dummy_kind,
+        symbol_kind=dummy_kind,
     )
-    symbol.kind = FileKind(symbol)
+    symbol.symbol_kind = FileKind(symbol)
     return symbol
 
 
@@ -829,29 +829,29 @@ class File:
         return [
             symbol
             for symbol in self._symbol_table.values()
-            if isinstance(symbol.kind, FunctionKind)
+            if isinstance(symbol.symbol_kind, FunctionKind)
         ]
 
     def dump_symbol_table(self, lines: List[str]) -> None:
         for _, symbol in self._symbol_table.items():
-            if not isinstance(symbol.kind, UnknownKind):
+            if not isinstance(symbol.symbol_kind, UnknownKind):
                 symbol.dump(lines)
 
     def dump_map(self, indent: int, lines: List[str]) -> None:
         def dump_symbol(symbol: Symbol, indent: int) -> None:
-            if isinstance(symbol.kind, UnknownKind):
+            if isinstance(symbol.symbol_kind, UnknownKind):
                 pass
-            elif not isinstance(symbol.kind, MetaSymbolKind):
+            elif not isinstance(symbol.symbol_kind, MetaSymbolKind):
                 decl_without_body = symbol.substring_without_body.decode().strip()
                 # indent the declaration
                 decl_without_body = decl_without_body.replace("\n", "\n" + " " * indent)
                 lines.append(f"{' ' * indent}{decl_without_body}")
             else:
-                lines.append(f"{' ' * indent}{symbol.id} = `{symbol.kind}`")
+                lines.append(f"{' ' * indent}{symbol.id} = `{symbol.symbol_kind}`")
             for s in symbol.body:
                 dump_symbol(s, indent + 2)
 
-        assert self.symbol and isinstance(self.symbol.kind, FileKind)
+        assert self.symbol and isinstance(self.symbol.symbol_kind, FileKind)
         for symbol in self.symbol.body:
             dump_symbol(symbol, indent)
 

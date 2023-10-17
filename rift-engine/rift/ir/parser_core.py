@@ -318,7 +318,7 @@ class SymbolParser:
             range=(parents[0].start_point, parents[-1].end_point),
             scope=self.scope,
             substring_=(parents[0].start_byte, parents[-1].end_byte),
-            kind=symbol_kind,
+            symbol_kind=symbol_kind,
         )
 
     def mk_dummy_symbol(self, id: Node | str, parents: List[Node]) -> Symbol:
@@ -328,7 +328,7 @@ class SymbolParser:
             name = id.text.decode()
         dummy_kind: SymbolKind = None  # type: ignore
         symbol = self.mk_symbol_decl(id=name, parents=parents, symbol_kind=dummy_kind)
-        symbol.kind = ValueKind(symbol)
+        symbol.symbol_kind = ValueKind(symbol)
         return symbol
 
     def mk_dummy_metasymbol(self, counter: Counter, name: str) -> Symbol:
@@ -339,7 +339,7 @@ class SymbolParser:
         return dummy
 
     def update_dummy_symbol(self, symbol: Symbol, symbol_kind: SymbolKind) -> None:
-        symbol.kind = symbol_kind
+        symbol.symbol_kind = symbol_kind
 
     def mk_fun_decl(
         self,
