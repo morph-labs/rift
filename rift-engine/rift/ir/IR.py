@@ -162,12 +162,12 @@ class Type:
 
 @dataclass
 class Field:
-    name: str
+    id: str
     optional: bool
     type: Type
 
     def __str__(self) -> str:
-        res = self.name
+        res = self.id
         if self.optional:
             res += "?"
         res += f": {self.type}"
