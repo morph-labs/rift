@@ -147,14 +147,14 @@ def test_meta_language():
         """
         for x in $Call:
             if x.function_name in ['useState', 'useEffect', 'useContext', 'useReducer', 'useCallback', 'useMemo', 'useRef', 'useImperativeHandle', 'useLayoutEffect', 'useDebugValue']:
-                $check(x.parent, x.parent.name == 'Function')
+                $check(x.parent, x.parent.kind == 'Function')
         """
     ).lstrip()
     code3 = dedent(
         """
         for x in $Call:
             if x.function_name.startswith('use'):
-                if x.parent.name != 'Function':
+                if x.parent.kind != 'Function':
                     $check(x, False)
         """
     ).lstrip()

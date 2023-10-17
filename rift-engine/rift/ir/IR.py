@@ -226,7 +226,7 @@ class SymbolKind(ABC):
     symbol: "Symbol"
 
     @abstractproperty
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         raise NotImplementedError
 
     @property
@@ -276,7 +276,7 @@ class BodyKind(MetaSymbolKind):
     block: Block
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Body"
 
     def dump(self, lines: List[str]) -> None:
@@ -299,7 +299,7 @@ class CallKind(MetaSymbolKind):
     arguments: List[Expression]
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Call"
 
     def dump(self, lines: List[str]) -> None:
@@ -323,7 +323,7 @@ class ClassKind(SymbolKind):
     superclasses: Optional[str]
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Class"
 
     def signature(self) -> Optional[str]:
@@ -338,7 +338,7 @@ class DefKind(SymbolKind):
     """
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Def"
 
 
@@ -353,7 +353,7 @@ class ExpressionKind(MetaSymbolKind):
     code: str
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Expression"
 
     def dump(self, lines: List[str]) -> None:
@@ -373,7 +373,7 @@ class FileKind(MetaSymbolKind):
     """
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "File"
 
 
@@ -386,7 +386,7 @@ class ForKind(MetaSymbolKind):
     body: "Symbol"
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "For"
 
     def dump(self, lines: List[str]) -> None:
@@ -415,7 +415,7 @@ class FunctionKind(SymbolKind):
     return_type: Optional[Type] = None
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Function"
 
     def dump(self, lines: List[str]) -> None:
@@ -436,7 +436,7 @@ class GuardKind(MetaSymbolKind):
     condition: Expression
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Guard"
 
     def dump(self, lines: List[str]) -> None:
@@ -464,7 +464,7 @@ class IfKind(MetaSymbolKind):
     else_body: Optional["Symbol"]
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "If"
 
     def dump(self, lines: List[str]) -> None:
@@ -491,7 +491,7 @@ class InterfaceKind(SymbolKind):
     """
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Interface"
 
 
@@ -502,7 +502,7 @@ class ModuleKind(SymbolKind):
     """
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Module"
 
 
@@ -513,7 +513,7 @@ class NamespaceKind(SymbolKind):
     """
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Namespace"
 
 
@@ -522,7 +522,7 @@ class SectionKind(SymbolKind):
     """Represents a Lean section: https://leanprover.github.io/lean4/doc/sections.html"""
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Section"
 
 
@@ -533,7 +533,7 @@ class StructureKind(SymbolKind):
     """
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Structure"
 
 
@@ -546,7 +546,7 @@ class SwitchKind(MetaSymbolKind):
     default: Optional["Symbol"]
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Switch"
 
     def dump(self, lines: List[str]) -> None:
@@ -570,7 +570,7 @@ class TheoremKind(SymbolKind):
     """
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Theorem"
 
 
@@ -583,7 +583,7 @@ class TypeDefinitionKind(SymbolKind):
     type: Optional[Type] = None
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "TypeDefinition"
 
     def dump(self, lines: List[str]) -> None:
@@ -592,7 +592,7 @@ class TypeDefinitionKind(SymbolKind):
 
     def __str__(self) -> str:
         if self.type is None:
-            return f"{self.name}"
+            return f"{self.kind}"
         else:
             return f"{self.type}"
 
@@ -604,7 +604,7 @@ class UnknownKind(MetaSymbolKind):
     """
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Unknown"
 
 
@@ -617,7 +617,7 @@ class ValueKind(SymbolKind):
     type: Optional[Type] = None
 
     @property
-    def name(self) -> SymbolKindName:
+    def kind(self) -> SymbolKindName:
         return "Value"
 
     def dump(self, lines: List[str]) -> None:
@@ -709,8 +709,8 @@ class Symbol:
             return self.code.bytes[start:end].decode()
 
     @property
-    def name(self) -> str:
-        return self.symbol_kind.name
+    def kind(self) -> str:
+        return self.symbol_kind.kind
 
     def dump(self, lines: List[str]) -> None:
         """
@@ -725,7 +725,7 @@ class Symbol:
         else:
             id = self.id
         lines.append(
-            f"{self.name}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring_}"
+            f"{self.kind}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring_}"
         )
         if self.scope != "":
             lines.append(f"   scope: {self.scope}")
