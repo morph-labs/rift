@@ -154,8 +154,7 @@ def test_meta_language():
         """
         for x in $Call:
             if x.function_name.startswith('use'):
-                if x.parent.kind != 'Function':
-                    $check(x, False)
+                $check(x, x.parent.kind == 'Function')
         """
     ).lstrip()
 
