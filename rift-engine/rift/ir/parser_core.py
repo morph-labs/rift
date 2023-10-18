@@ -952,7 +952,7 @@ class SymbolParser:
                                 fname = children[0].text.decode()
                                 optional = True
                                 type = parse_type(language, children[2].children[1], parent)
-                                field = Field(fname, optional, type)
+                                field = Field(fname, optional, parent, type)
                             elif (
                                 len(children) == 2
                                 and children[0].type == "property_identifier"
@@ -961,7 +961,7 @@ class SymbolParser:
                                 fname = children[0].text.decode()
                                 optional = False
                                 type = parse_type(language, children[1].children[1], parent)
-                                field = Field(fname, optional, type)
+                                field = Field(fname, optional, parent, type)
                             else:
                                 logger.warning(
                                     f"Unexpected node structure in record_type_field: {f.text.decode()}"
