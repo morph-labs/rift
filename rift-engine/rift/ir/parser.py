@@ -4,7 +4,7 @@ from typing import Callable, List, Optional
 from tree_sitter import Parser
 from tree_sitter_languages import get_parser as get_tree_sitter_parser
 
-from . import IR, custom_parsers, parser_core
+from . import IR, custom_parsers, parser_core, parser_ocaml
 
 
 def get_parser(language: IR.Language) -> Parser:
@@ -25,7 +25,11 @@ def parse_code_block(
 ) -> None:
     parser = get_parser(language)
     tree = parser.parse(code.bytes)
-    parser_core.SymbolParser(
+    if language == "ocaml":
+        constructor = parser_ocaml.OCamlParser
+    else:
+        constructor = parser_core.SymbolParser
+    symbol_parser = constructor(
         code=code,
         file=file,
         language=language,
@@ -33,7 +37,8 @@ def parse_code_block(
         node=tree.root_node,
         parent=file.symbol,
         scope="",
-    ).parse_block()
+    )
+    symbol_parser.parse_block()
 
 
 def parse_path(
