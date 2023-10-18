@@ -166,7 +166,12 @@ class Type:
 class Field:
     id: str
     optional: bool
+    parent: "Symbol"
     type: Type
+
+    @property
+    def file_path(self) -> Optional[str]:
+        return self.parent.file_path
 
     def __str__(self) -> str:
         res = self.id
@@ -185,6 +190,10 @@ class Parameter:
     default_value: Optional[str] = None
     type: Optional[Type] = None
     optional: bool = False
+
+    @property
+    def file_path(self) -> Optional[str]:
+        return self.parent.file_path
 
     def __str__(self) -> str:
         res = self.name
