@@ -3,7 +3,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from textwrap import dedent
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List
 
 from . import IR, parser
 
@@ -20,23 +20,6 @@ class MetaLanguage:
     globals: Dict[str, Any] = field(default_factory=dict)
     code: str = ""
     _all_symbols: List[IR.Symbol] = field(default_factory=list)
-
-    SymbolicType = Union[
-        IR.Field,
-        IR.Parameter,
-    ]
-
-    @classmethod
-    def set_file_path(
-        cls,
-        x: SymbolicType,
-        path: Optional[str],
-    ) -> None:
-        x.file_path = path  # type: ignore
-
-    @classmethod
-    def get_file_path(cls, x: SymbolicType) -> str:
-        return x.file_path  # type: ignore
 
     def process_meta_variable(self, mv: str) -> None:
         if mv == "Call":
@@ -58,28 +41,15 @@ class MetaLanguage:
                 functions: List[IR.FunctionKind] = []
                 for symbol in self._all_symbols:
                     if isinstance(symbol.symbol_kind, IR.FunctionKind):
-                        f = symbol.symbol_kind
-
-                        for p in f.parameters:
-                            self.set_file_path(p, symbol.file_path)
                         functions.append(symbol.symbol_kind)
                 self.locals["Function"] = functions
         elif mv == "TypeDefinition":
             if "TypeDefinition" not in self.locals:
                 type_definitions: List[IR.TypeDefinitionKind] = []
 
-                def traverse_type(t: IR.Type, file_path: str) -> None:
-                    for a in t.arguments:
-                        traverse_type(a, file_path)
-                    for f in t.fields:
-                        self.set_file_path(f, file_path)
-                        traverse_type(f.type, file_path)
-
                 for symbol in self._all_symbols:
                     if isinstance(symbol.symbol_kind, IR.TypeDefinitionKind):
                         type_definitions.append(symbol.symbol_kind)
-                        if symbol.symbol_kind.type is not None and symbol.file_path is not None:
-                            traverse_type(symbol.symbol_kind.type, symbol.file_path)
                 self.locals["TypeDefinition"] = type_definitions
         elif mv == "check":
 
@@ -89,12 +59,11 @@ class MetaLanguage:
                         self.report_check_failed(
                             f"Check failed on {x.qualified_id} in {x.file_path}"
                         )
-                elif isinstance(x, (IR.CallKind, IR.FunctionKind, IR.TypeDefinitionKind)):
+                elif isinstance(
+                    x, (IR.CallKind, IR.FunctionKind, IR.TypeDefinitionKind, IR.Field, IR.Parameter)
+                ):
                     if not b:
                         self.report_check_failed(f"Check failed on: {x} in {x.file_path}")
-                elif isinstance(x, (IR.Field, IR.Parameter)):
-                    if not b:
-                        self.report_check_failed(f"Check failed on: {x} in {self.get_file_path(x)}")
                 else:
                     raise Exception(f"Unknown type: {type(x)}")
 
