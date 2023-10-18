@@ -181,6 +181,7 @@ class Field:
 @dataclass
 class Parameter:
     name: str
+    parent: "Symbol"
     default_value: Optional[str] = None
     type: Optional[Type] = None
     optional: bool = False

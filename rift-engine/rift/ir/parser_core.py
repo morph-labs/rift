@@ -131,7 +131,7 @@ def get_c_cpp_parameter(language: Language, node: Node, parent: Symbol) -> Param
     name = ""
     if final_node.type == "identifier":
         name = final_node.text.decode()
-    return Parameter(name=name, type=type)
+    return Parameter(name=name, type=type, parent=parent)
 
 
 def get_parameters(language: Language, node: Node, parent: Symbol) -> List[Parameter]:
@@ -139,7 +139,7 @@ def get_parameters(language: Language, node: Node, parent: Symbol) -> List[Param
     for child in node.children:
         if child.type == "identifier":
             name = child.text.decode()
-            parameters.append(Parameter(name=name))
+            parameters.append(Parameter(name=name, parent=parent))
         elif child.type in ["typed_parameter", "typed_default_parameter"]:
             name = ""
             type: Optional[Type] = None
@@ -151,7 +151,9 @@ def get_parameters(language: Language, node: Node, parent: Symbol) -> List[Param
             value_node = child.child_by_field_name("value")
 
             default_value = value_node.text.decode() if value_node is not None else None
-            parameters.append(Parameter(name=name, default_value=default_value, type=type))
+            parameters.append(
+                Parameter(name=name, default_value=default_value, type=type, parent=parent)
+            )
         elif child.type == "parameter_declaration":
             if language in ["c", "cpp"]:
                 parameters.append(get_c_cpp_parameter(language, child, parent))
@@ -161,7 +163,7 @@ def get_parameters(language: Language, node: Node, parent: Symbol) -> List[Param
                 if type_node is not None:
                     type = parse_type(language, type_node, parent)
                 name = child.text.decode()
-                parameters.append(Parameter(name=name, type=type))
+                parameters.append(Parameter(name=name, type=type, parent=parent))
         elif child.type in ["required_parameter", "optional_parameter"]:
             name = ""
             pattern_node = child.child_by_field_name("pattern")
@@ -172,7 +174,9 @@ def get_parameters(language: Language, node: Node, parent: Symbol) -> List[Param
             if type_node is not None:
                 type = parse_type(language, type_node, parent)
             parameters.append(
-                Parameter(name=name, type=type, optional=child.type == "optional_parameter")
+                Parameter(
+                    name=name, type=type, optional=child.type == "optional_parameter", parent=parent
+                )
             )
         elif child.type in ["formal_parameter", "parameter"]:
             type: Optional[Type] = None
@@ -180,7 +184,7 @@ def get_parameters(language: Language, node: Node, parent: Symbol) -> List[Param
             if type_node is not None:
                 type = parse_type(language, type_node, parent)
             name = child.text.decode()
-            parameters.append(Parameter(name=name, type=type))
+            parameters.append(Parameter(name=name, type=type, parent=parent))
     return parameters
 
 
@@ -636,7 +640,7 @@ class SymbolParser:
             def parse_inner_parameter(inner: Node, parent: Symbol) -> Optional[Parameter]:
                 if inner.type in ["label_name", "value_pattern"]:
                     name = inner.text.decode()
-                    return Parameter(name=name)
+                    return Parameter(name=name, parent=parent)
                 elif (
                     inner.type == "typed_pattern"
                     and inner.child_count == 5
@@ -648,11 +652,11 @@ class SymbolParser:
                     if id.type == "value_pattern":
                         name = id.text.decode()
                         type = extract_type(tp, parent)
-                        return Parameter(name=name, type=type)
+                        return Parameter(name=name, type=type, parent=parent)
                 elif inner.type == "unit":
                     name = "()"
                     type = Type.constructor(name="unit", parent=parent)
-                    return Parameter(name=name, type=type)
+                    return Parameter(name=name, type=type, parent=parent)
 
             def parse_ocaml_parameter(parameter: Node, parent: Symbol) -> None:
                 if parameter.child_count == 1:
@@ -775,7 +779,9 @@ class SymbolParser:
                         name = "~" + children[1].text.decode()
                     else:
                         name = nodes[0].text.decode()
-                    parameters.append(Parameter(default_value=default_value, name=name, type=type))
+                    parameters.append(
+                        Parameter(default_value=default_value, name=name, type=type, parent=parent)
+                    )
                 else:
                     logger.warning(f"Unexpected parameter type: {par.type}")
 
@@ -791,7 +797,9 @@ class SymbolParser:
                     parameter_node = exp.child_by_field_name("parameter")
                     if parameter_node is not None:
                         parameters.append(
-                            Parameter(default_value=None, name=parameter_node.text.decode())
+                            Parameter(
+                                default_value=None, name=parameter_node.text.decode(), parent=parent
+                            )
                         )
                     nodes = exp.children
                     if len(nodes) >= 2:
