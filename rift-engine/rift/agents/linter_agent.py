@@ -11,6 +11,7 @@ import openai
 
 import rift.agents.abstract as agent
 import rift.agents.registry as registry
+import rift.ir.custom_parsers as custom_parsers
 import rift.ir.IR as IR
 import rift.ir.parser as parser
 import rift.llm.openai_types as openai_types
@@ -127,6 +128,7 @@ class LinterAgent(agent.ThirdPartyAgent):
 
     @classmethod
     async def create(cls, params: agent.AgentParams, server: LspServer) -> agent.Agent:
+        custom_parsers.activate()  # Needed to support ReScript
         state = State(
             params=params,
             messages=[],

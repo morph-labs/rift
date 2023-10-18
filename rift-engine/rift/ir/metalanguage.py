@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from textwrap import dedent
 from typing import Any, Callable, Dict, List
 
+import rift.ir.custom_parsers as custom_parsers
+
 from . import IR, parser
 
 logger = logging.getLogger(__name__)
@@ -130,6 +132,7 @@ def test_meta_language():
     codes = [code0, code1, code2, code3]
     this_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(this_dir)
+    custom_parsers.activate()
     project = parser.parse_files_in_paths([project_root], metasymbols=True)
     failures: List[str] = []
 
