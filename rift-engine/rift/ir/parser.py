@@ -4,7 +4,9 @@ from typing import Callable, List, Optional
 from tree_sitter import Parser
 from tree_sitter_languages import get_parser as get_tree_sitter_parser
 
-from . import IR, custom_parsers, parser_core, parser_ocaml
+from rift.ir import parser_rescript
+
+from . import IR, custom_parsers, parser_core, parser_ocaml, parser_rescript
 
 
 def get_parser(language: IR.Language) -> Parser:
@@ -27,6 +29,8 @@ def parse_code_block(
     tree = parser.parse(code.bytes)
     if language == "ocaml":
         constructor = parser_ocaml.OCamlParser
+    elif language == "rescript":
+        constructor = parser_rescript.ReScriptParser
     else:
         constructor = parser_core.SymbolParser
     symbol_parser = constructor(
