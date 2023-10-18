@@ -45,9 +45,6 @@ def parse_type(language: Language, node: Node, parent: Symbol) -> Type:
 
 
 class ReScriptParser(SymbolParser):
-    def process_body(self) -> Optional[Node]:
-        pass  # handled for each declaration in a let binding
-
     def parse_symbols(self, counter: Counter) -> List[Symbol]:
         if self.node.type == "let_declaration":
             return_type = None
