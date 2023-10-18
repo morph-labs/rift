@@ -1,5 +1,5 @@
 import os
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractproperty
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
@@ -100,38 +100,41 @@ class Type:
     kind: Literal[
         "array", "constructor", "function", "pointer", "record", "reference", "type_of", "unknown"
     ]
+    parent: "Symbol"
     arguments: List["Type"] = field(default_factory=list)
     fields: List["Field"] = field(default_factory=list)
     id: Optional[str] = None
 
-    def array(self) -> "Type":
-        return Type(kind="array", arguments=[self])
+    def array(self, parent: "Symbol") -> "Type":
+        return Type(kind="array", arguments=[self], parent=parent)
 
     @staticmethod
-    def constructor(name: str, arguments: Optional[List["Type"]] = None) -> "Type":
+    def constructor(
+        name: str, parent: "Symbol", arguments: Optional[List["Type"]] = None
+    ) -> "Type":
         if arguments is None:
             arguments = []
-        return Type(kind="constructor", id=name, arguments=arguments)
+        return Type(kind="constructor", id=name, arguments=arguments, parent=parent)
 
-    def function(self) -> "Type":
-        return Type(kind="function")
+    def function(self, parent: "Symbol") -> "Type":
+        return Type(kind="function", parent=parent)
 
-    def pointer(self) -> "Type":
-        return Type(kind="pointer", arguments=[self])
-
-    @staticmethod
-    def record(fields: List["Field"]) -> "Type":
-        return Type(kind="record", fields=fields)
-
-    def reference(self) -> "Type":
-        return Type(kind="reference", arguments=[self])
-
-    def type_of(self) -> "Type":
-        return Type(kind="type_of", arguments=[self])
+    def pointer(self, parent: "Symbol") -> "Type":
+        return Type(kind="pointer", arguments=[self], parent=parent)
 
     @staticmethod
-    def unknown(s: str) -> "Type":
-        return Type(kind="unknown", id=s)
+    def record(fields: List["Field"], parent: "Symbol") -> "Type":
+        return Type(kind="record", fields=fields, parent=parent)
+
+    def reference(self, parent: "Symbol") -> "Type":
+        return Type(kind="reference", arguments=[self], parent=parent)
+
+    def type_of(self, parent: "Symbol") -> "Type":
+        return Type(kind="type_of", arguments=[self], parent=parent)
+
+    @staticmethod
+    def unknown(s: str, parent: "Symbol") -> "Type":
+        return Type(kind="unknown", id=s, parent=parent)
 
     def __str__(self) -> str:
         if self.kind == "array":
