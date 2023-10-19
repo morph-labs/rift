@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import List, Optional
 
 from tree_sitter import Node
@@ -6,7 +7,9 @@ from tree_sitter import Node
 from rift.ir.parser_core import Counter, SymbolParser
 
 from .IR import (
+    ArrayKind,
     Case,
+    Expression,
     Field,
     FunctionKind,
     IfKind,
@@ -345,12 +348,36 @@ class ReScriptParser(SymbolParser):
                 self.file.add_symbol(switch_symbol)
                 return switch_symbol
 
+        elif node.type == "array":
+            symbol = self.mk_dummy_metasymbol(counter, "array")
+            elements: List[Expression] = []
+            symbol_kind = ArrayKind(symbol, elements)
+            for child in self.node.children:
+                if child.type in ["[", "]", ","]:
+                    continue
+                scope = self.scope
+                exp = self.recurse(child, scope, parent=symbol).parse_expression(counter)
+                elements.append(exp)
+            self.update_dummy_symbol(symbol, symbol_kind)
+            self.file.add_symbol(symbol)
+            return symbol
+
         return super().parse_metasymbol(counter)
 
     def walk_expression(self, counter: Counter) -> None:
-        if self.node.type in ["if_expression", "switch_expression"]:
+        if self.node.type in ["if_expression", "switch_expression", "array"]:
             self.parse_symbols(counter)
         elif self.node.type == "block":
             self.parse_block()
 
         super().walk_expression(counter)
+
+
+def test():
+    from . import custom_parsers, parser
+
+    project_root = os.path.join(os.path.dirname(__file__), "tests")
+    custom_parsers.activate()
+    project = parser.parse_files_in_paths([project_root], metasymbols=True)
+    map = project.dump_map(indent=0)
+    print(f"\nMAP:\n{map}")

@@ -209,6 +209,7 @@ class Parameter:
 
 
 SymbolKindName = Literal[
+    "Array",
     "Body",
     "Call",
     "Class",
@@ -276,6 +277,26 @@ class MetaSymbolKind(SymbolKind):
     """
 
     pass
+
+
+@dataclass
+class ArrayKind(MetaSymbolKind):
+    """A symbol kind representing an array expression."""
+
+    elements: List[Expression]
+
+    @property
+    def kind(self) -> SymbolKindName:
+        return "Array"
+
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   elements: {self.elements}")
+
+    def __str__(self) -> str:
+        return f"[{', '.join(self.elements)}]"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 @dataclass

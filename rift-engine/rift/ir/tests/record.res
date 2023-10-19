@@ -7,5 +7,5 @@ let useInConditional = x => {
 }
 
 let useAtToplevel = x => {
-  useState()
+  useState([1,2,[3,4]])
 }

@@ -1,15 +1,9 @@
 import logging
 from typing import List
 
-
 from rift.ir.parser_core import Counter, SymbolParser
 
-from .IR import (
-    DefKind,
-    StructureKind,
-    Symbol,
-    TheoremKind,
-)
+from .IR import DefKind, StructureKind, Symbol, TheoremKind
 
 logger = logging.getLogger(__name__)
 

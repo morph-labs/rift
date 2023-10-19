@@ -4,14 +4,7 @@ from tree_sitter import Node
 
 from rift.ir.parser_core import Counter, SymbolParser
 
-from .IR import (
-    FunctionKind,
-    ModuleKind,
-    Parameter,
-    Symbol,
-    Type,
-    ValueKind,
-)
+from .IR import FunctionKind, ModuleKind, Parameter, Symbol, Type, ValueKind
 
 
 class OCamlParser(SymbolParser):
