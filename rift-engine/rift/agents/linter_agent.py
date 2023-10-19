@@ -98,7 +98,7 @@ class GenerateCodePrompt:
             You will generate the following *code block*:
             ```python
             for x in $TypeDefinition:
-                /if x.type.kind == 'record': $check(x, 'name' in x.type.fields)
+                if x.type.kind == 'record': $check(x, 'name' in x.type.fields)
             ```
             """
         ).lstrip()
