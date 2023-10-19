@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Callable, List, Optional
 
@@ -7,6 +8,8 @@ from tree_sitter_languages import get_parser as get_tree_sitter_parser
 from rift.ir import parser_rescript
 
 from . import IR, custom_parsers, parser_core, parser_lean, parser_ocaml, parser_rescript
+
+logger = logging.getLogger(__name__)
 
 
 def get_parser(language: IR.Language) -> Parser:
@@ -59,6 +62,10 @@ def parse_path(
     language = IR.language_from_file_extension(path)
     if language is not None and (filter_file is None or filter_file(path)):
         path_from_root = os.path.relpath(path, project.root_path)
+        # check if the file is too large before reading it
+        if os.path.getsize(path) > 5000000:
+            logger.warning(f"Skipping {path_from_root} because it is too large")
+            return
         with open(path, "r", encoding="utf-8") as f:
             code = IR.Code(f.read().encode("utf-8"))
         file_ir = IR.File(code=code, path=path_from_root)
