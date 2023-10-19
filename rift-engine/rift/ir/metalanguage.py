@@ -137,7 +137,7 @@ def test_meta_language():
         """
         for x in $Call:
             if x.function_name == 'useEffect':
-                $check(x, x.arguments[1].kind in ['Array', 'Tuple'])
+                $check(x, x.arguments[1].kind in ['Tuple', 'Array'])
         """
     ).lstrip()
 

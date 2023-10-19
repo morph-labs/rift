@@ -56,7 +56,8 @@ class GenerateCodePrompt:
             
             You MUST format your response as a *code block*:
                 ```python
-                for x in __set__: ...
+                for x in __set__:
+                    ...
                 ```
             
             The function must be written in the following subset of Python:
@@ -64,6 +65,7 @@ class GenerateCodePrompt:
             - sets `__set__` can be one of ["$Call", "$Class", "$File", "$Function", "$Method", "$Module", "$Namespace", "$TypeDefinition"]
             - __body__ performs a check on using the following functions:
                 - `$check(x, __expression__)` where `x` is an element of a __set__
+                - Note: `$check` MUST be called with 2 arguments.
             - __expression__ can be one of the following categories:
                 - `x.id`
                 - boolean, and equality operations
@@ -74,7 +76,7 @@ class GenerateCodePrompt:
                 - `t.fields` when `d` is a record type definition
                 - `f.id` and `f.type` and `f.optional` when `f` is a field
                 - 'c.function_name` and `c.arguments` when `c` is in "$Call"
-                - `e.kind` is in ["Array", "Tuple", "Switch", ...]
+                - `e.kind` can be "Array", "Tuple", "Switch", ... if `e` is an expression
             - A call is at toplevel if the parent is a function
 
             Example:
@@ -84,7 +86,8 @@ class GenerateCodePrompt:
             ```
             You will generate the following *code block*:
             ```python
-            for x in $Function: $check(x, x.id[0] == 'f')
+            for x in $Function:
+                $check(x, x.id[0] == 'f')
             ```
 
             Example:
@@ -94,7 +97,8 @@ class GenerateCodePrompt:
             ```
             You will generate the following *code block*:
             ```python
-            for x in $TypeDefinition: if x.type.kind == 'record': $check(x, 'name' in x.type.fields)
+            for x in $TypeDefinition:
+                /if x.type.kind == 'record': $check(x, 'name' in x.type.fields)
             ```
             """
         ).lstrip()
