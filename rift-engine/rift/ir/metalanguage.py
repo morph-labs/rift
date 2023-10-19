@@ -107,6 +107,7 @@ def test_meta_language():
                         $check(f, f.type.id != 'option')
         """
     ).lstrip()
+
     code1 = dedent(
         """
         for x in $Function: 
@@ -114,6 +115,7 @@ def test_meta_language():
                 $check(p, p.default_value != "[]")
         """
     ).lstrip()
+
     code2 = dedent(
         """
         for x in $Call:
@@ -121,6 +123,7 @@ def test_meta_language():
                 $check(x.parent, x.parent.kind == 'Function')
         """
     ).lstrip()
+
     code3 = dedent(
         """
         for x in $Call:
@@ -129,7 +132,16 @@ def test_meta_language():
         """
     ).lstrip()
 
-    codes = [code0, code1, code2, code3]
+    # Check that the second argument passed to `useEffect` is either a tuple or an array.
+    code4 = dedent(
+        """
+        for x in $Call:
+            if x.function_name == 'useEffect':
+                $check(x, x.arguments[1].kind in ['Array', 'Tuple'])
+        """
+    ).lstrip()
+
+    codes = [code0, code1, code2, code3, code4]
     this_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(this_dir)
     custom_parsers.activate()

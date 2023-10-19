@@ -7,5 +7,9 @@ let useInConditional = x => {
 }
 
 let useAtToplevel = x => {
-  useState([1,2,[3,4]], ("a", "b"))
+  useState([1, 2, [3, 4]], ("a", "b"))
+}
+
+let testUseEffect = f => {
+  useEffect(f, [1, 2, 3])
 }
