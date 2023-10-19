@@ -725,7 +725,7 @@ class SymbolParser:
         """
         Parse an expression to generate its corresponding code with symbols replaced by their names.
         """
-        
+
         self_rec = self.recurse(self.node, self.scope, parent=self.parent)
         symbol = self_rec.parse_metasymbol(counter)
         if symbol is not None:

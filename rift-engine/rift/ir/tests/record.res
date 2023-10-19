@@ -10,6 +10,14 @@ let useAtToplevel = x => {
   useState([1, 2, [3, 4]], ("a", "b"))
 }
 
-let testUseEffect = f => {
+let testUseEffect1 = f => {
   useEffect(f, [1, 2, 3])
+}
+
+let testUseEffect2 = f => {
+  useEffect(f, (1,2))
+}
+
+let testUseEffect2 = f => {
+  useEffect(f, 10)
 }
