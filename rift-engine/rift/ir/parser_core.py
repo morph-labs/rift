@@ -775,7 +775,7 @@ class SymbolParser:
                     if arguments_node is not None:
                         arg_counter = Counter()
                         for arg in arguments_node.children:
-                            if arg.type in ["(", ")"]:
+                            if arg.type in ["(", ")", ","]:
                                 continue
                             expression = self.recurse(
                                 arg, self.scope, parent=symbol
