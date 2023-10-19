@@ -21,12 +21,14 @@ from .IR import (
     Import,
     InterfaceKind,
     Language,
+    LiteralExpression,
     ModuleKind,
     NamespaceKind,
     Parameter,
     Scope,
     Substring,
     Symbol,
+    SymbolExpression,
     SymbolKind,
     Type,
     TypeDefinitionKind,
@@ -723,13 +725,18 @@ class SymbolParser:
         """
         Parse an expression to generate its corresponding code with symbols replaced by their names.
         """
+        
+        self_rec = self.recurse(self.node, self.scope, parent=self.parent)
+        symbol = self_rec.parse_metasymbol(counter)
+        if symbol is not None:
+            return SymbolExpression(symbol)
 
-        self.recurse(self.node, self.scope, parent=self.parent).walk_expression(counter)
+        self_rec.walk_expression(counter)
 
         code = self.node.text.decode()
 
         if self.parent is None:
-            return code
+            return LiteralExpression(code)
 
         # Get a list of symbols from the parent's body
         symbols = self.parent.body
@@ -747,7 +754,7 @@ class SymbolParser:
             if start >= 0 and end <= len(code):
                 code = code[:start] + symbol.id + code[end:]
 
-        return code
+        return LiteralExpression(code)
 
     @classmethod
     def expression_requires_node(cls, node: Node) -> bool:

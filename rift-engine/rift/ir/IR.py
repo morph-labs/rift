@@ -62,7 +62,47 @@ class CodeEdit:
         return Code(code.bytes[:start] + self.new_bytes + code.bytes[end:])
 
 
-Expression = str
+@dataclass
+class Expression(ABC):
+    """Abstract class for expressions."""
+
+    @abstractproperty
+    def kind(self) -> str:
+        raise NotImplementedError
+
+
+@dataclass
+class LiteralExpression(Expression):
+    """Represents a literal expression: the string is obtained by substituting symbol names in the code"""
+
+    value: str
+
+    @property
+    def kind(self) -> str:
+        return "Literal"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+@dataclass
+class SymbolExpression(Expression):
+    """Represents an expression which is a recognized symbol"""
+
+    symbol: "Symbol"
+
+    @property
+    def kind(self) -> str:
+        return self.symbol.kind
+
+    def __str__(self) -> str:
+        return self.symbol.id
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 @dataclass
@@ -294,7 +334,8 @@ class ArrayKind(MetaSymbolKind):
         lines.append(f"   elements: {self.elements}")
 
     def __str__(self) -> str:
-        return f"[{', '.join(self.elements)}]"
+        elements = [str(element) for element in self.elements]
+        return f"[{', '.join(elements)}]"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -343,7 +384,8 @@ class CallKind(MetaSymbolKind):
             lines.append(f"   arguments: {self.arguments}")
 
     def __str__(self) -> str:
-        return f"{self.function_name}({', '.join(self.arguments)})"
+        arguments = [str(argument) for argument in self.arguments]
+        return f"{self.function_name}({', '.join(arguments)})"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -385,17 +427,17 @@ class ExpressionKind(MetaSymbolKind):
         code (str): The code string that represents the expression.
     """
 
-    code: str
+    expression: Expression
 
     @property
     def kind(self) -> SymbolKindName:
         return "Expression"
 
     def dump(self, lines: List[str]) -> None:
-        lines.append(f"   code: {self.code}")
+        lines.append(f"   expression: {self.expression}")
 
     def __str__(self) -> str:
-        return self.code
+        return str(self.expression)
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -478,7 +520,7 @@ class GuardKind(MetaSymbolKind):
         lines.append(f"   condition: {self.condition}")
 
     def __str__(self) -> str:
-        return self.condition
+        return str(self.condition)
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -623,7 +665,8 @@ class TupleKind(MetaSymbolKind):
         lines.append(f"   elements: {self.elements}")
 
     def __str__(self) -> str:
-        return f"({', '.join(self.elements)})"
+        elements = [str(element) for element in self.elements]
+        return f"({', '.join(elements)})"
 
     def __repr__(self) -> str:
         return self.__str__()
