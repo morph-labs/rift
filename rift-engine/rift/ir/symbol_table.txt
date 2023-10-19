@@ -183,7 +183,7 @@ Call: call$0
    scope: if$0.body$0.
    parent: if$0.body$0
    function_name: console.log
-   arguments: ['"true"']
+   arguments: ["true"]
 Call: call$1
    language: typescript
    range: ((17, 4), (17, 19))
@@ -191,7 +191,7 @@ Call: call$1
    scope: if$0.body$0.
    parent: if$0.body$0
    function_name: congole.log
-   arguments: ['42']
+   arguments: [42]
 Body: body$0
    language: typescript
    range: ((15, 10), (18, 1))
@@ -207,7 +207,7 @@ Call: call$0
    scope: if$0.body$1.
    parent: if$0.body$1
    function_name: console.log
-   arguments: ['"false"']
+   arguments: ["false"]
 Body: body$1
    language: typescript
    range: ((18, 7), (20, 1))
@@ -236,7 +236,7 @@ Expression: expression$0
    range: ((0, 0), (0, 22))
    substring: (0, 22)
    parent: test.tsx
-   code: d = <div> "abc" </div>
+   expression: d = <div> "abc" </div>
 Function: tsx
    language: tsx
    range: ((1, 0), (1, 27))
@@ -257,7 +257,7 @@ Expression: expression$0
    substring: (18, 69)
    scope: A.
    parent: A
-   code: """
+   expression: """
     This is a docstring
     for class A
     """
@@ -267,7 +267,7 @@ Expression: expression$0
    substring: (97, 122)
    scope: A.py.
    parent: A.py
-   code: """This is a docstring"""
+   expression: """This is a docstring"""
 Function: py
    language: python
    range: ((6, 4), (8, 16))
@@ -357,7 +357,7 @@ Expression: expression$0
    substring: (647, 664)
    scope: some_conditionals.
    parent: some_conditionals
-   code: """explanation"""
+   expression: """explanation"""
 Guard: guard$0
    language: python
    range: ((33, 7), (33, 18))
@@ -475,7 +475,7 @@ Call: call$0
    scope: with_nested_conditionals.if$0.body$0.if$0.body$0.expression$0.
    parent: with_nested_conditionals.if$0.body$0.if$0.body$0.expression$0
    function_name: foo
-   arguments: ['1']
+   arguments: [1]
 Call: call$1
    language: python
    range: ((50, 25), (50, 31))
@@ -483,7 +483,7 @@ Call: call$1
    scope: with_nested_conditionals.if$0.body$0.if$0.body$0.expression$0.call.
    parent: with_nested_conditionals.if$0.body$0.if$0.body$0.expression$0
    function_name: bar
-   arguments: ['2']
+   arguments: [2]
 Expression: expression$0
    language: python
    range: ((50, 12), (50, 31))
@@ -491,7 +491,7 @@ Expression: expression$0
    scope: with_nested_conditionals.if$0.body$0.if$0.body$0.
    body: ['call$0', 'call$1']
    parent: with_nested_conditionals.if$0.body$0.if$0.body$0
-   code: x = call$0 + call$1
+   expression: x = call$0 + call$1
 Body: body$0
    language: python
    range: ((50, 12), (50, 31))
@@ -522,7 +522,7 @@ Call: call$0
    scope: with_nested_conditionals.if$0.body$0.if$1.body$1.
    parent: with_nested_conditionals.if$0.body$0.if$1.body$1
    function_name: print
-   arguments: ['"hello"']
+   arguments: ["hello"]
 Call: call$1
    language: python
    range: ((53, 12), (53, 26))
@@ -530,7 +530,7 @@ Call: call$1
    scope: with_nested_conditionals.if$0.body$0.if$1.body$1.
    parent: with_nested_conditionals.if$0.body$0.if$1.body$1
    function_name: print
-   arguments: ['"world"']
+   arguments: ["world"]
 Body: body$1
    language: python
    range: ((52, 12), (53, 26))
@@ -579,7 +579,7 @@ Call: call$0
    scope: for$0.
    parent: for$0
    function_name: range
-   arguments: ['10']
+   arguments: [10]
 Call: call$0
    language: python
    range: ((56, 4), (56, 15))
@@ -587,7 +587,7 @@ Call: call$0
    scope: for$0.body$0.
    parent: for$0.body$0
    function_name: print
-   arguments: ['i+1']
+   arguments: [i+1]
 Call: call$1
    language: python
    range: ((57, 14), (57, 31))
@@ -595,7 +595,7 @@ Call: call$1
    scope: for$0.body$0.expression$0.
    parent: for$0.body$0.expression$0
    function_name: get_some_value
-   arguments: ['i']
+   arguments: [i]
 Expression: expression$0
    language: python
    range: ((57, 4), (57, 32))
@@ -603,7 +603,7 @@ Expression: expression$0
    scope: for$0.body$0.
    body: ['call$1']
    parent: for$0.body$0
-   code: x = await(call$1)
+   expression: x = await(call$1)
 Body: body$0
    language: python
    range: ((56, 4), (57, 32))
