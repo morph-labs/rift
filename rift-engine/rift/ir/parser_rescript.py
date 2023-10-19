@@ -18,6 +18,7 @@ from .IR import (
     Parameter,
     SwitchKind,
     Symbol,
+    TupleKind,
     Type,
     TypeDefinitionKind,
     ValueKind,
@@ -348,12 +349,15 @@ class ReScriptParser(SymbolParser):
                 self.file.add_symbol(switch_symbol)
                 return switch_symbol
 
-        elif node.type == "array":
-            symbol = self.mk_dummy_metasymbol(counter, "array")
+        elif node.type in ["array", "tuple"]:
+            symbol = self.mk_dummy_metasymbol(counter, node.type)
             elements: List[Expression] = []
-            symbol_kind = ArrayKind(symbol, elements)
+            if node.type == "array":
+                symbol_kind = ArrayKind(symbol, elements)
+            else:
+                symbol_kind = TupleKind(symbol, elements)
             for child in self.node.children:
-                if child.type in ["[", "]", ","]:
+                if child.type in ["[", "(", "]", ")", ","]:
                     continue
                 scope = self.scope
                 exp = self.recurse(child, scope, parent=symbol).parse_expression(counter)
@@ -365,7 +369,7 @@ class ReScriptParser(SymbolParser):
         return super().parse_metasymbol(counter)
 
     def walk_expression(self, counter: Counter) -> None:
-        if self.node.type in ["if_expression", "switch_expression", "array"]:
+        if self.node.type in ["array", "if_expression", "switch_expression", "tuple"]:
             self.parse_symbols(counter)
         elif self.node.type == "block":
             self.parse_block()

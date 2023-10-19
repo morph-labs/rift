@@ -227,6 +227,7 @@ SymbolKindName = Literal[
     "Structure",
     "Switch",
     "Theorem",
+    "Tuple",
     "TypeDefinition",
     "Unknown",
     "Value",
@@ -606,6 +607,26 @@ class TheoremKind(SymbolKind):
     @property
     def kind(self) -> SymbolKindName:
         return "Theorem"
+
+
+@dataclass
+class TupleKind(MetaSymbolKind):
+    """A symbol kind representing a tuple expression."""
+
+    elements: List[Expression]
+
+    @property
+    def kind(self) -> SymbolKindName:
+        return "Tuple"
+
+    def dump(self, lines: List[str]) -> None:
+        lines.append(f"   elements: {self.elements}")
+
+    def __str__(self) -> str:
+        return f"({', '.join(self.elements)})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 @dataclass
