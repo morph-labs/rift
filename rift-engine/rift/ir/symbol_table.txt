@@ -1,6 +1,6 @@
 === Symbol Table for test.c ===
 File: test.c
-   language: python
+   language: c
    range: ((0, 0), (17, 1))
    substring: (0, 169)
    body_sub: (0, 169)
@@ -37,7 +37,7 @@ Function: main
    return_type: int
 === Symbol Table for test.js ===
 File: test.js
-   language: python
+   language: javascript
    range: ((0, 0), (3, 18))
    substring: (0, 111)
    body_sub: (0, 111)
@@ -58,7 +58,7 @@ Function: f2
    parent: test.js
 === Symbol Table for test.java ===
 File: test.java
-   language: python
+   language: java
    range: ((0, 0), (24, 6))
    substring: (0, 458)
    body_sub: (0, 458)
@@ -105,7 +105,7 @@ Interface: Animal
    parent: test.java
 === Symbol Table for test.ts ===
 File: test.ts
-   language: python
+   language: typescript
    range: ((0, 0), (20, 1))
    substring: (0, 458)
    body_sub: (0, 458)
@@ -226,7 +226,7 @@ If: if$0
    else_body: body$1
 === Symbol Table for test.tsx ===
 File: test.tsx
-   language: python
+   language: tsx
    range: ((0, 0), (1, 27))
    substring: (0, 50)
    body_sub: (0, 50)
@@ -622,7 +622,7 @@ For: for$0
    for i in call$0: body$0
 === Symbol Table for test.cpp ===
 File: test.cpp
-   language: python
+   language: cpp
    range: ((0, 0), (7, 1))
    substring: (0, 142)
    body_sub: (0, 142)
@@ -660,7 +660,7 @@ Namespace: namespace_name
    parent: test.cpp
 === Symbol Table for test.cs ===
 File: test.cs
-   language: python
+   language: c_sharp
    range: ((0, 0), (17, 1))
    substring: (0, 276)
    body_sub: (0, 276)
@@ -700,7 +700,7 @@ Interface: IEquatable
    parent: test.cs
 === Symbol Table for test.ml ===
 File: test.ml
-   language: python
+   language: ocaml
    range: ((0, 0), (14, 3))
    substring: (0, 365)
    body_sub: (0, 365)
@@ -793,7 +793,7 @@ Module: N
    parent: test.ml
 === Symbol Table for test.rb ===
 File: test.rb
-   language: python
+   language: ruby
    range: ((0, 0), (50, 11))
    substring: (0, 1015)
    body_sub: (0, 1015)

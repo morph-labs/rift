@@ -896,7 +896,8 @@ class File:
     _symbol_table: Dict[QualifiedId, Symbol] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        self.symbol = create_file_symbol(code=self.code, language="python", path=self.path)
+        language = language_from_file_extension(self.path) or "python"
+        self.symbol = create_file_symbol(code=self.code, language=language, path=self.path)
         self.add_symbol(self.symbol)
 
     def lookup_symbol(self, qid: QualifiedId) -> Optional[Symbol]:
