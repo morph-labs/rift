@@ -4,8 +4,7 @@ from typing import List, Optional
 
 from tree_sitter import Node
 
-from rift.ir.parser_core import Counter, SymbolParser
-
+from . import parser_core
 from .IR import (
     ArrayKind,
     Case,
@@ -48,8 +47,8 @@ def parse_type(language: Language, node: Node, parent: Symbol) -> Type:
     return Type.unknown(node.text.decode(), parent)
 
 
-class ReScriptParser(SymbolParser):
-    def parse_symbols(self, counter: Counter) -> List[Symbol]:
+class ReScriptParser(parser_core.SymbolParser):
+    def parse_symbols(self, counter: parser_core.Counter) -> List[Symbol]:
         if self.node.type == "let_declaration":
             return_type = None
 
@@ -112,7 +111,7 @@ class ReScriptParser(SymbolParser):
                 if exp.type == "function":
                     body_node = exp.child_by_field_name("body")
                     if body_node is not None:
-                        counter = Counter()
+                        counter = parser_core.Counter()
                         scope = self.scope + id_name + "."
                         self.recurse(body_node, scope, parent=parent).parse_expression(counter)
 
@@ -299,7 +298,7 @@ class ReScriptParser(SymbolParser):
 
         return super().parse_symbols(counter)
 
-    def parse_metasymbol(self, counter: Counter) -> Optional[Symbol]:
+    def parse_metasymbol(self, counter: parser_core.Counter) -> Optional[Symbol]:
         node = self.node
         if node.type == "if_expression" and node.child_count >= 3:
             guard_node = node.children[1]
@@ -368,7 +367,7 @@ class ReScriptParser(SymbolParser):
 
         return super().parse_metasymbol(counter)
 
-    def walk_expression(self, counter: Counter) -> None:
+    def walk_expression(self, counter: parser_core.Counter) -> None:
         if self.node.type in ["array", "if_expression", "switch_expression", "tuple"]:
             self.parse_symbols(counter)
         elif self.node.type == "block":

@@ -2,16 +2,15 @@ from typing import List, Optional
 
 from tree_sitter import Node
 
-from rift.ir.parser_core import Counter, SymbolParser
-
+from . import parser_core
 from .IR import FunctionKind, ModuleKind, Parameter, Symbol, Type, ValueKind
 
 
-class OCamlParser(SymbolParser):
+class OCamlParser(parser_core.SymbolParser):
     def process_body(self) -> Optional[Node]:
         pass  # handled for each declaration in a let binding
 
-    def parse_symbols(self, counter: Counter) -> List[Symbol]:
+    def parse_symbols(self, counter: parser_core.Counter) -> List[Symbol]:
         if self.node.type == "value_definition":
             parameters: List[Parameter] = []
 

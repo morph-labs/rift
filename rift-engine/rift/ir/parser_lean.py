@@ -1,15 +1,14 @@
 import logging
 from typing import List
 
-from rift.ir.parser_core import Counter, SymbolParser
-
+from . import parser_core
 from .IR import DefKind, StructureKind, Symbol, TheoremKind
 
 logger = logging.getLogger(__name__)
 
 
-class LeanParser(SymbolParser):
-    def parse_symbols(self, counter: Counter) -> List[Symbol]:
+class LeanParser(parser_core.SymbolParser):
+    def parse_symbols(self, counter: parser_core.Counter) -> List[Symbol]:
         node = self.node
         if node.type == "declaration" and len(node.children) >= 1:
             node0 = node.children[-1]
