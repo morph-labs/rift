@@ -5,8 +5,6 @@ from typing import Callable, List, Optional
 from tree_sitter import Parser
 from tree_sitter_languages import get_parser as get_tree_sitter_parser
 
-from rift.ir import parser_rescript
-
 from . import IR, custom_parsers, parser_core, parser_lean, parser_ocaml, parser_rescript
 
 logger = logging.getLogger(__name__)
