@@ -895,6 +895,10 @@ class File:
     _imports: List[Import] = field(default_factory=list)
     _symbol_table: Dict[QualifiedId, Symbol] = field(default_factory=dict)
 
+    @property
+    def symbols(self) -> List[Symbol]:
+        return list(self._symbol_table.values())
+
     def __post_init__(self) -> None:
         language = language_from_file_extension(self.path) or "python"
         self.symbol = create_file_symbol(code=self.code, language=language, path=self.path)
@@ -997,6 +1001,10 @@ class ResolvedReference:
 class Project:
     root_path: str
     _files: List[File] = field(default_factory=list)
+
+    @property
+    def files(self) -> List[File]:
+        return self._files
 
     def add_file(self, file: File):
         self._files.append(file)
