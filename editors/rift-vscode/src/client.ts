@@ -218,7 +218,10 @@ export class MorphLanguageClient
           (id: string) => this.client?.sendNotification("morph/reject", { id }),
         ),
         vscode.workspace.onDidChangeConfiguration((e) => {
-          if (e.affectsConfiguration("rift.openaiKey")) {
+          if (
+            e.affectsConfiguration("rift.openaiKey") ||
+            e.affectsConfiguration("rift.openaiApiUrl")
+          ) {
             this.restart();
           }
           this.on_config_change.bind(this);
