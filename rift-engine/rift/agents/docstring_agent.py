@@ -19,10 +19,10 @@ import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
 from rift.agents.agenttask import AgentTask
 from rift.ir.missing_docstrings import (
-    FunctionMissingDocstring,
     FileMissingDocstrings,
-    functions_missing_docstrings_in_file,
+    FunctionMissingDocstring,
     files_missing_docstrings_in_project,
+    functions_missing_docstrings_in_file,
 )
 from rift.ir.response import (
     Replace,
@@ -39,19 +39,12 @@ Prompt = List[Message]
 
 
 @dataclass
-class Params(agent.AgentParams):
-    ...
-
-
-@dataclass
 class Result(agent.AgentRunResult):
     ...
 
 
 @dataclass
 class State(agent.AgentState):
-    params: Params
-    messages: List[openai_types.Message]
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
@@ -59,7 +52,8 @@ class Config:
     debug = False
     model = "gpt-3.5-turbo"  # ["gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k"]
     temperature = 0.0
-    max_size_group_missing_docstrings = 10  # Max number of functions to process at once
+    # Max number of functions to process at once
+    max_size_group_missing_docstrings = 10
 
 
 class MissingDocStringPrompt:
@@ -71,7 +65,7 @@ class MissingDocStringPrompt:
         n = 0
         for function in functions_missing_docstrings:
             n += 1
-            missing_str += f"{n}. {function.function_declaration.name}\n"
+            missing_str += f"{n}. {function.function_declaration.id}\n"
 
         return dedent(
             f"""
@@ -91,7 +85,7 @@ class MissingDocStringPrompt:
     ) -> IR.Code:
         bytes = b""
         for function in functions_missing_docstrings:
-            bytes += function.function_declaration.get_substring()
+            bytes += function.function_declaration.substring
             bytes += b"\n"
         return IR.Code(bytes)
 
@@ -204,11 +198,10 @@ class FileProcess:
 @dataclass
 class MissingDocstringAgent(agent.ThirdPartyAgent):
     agent_type: ClassVar[str] = "missing_docstring_agent"
-    params_cls: ClassVar[Any] = Params
     debug: bool = Config.debug
 
     @classmethod
-    async def create(cls, params: Any, server: LspServer) -> Any:
+    async def create(cls, params: agent.AgentParams, server: LspServer) -> "MissingDocstringAgent":
         state = State(params=params, messages=[], response_lock=asyncio.Lock())
         obj: agent.ThirdPartyAgent = cls(state=state, agent_id=params.agent_id, server=server)
         return obj
@@ -227,8 +220,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
         if self.debug:
             logger.info(f"code_blocks: \n{code_blocks}\n")
         filter_function_ids = [
-            function.function_declaration.get_qualified_id()
-            for function in functions_missing_docstrings
+            function.function_declaration.qualified_id for function in functions_missing_docstrings
         ]
         x = replace_functions_from_code_blocks(
             code_blocks=code_blocks,
@@ -274,7 +266,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
 
         response_stream._feed_task = asyncio.create_task(  # type: ignore
             self.add_task(  # type: ignore
-                f"Write doc strings for {'/'.join(function.function_declaration.name for function in functions_missing_docstrings)}",
+                f"Write doc strings for {'/'.join(function.function_declaration.id for function in functions_missing_docstrings)}",
                 feed_task,
             ).run()
         )
@@ -299,7 +291,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
             split = len(group) == Config.max_size_group_missing_docstrings
             # also split if a function with the same name is in the current group (e.g. from another class)
             for function2 in group:
-                if function.function_declaration.name == function2.function_declaration.name:
+                if function.function_declaration.id == function2.function_declaration.id:
                     split = True
                     break
             if split:
@@ -337,7 +329,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
         logger.info(f"ABOUT TO APPLY EDITS: {file_process.edits}")
         new_document = document.apply_edits(file_process.edits)
         logger.info(f"{new_document=}")
-        dummy_file = IR.File("dummy")
+        dummy_file = IR.File(IR.Code(b""), "dummy")
         parser.parse_code_block(dummy_file, new_document, language)
         new_num_missing = len(functions_missing_docstrings_in_file(dummy_file))
         await self.send_chat_update(
@@ -387,7 +379,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
         async def log_missing(file_missing_docstrings: FileMissingDocstrings):
             await info_update(f"File: {file_missing_docstrings.ir_name.path}")
             for function in file_missing_docstrings.functions_missing_docstrings:
-                logger.info(f"Missing: {function.function_declaration.name}")
+                logger.info(f"Missing: {function.function_declaration.id}")
 
         async def get_user_response() -> str:
             result = await self.request_chat(
@@ -446,7 +438,7 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
                 functions_missing_docstrings = [
                     function_missing_docstrings
                     for function_missing_docstrings in file_missing_docstrings.functions_missing_docstrings
-                    if function_missing_docstrings.function_declaration.get_qualified_id()
+                    if function_missing_docstrings.function_declaration.qualified_id
                     in symbols_per_file[full_path]
                 ]
                 if functions_missing_docstrings != []:

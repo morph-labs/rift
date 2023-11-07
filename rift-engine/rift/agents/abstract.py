@@ -6,13 +6,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
-from pydantic import BaseModel
-
 import rift.llm.openai_types as openai
 import rift.lsp.types as lsp
 from rift.agents.agenttask import AgentTask
 from rift.llm.openai_types import Message as ChatMessage
-from rift.lsp import LspServer as BaseLspServer
+from rift.lsp import LspServer
 from rift.util.TextStream import TextStream
 
 logger = logging.getLogger(__name__)
@@ -54,9 +52,9 @@ AgentTaskId = str
 class AgentParams:
     agent_type: str
     agent_id: str
-    textDocument: Optional[lsp.TextDocumentIdentifier]
     selection: Optional[lsp.Selection]
     position: Optional[lsp.Position]
+    textDocument: Optional[lsp.TextDocumentIdentifier]
     workspaceFolderPath: Optional[str]
     visibleEditorMetadata: Optional[List[lsp.EditorMetadata]]
 
@@ -83,6 +81,7 @@ class AgentState(ABC):
     """
 
     params: AgentParams
+    messages: list[openai.Message]
 
 
 @dataclass
@@ -98,7 +97,7 @@ class Agent:
     """
 
     agent_type: ClassVar[str]
-    server: Optional[BaseLspServer] = None
+    server: Optional[LspServer] = None
     state: Optional[AgentState] = None
     agent_id: Optional[str] = None
     tasks: List[AgentTask] = field(default_factory=list)
@@ -114,7 +113,7 @@ class Agent:
         return f"<{self.agent_type}> {self.agent_id}"
 
     @classmethod
-    async def create(cls, params: AgentParams, server: BaseLspServer):
+    async def create(cls, params: AgentParams, server: LspServer) -> "Agent":
         """
         Factory function which is responsible for constructing the agent's state.
         """

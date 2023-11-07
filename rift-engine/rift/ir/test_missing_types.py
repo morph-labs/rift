@@ -2,9 +2,8 @@ import difflib
 import os
 from typing import List
 
-import rift.ir.parser as parser
-import rift.ir.test_parser as test_parser
-from rift.ir.missing_types import files_missing_types_in_project, functions_missing_types_in_file
+from . import parser, test_parser
+from .missing_types import files_missing_types_in_project, functions_missing_types_in_file
 
 
 def test_missing_types():

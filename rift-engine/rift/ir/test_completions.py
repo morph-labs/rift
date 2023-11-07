@@ -1,11 +1,7 @@
 import difflib
 import os
 
-
-import rift.ir.completions as completions
-import rift.ir.IR as IR
-import rift.ir.parser as parser
-import rift.ir.test_parser as test_parser
+from . import IR, completions, parser, test_parser
 
 
 def test_completions_file():
@@ -57,6 +53,6 @@ def test_symbol_reference():
     assert res_some_function is not None
     assert res_some_function.symbol is not None
     assert (
-        res_some_function.symbol.get_substring_without_body().decode().strip()
+        res_some_function.symbol.substring_without_body.decode().strip()
         == "def some_function(self, x: int, y: int) -> int:"
     )

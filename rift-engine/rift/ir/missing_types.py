@@ -2,8 +2,7 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
-import rift.ir.IR as IR
-import rift.ir.parser as parser
+from . import IR, parser
 
 
 @dataclass
@@ -13,7 +12,7 @@ class MissingType:
     return_type: bool = False
 
     def __str__(self) -> str:
-        s = f"Function `{self.function_declaration.name}` is missing type annotations"
+        s = f"Function `{self.function_declaration.id}` is missing type annotations"
         if self.parameters != []:
             if len(self.parameters) == 1:
                 s += f" in parameter '{self.parameters[0]}'"
@@ -77,7 +76,7 @@ def functions_missing_types_in_path(
 ) -> Tuple[List[MissingType], IR.Code, IR.File]:
     """Given a file path, parse the file and find function declarations that are missing types in the parameters or the return type."""
     full_path = os.path.join(root, path)
-    file = IR.File(path)
+    file = IR.File(IR.Code(b""), path)
     language = IR.language_from_file_extension(path)
     missing_types: List[MissingType] = []
     if language is None:

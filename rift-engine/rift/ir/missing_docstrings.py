@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-import rift.ir.IR as IR
+from . import IR
 
 
 @dataclass
@@ -10,7 +10,7 @@ class FunctionMissingDocstring:
 
     def __str__(self) -> str:
         # let agent generate doc string for function by reading the function code
-        return f"Function `{self.function_declaration.name}` is missing a doc string"
+        return f"Function `{self.function_declaration.id}` is missing a doc string"
 
     def __repr__(self) -> str:
         return self.__str__()

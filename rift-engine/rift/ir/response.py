@@ -1,12 +1,10 @@
-from enum import Enum
+import logging
 import re
 import textwrap
+from enum import Enum
 from typing import List, Optional, Set, Tuple
 
-import rift.ir.IR as IR
-import rift.ir.parser as parser
-import rift.ir.python_typing as python_typing
-import logging
+from . import IR, parser, python_typing
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +47,7 @@ def parse_code_blocks(code_blocks: List[IR.Code], language: IR.Language) -> IR.F
     Returns:
         IR: The intermediate representation of the parsed code blocks.
     """
-    file = IR.File("response")
+    file = IR.File(code_blocks[0], "response")
     for block in code_blocks:
         parser.parse_code_block(file, block, language)
     return file
@@ -61,8 +59,8 @@ def get_typing_names_from_types(types: List[IR.Type]) -> Set[str]:
     """
     names: Set[str] = set()
     for t in types:
-        if t.name and python_typing.is_typing_type(t.name):
-            names.add(t.name)
+        if t.id and python_typing.is_typing_type(t.id):
+            names.add(t.id)
         new_names = get_typing_names_from_types(t.arguments)
         names = names.union(new_names)
     return names
@@ -80,15 +78,13 @@ def replace_functions_in_document(
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
     """
-    function_declarations_in_document: List[
-        IR.Symbol
-    ] = ir_doc.get_function_declarations()
+    function_declarations_in_document: List[IR.Symbol] = ir_doc.get_function_declarations()
 
     code_edits: List[IR.CodeEdit] = []
     updated_functions: List[IR.Symbol] = []
 
     for function_declaration in function_declarations_in_document:
-        function_in_blocks_ = ir_blocks.search_symbol(function_declaration.name)
+        function_in_blocks_ = ir_blocks.search_symbol(function_declaration.id)
         function_in_blocks = None
         if len(function_in_blocks_) == 1:
             f0 = function_in_blocks_[0]
@@ -97,19 +93,19 @@ def replace_functions_in_document(
         if filter_function_ids is None:
             filter = True
         else:
-            filter = function_declaration.get_qualified_id() in filter_function_ids
+            filter = function_declaration.qualified_id in filter_function_ids
         if filter and function_in_blocks is not None:
             updated_functions.append(function_in_blocks)
             if replace == Replace.ALL:
-                substring = function_declaration.substring
-                new_bytes = function_in_blocks.get_substring()
+                substring = function_declaration.substring_
+                new_bytes = function_in_blocks.substring
             elif replace == Replace.DOC:
                 if function_in_blocks.docstring is None:
-                    logger.warning(f"No docstring for function {function_declaration.name}")
+                    logger.warning(f"No docstring for function {function_declaration.id}")
                     continue
                 if function_declaration.docstring_sub is not None:
                     logger.warning(
-                        f"Docstring already exists for function {function_declaration.name}"
+                        f"Docstring already exists for function {function_declaration.id}"
                     )
                     continue
 
@@ -133,27 +129,27 @@ def replace_functions_in_document(
                         substring = (body_start - old_indent, body_start - old_indent)
                     else:
                         # add the doc comment before the function
-                        old_function_start = function_declaration.substring[0]
+                        old_function_start = function_declaration.substring_[0]
                         old_indent = find_indent(
                             function_declaration.code.bytes, old_function_start
                         )
-                        new_function_start = function_in_blocks.substring[0]
+                        new_function_start = function_in_blocks.substring_[0]
                         new_indent = find_indent(function_in_blocks.code.bytes, new_function_start)
                         substring = (
                             old_function_start - old_indent,
                             old_function_start - old_indent,
                         )
                 else:
-                    logger.warning(f"No body for function {function_declaration.name}")
+                    logger.warning(f"No body for function {function_declaration.id}")
                     continue
 
                 docstring = textwrap.dedent(" " * new_indent + function_in_blocks.docstring)
                 docstring = textwrap.indent(docstring, " " * old_indent)
                 new_bytes = docstring.encode("utf-8") + b"\n"
             elif replace == Replace.SIGNATURE:
-                new_function_text = function_in_blocks.get_substring_without_body()
+                new_function_text = function_in_blocks.substring_without_body
                 logger.info(f"{new_function_text=}")
-                old_function_text = function_declaration.get_substring_without_body()
+                old_function_text = function_declaration.substring_without_body
                 # Get trailing newline and/or whitespace from old text
                 old_trailing_whitespace = re.search(rb"\s*$", old_function_text)
                 # Add it to new text
@@ -162,7 +158,7 @@ def replace_functions_in_document(
                     logger.info(f"{new_function_text=}")
                     new_function_text += old_trailing_whitespace.group(0)
                     logger.info(f"{new_function_text=}")
-                start_replace = function_declaration.substring[0]
+                start_replace = function_declaration.substring_[0]
                 end_replace = start_replace + len(old_function_text)
                 substring = (start_replace, end_replace)
                 new_bytes = new_function_text

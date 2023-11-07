@@ -1,7 +1,23 @@
+import asyncio
 import logging
 import os
 import re
+import time
 from concurrent import futures
+from dataclasses import dataclass, field
+from pathlib import PurePath
+from typing import Any, ClassVar, List, Optional
+
+from rich.text import Text
+
+import rift.agents.abstract as agent
+import rift.agents.registry as registry
+import rift.ir.IR as IR
+import rift.llm.openai_types as openai
+import rift.lsp.types as lsp
+import rift.util.file_diff as file_diff
+from rift.lsp import LspServer
+from rift.util.TextStream import TextStream
 
 aider_available = False
 try:
@@ -26,23 +42,6 @@ except ImportError:
     )
 
 
-import asyncio
-import logging
-import time
-from dataclasses import dataclass, field
-from pathlib import PurePath
-from typing import Any, ClassVar, List, Optional
-
-from rich.text import Text
-
-import rift.agents.abstract as agent
-import rift.agents.registry as registry
-import rift.ir.IR as IR
-import rift.llm.openai_types as openai
-import rift.lsp.types as lsp
-import rift.util.file_diff as file_diff
-from rift.util.TextStream import TextStream
-
 logger = logging.getLogger(__name__)
 
 
@@ -52,21 +51,13 @@ class AiderRunResult(agent.AgentRunResult):
 
 
 @dataclass
-class AiderAgentParams(agent.AgentParams):
-    ...
-
-
-@dataclass
 class AiderAgentState(agent.AgentState):
     """
     A data class that holds the state of an Aider agent.
     It has the following attributes:
-    - params (AiderAgentParams) : The parameters associated with the Aider agent.
-    - messages (List[openai.Message]) : A list of messages communicated with the openai API during the agent's run.
+    - params : The parameters associated with the agent.
     """
 
-    params: AiderAgentParams
-    messages: list[openai.Message]
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
@@ -81,10 +72,9 @@ class AiderAgentState(agent.AgentState):
 @dataclass
 class Aider(agent.ThirdPartyAgent):
     agent_type: ClassVar[str] = "aider"
-    params_cls: ClassVar[Any] = AiderAgentParams
 
     @classmethod
-    async def create(cls, params: AiderAgentParams, server: Any) -> agent.ThirdPartyAgent:
+    async def create(cls, params: agent.AgentParams, server: LspServer) -> agent.ThirdPartyAgent:
         """
         Class method to create an instance of the Aider class.
         :param params: Parameters for the Aider agent.
@@ -178,7 +168,6 @@ class Aider(agent.ThirdPartyAgent):
                 )
 
                 def refactor_uri_match(resp) -> str:
-
                     dropped_symbols = False
 
                     def replacement(m: re.Match[str]):
@@ -189,7 +178,6 @@ class Aider(agent.ThirdPartyAgent):
                             uri, symbol = parsed_uri.split("#")[0], parsed_uri.split("#")[1]
                         else:
                             uri = parsed_uri
-                        
 
                         reference = IR.Reference.from_uri(uri)
                         file_path = reference.file_path
@@ -197,10 +185,18 @@ class Aider(agent.ThirdPartyAgent):
                             file_path, self.state.params.workspaceFolderPath
                         )
                         if not resp.startswith("/add"):
-                            return f"`{relative_path}`" if not dropped_symbols else f"{symbol} @ `{relative_path}`"
+                            return (
+                                f"`{relative_path}`"
+                                if not dropped_symbols
+                                else f"{symbol} @ `{relative_path}`"
+                            )
                         else:
-                            return f"{relative_path}" if not dropped_symbols else f"{symbol} @ {relative_path}"
-                    
+                            return (
+                                f"{relative_path}"
+                                if not dropped_symbols
+                                else f"{symbol} @ {relative_path}"
+                            )
+
                     # def process_path(path):
                     #     relative_path = os.path.relpath(path, self.state.params.workspaceFolderPath)
                     #     if not resp.startswith("/add"):  # /add does not like a quoted path
@@ -223,7 +219,7 @@ class Aider(agent.ThirdPartyAgent):
             result = t.result()
             return result
 
-        ##### PATCHES
+        # PATCHES
 
         def confirm_ask(self, question, default="y"):
             # print(f"[confirm_ask] question={question}")

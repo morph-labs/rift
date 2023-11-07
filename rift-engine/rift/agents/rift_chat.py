@@ -11,7 +11,7 @@ from rift.agents.abstract import AgentProgress  # AgentTask,
 from rift.agents.abstract import Agent, AgentParams, AgentRunResult, AgentState, RequestChatRequest
 from rift.agents.agenttask import AgentTask
 from rift.llm.abstract import AbstractChatCompletionProvider
-from rift.lsp import LspServer as BaseLspServer
+from rift.lsp import LspServer
 from rift.util.context import resolve_inline_uris
 
 logger = logging.getLogger(__name__)
@@ -19,11 +19,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ChatRunResult(AgentRunResult):
-    ...
-
-
-@dataclass
-class RiftChatAgentParams(AgentParams):
     ...
 
 
@@ -38,9 +33,7 @@ class ChatProgress(
 @dataclass
 class RiftChatAgentState(AgentState):
     model: AbstractChatCompletionProvider
-    messages: list[openai.Message]
     document: lsp.TextDocumentItem
-    params: RiftChatAgentParams
 
 
 @registry.agent(
@@ -51,10 +44,9 @@ class RiftChatAgentState(AgentState):
 class RiftChatAgent(Agent):
     state: Optional[RiftChatAgentState] = None
     agent_type: ClassVar[str] = "rift_chat"
-    params_cls: ClassVar[Any] = RiftChatAgentParams
 
     @classmethod
-    async def create(cls, params: AgentParams, server: BaseLspServer):
+    async def create(cls, params: AgentParams, server: LspServer) -> "RiftChatAgent":
         # logger.info(f"RiftChatAgent.create {params=}")
         model = await server.ensure_chat_model()
         if params.textDocument is None:

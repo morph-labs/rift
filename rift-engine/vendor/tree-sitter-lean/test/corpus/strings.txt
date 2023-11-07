@@ -1,0 +1,152 @@
+======
+String
+======
+
+#eval "foo"
+#eval "'"
+
+---
+
+(module (hash_command (string)) (hash_command (string)))
+
+============
+Empty String
+============
+
+#eval ""
+
+---
+
+(module (hash_command (string)))
+
+================
+Escape Sequences
+================
+
+#eval "f\'o\"\ro\nb\ta\\r"
+
+---
+
+(module
+  (hash_command
+    (string
+      (quoted_char)
+      (quoted_char)
+      (quoted_char)
+      (quoted_char)
+      (quoted_char)
+      (quoted_char))))
+
+=========
+\x and \u
+=========
+
+#eval "\x12\u1234"
+
+---
+
+(module
+  (hash_command
+    (string
+      (quoted_char)
+      (quoted_char))))
+
+====
+Char
+====
+
+#eval 'f'
+#eval '"'
+
+---
+
+(module (hash_command (char)) (hash_command (char)))
+
+====================
+Char Escape Sequence
+====================
+
+#eval '\''
+
+---
+
+(module (hash_command (char (quoted_char))))
+
+========
+Non-Char
+========
+
+#eval 'fa'
+
+---
+
+(module (hash_command (ERROR) (identifier)))
+
+==================================
+Non-Interpolation in Normal String
+==================================
+
+#eval println! "The result of squaring the integer 4573 and adding 3 is {result1}"
+
+---
+
+(module (hash_command (apply (identifier) (string))))
+
+=============
+Interpolation
+=============
+
+#eval println! s!"The result of squaring the integer 4573 and adding 3 is {result1}"
+
+---
+
+(module
+  (hash_command
+    (apply (identifier)
+      (interpolated_string (interpolation (identifier))))))
+
+=======================================
+Interpolation With Function Application
+=======================================
+
+#eval println! s!"The result of applying sampleFunction3 to 2 is {sampleFunction3 2}"
+
+---
+
+(module
+  (hash_command
+    (apply (identifier)
+      (interpolated_string
+        (interpolation (apply (identifier) (number)))))))
+
+===================================
+Interpolation With Escape Sequences
+===================================
+
+#eval s!"f\'o\"\ro\nb\ta\\r {baz}"
+
+---
+
+(module
+  (hash_command
+    (interpolated_string
+      (quoted_char)
+      (quoted_char)
+      (quoted_char)
+      (quoted_char)
+      (quoted_char)
+      (quoted_char)
+      (interpolation (identifier)))))
+
+==============
+String With --
+==============
+
+#eval "--"
+#eval "/--"
+
+---
+
+(module
+  (hash_command (string))
+  (hash_command (string)))

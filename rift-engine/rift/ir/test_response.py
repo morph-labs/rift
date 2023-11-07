@@ -2,11 +2,9 @@ import difflib
 import os
 from textwrap import dedent
 
-import rift.ir.IR as IR
-from rift.ir.missing_docstrings import functions_missing_docstrings_in_file
-import rift.ir.parser as parser
-import rift.ir.response as response
-from rift.ir.missing_types import functions_missing_types_in_file
+from . import IR, parser, response
+from .missing_docstrings import functions_missing_docstrings_in_file
+from .missing_types import functions_missing_types_in_file
 
 
 class Test:
@@ -153,7 +151,7 @@ class Test:
         class TestAddDocs:
             def dump_elements(self, elements: List[str]) -> None:
                 def dump_symbol(symbol: SymbolInfo) -> None:
-                    decl_without_body = symbol.get_substring_without_body().decode()
+                    decl_without_body = symbol.substring_without_body.decode()
                     elements.append(decl_without_body)
                     if isinstance(symbol, ContainerDeclaration):
                         for statement in symbol.body:
@@ -302,10 +300,10 @@ def test_response():
 
     language = "python"
     code_blocks3 = response.extract_blocks_from_response(Test.response3)
-    file = IR.File("response3")
+    file = IR.File(IR.Code(Test.response3.encode()), "response3")
     parser.parse_code_block(file, IR.Code(Test.code3), language)
     missing_types = functions_missing_types_in_file(file)
-    filter_function_ids = [mt.function_declaration.get_qualified_id() for mt in missing_types]
+    filter_function_ids = [mt.function_declaration.qualified_id for mt in missing_types]
     document3 = IR.Code(Test.code3)
     edits3, updated_functions = response.replace_functions_from_code_blocks(
         code_blocks=code_blocks3,
@@ -325,10 +323,10 @@ def test_response():
 
     language = "python"
     code_blocks4 = response.extract_blocks_from_response(Test.response4)
-    file = IR.File("response4")
+    file = IR.File(IR.Code(Test.response4.encode()), "response4")
     parser.parse_code_block(file, IR.Code(Test.code4), language)
     missing_docs = functions_missing_docstrings_in_file(file)
-    filter_function_ids = [md.function_declaration.get_qualified_id() for md in missing_docs]
+    filter_function_ids = [md.function_declaration.qualified_id for md in missing_docs]
     document4 = IR.Code(Test.code4)
     edits4, updated_functions = response.replace_functions_from_code_blocks(
         code_blocks=code_blocks4,
@@ -342,10 +340,10 @@ def test_response():
 
     language = "typescript"
     code_blocks5 = response.extract_blocks_from_response(Test.response5)
-    file = IR.File("response5")
+    file = IR.File(IR.Code(Test.response5.encode()), "response5")
     parser.parse_code_block(file, IR.Code(Test.code5), language)
     missing_docs = functions_missing_docstrings_in_file(file)
-    filter_function_ids = [md.function_declaration.get_qualified_id() for md in missing_docs]
+    filter_function_ids = [md.function_declaration.qualified_id for md in missing_docs]
     document5 = IR.Code(Test.code5)
     edits5, updated_functions = response.replace_functions_from_code_blocks(
         code_blocks=code_blocks5,
