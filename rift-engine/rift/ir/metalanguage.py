@@ -62,7 +62,12 @@ class MetaLanguage:
                             f"Check failed on {x.qualified_id} in {x.file_path}"
                         )
                 elif isinstance(
-                    x, (IR.CallKind, IR.FunctionKind, IR.TypeDefinitionKind, IR.Field, IR.Parameter)
+                    x, (IR.ClassKind, IR.FunctionKind)
+                ):
+                    if not b:
+                        self.report_check_failed(f"Check failed on: {x.id} in {x.file_path}")
+                elif isinstance(
+                    x, (IR.CallKind, IR.TypeDefinitionKind, IR.Field, IR.Parameter)
                 ):
                     if not b:
                         self.report_check_failed(f"Check failed on: {x} in {x.file_path}")
@@ -98,7 +103,26 @@ class MetaLanguage:
 
 
 def test_meta_language():
+    # Check that all class names have at least 5 letters
     code0 = dedent(
+        """
+        for x in $Class:
+            $check(x, len(x.id) >= 5)
+        """
+    ).lstrip()
+
+
+    # check that no functions have parameters with default_value "[]"
+    code1 = dedent(
+        """
+        for x in $Function: 
+            for p in x.parameters:
+                $check(p, p.default_value != "[]")
+        """
+    ).lstrip()
+
+    # check that optional record fields are not of option type
+    code2 = dedent(
         """
         for x in $TypeDefinition:
             if x.type.kind == 'record':
@@ -108,23 +132,18 @@ def test_meta_language():
         """
     ).lstrip()
 
-    code1 = dedent(
-        """
-        for x in $Function: 
-            for p in x.parameters:
-                $check(p, p.default_value != "[]")
-        """
-    ).lstrip()
 
-    code2 = dedent(
+    # Check that the second argument passed to `useEffect` is either a tuple or an array
+    code3 = dedent(
         """
         for x in $Call:
-            if x.function_name in ['useState', 'useEffect', 'useContext', 'useReducer', 'useCallback', 'useMemo', 'useRef', 'useImperativeHandle', 'useLayoutEffect', 'useDebugValue']:
-                $check(x.parent, x.parent.kind == 'Function')
+            if x.function_name == 'useEffect':
+                $check(x, x.arguments[1].kind in ['Tuple', 'Array'])
         """
     ).lstrip()
 
-    code3 = dedent(
+    # Check the rule of hooks that calls to hook functions must be at toplevel
+    code4 = dedent(
         """
         for x in $Call:
             if x.function_name.startswith('use'):
@@ -132,14 +151,6 @@ def test_meta_language():
         """
     ).lstrip()
 
-    # Check that the second argument passed to `useEffect` is either a tuple or an array.
-    code4 = dedent(
-        """
-        for x in $Call:
-            if x.function_name == 'useEffect':
-                $check(x, x.arguments[1].kind in ['Tuple', 'Array'])
-        """
-    ).lstrip()
 
     codes = [code0, code1, code2, code3, code4]
     this_dir = os.path.dirname(os.path.abspath(__file__))
