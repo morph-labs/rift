@@ -39,9 +39,16 @@
           ]
         },
         "rift.openaiKey": {
+          "title": "OpenAI API key",
           "type": "string",
           "default": "",
-          "description": "OpenAI API key"
+          "description": "OpenAI API key. Compatible with other providers like OpenRouter."
+        },
+        "rift.openaiApiUrl": {
+          "title": "OpenAI API URL",
+          "type": "string",
+          "default": "",
+          "description": "OpenAI API URL. Custom API URL is useful for example for LocalAI / OpenRouter / Azure."
         },
         "rift.riftPath": {
           "type": "string",

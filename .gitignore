@@ -1,3 +1,5 @@
+.DS_Store
+
 ./editors/**/out
 ./editors/**/dist
 ./editors/**/node_modules
