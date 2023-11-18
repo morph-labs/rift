@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  rift-engine:
+    build:
+      context: ./rift-engine
+      dockerfile: Dockerfile
+    # volumes:
+    #   - ./models/:/models/
+    command: python -m rift.server.core --host 0.0.0.0 --port 7797 --debug True
+    ports:
+      - 7797:7797
